@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Tour de contrôle · Vol MC 5060</title>
+  <meta name="theme-color" content="#0e1a2b" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin">
+
+  <!-- ───────── Connexion ───────── -->
+  <main class="gate" id="view-login" hidden>
+    <form class="badge" id="login-form" novalidate>
+      <p class="eyebrow">Accès équipage</p>
+      <h1>Tour de contrôle</h1>
+      <p class="badge__sub">Vol MC 5060 · Marjorie &amp; Christophe</p>
+      <div class="field">
+        <label for="l-user">Identifiant</label>
+        <input id="l-user" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+      </div>
+      <div class="field">
+        <label for="l-pass">Mot de passe</label>
+        <input id="l-pass" name="password" type="password" autocomplete="current-password" required />
+      </div>
+      <p class="form-error" role="alert" hidden></p>
+      <button class="btn btn--gold btn--block" type="submit">Se connecter</button>
+      <a class="badge__back" href="/">← Retour au site</a>
+    </form>
+  </main>
+
+  <!-- ───────── Premier mot de passe ───────── -->
+  <main class="gate" id="view-password" hidden>
+    <form class="badge" id="first-pass-form" novalidate>
+      <p class="eyebrow">Première connexion</p>
+      <h1>Bienvenue à bord, <span data-me="name"></span></h1>
+      <p class="badge__sub">Remplacez votre code provisoire par un mot de passe personnel.</p>
+      <div class="field">
+        <label for="fp-current">Code provisoire</label>
+        <input id="fp-current" name="current" type="password" autocomplete="current-password" required />
+      </div>
+      <div class="field">
+        <label for="fp-next">Nouveau mot de passe (8 caractères min.)</label>
+        <input id="fp-next" name="next" type="password" autocomplete="new-password" minlength="8" required />
+      </div>
+      <div class="field">
+        <label for="fp-confirm">Confirmer</label>
+        <input id="fp-confirm" name="confirm" type="password" autocomplete="new-password" required />
+      </div>
+      <p class="form-error" role="alert" hidden></p>
+      <button class="btn btn--gold btn--block" type="submit">Enregistrer</button>
+      <button class="badge__back linklike" type="button" data-action="logout">Se déconnecter</button>
+    </form>
+  </main>
+
+  <!-- ───────── Application ───────── -->
+  <div id="view-app" hidden>
+    <header class="topbar">
+      <a href="/" class="nav__brand" title="Voir le site">
+        <span class="nav__mono">M<span>&amp;</span>C</span>
+        <span class="nav__flight">Tour de contrôle</span>
+      </a>
+      <div class="topbar__me">
+        <span><span data-me="name"></span> · <em data-me="roleLabel"></em></span>
+        <button class="btn btn--small btn--line" data-action="logout">Déconnexion</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" data-tab="manifeste" aria-selected="true">Manifeste</button>
+      <button role="tab" data-tab="cabine">Plan de cabine</button>
+      <button role="tab" data-tab="comptes" data-admin-only>Comptes</button>
+      <button role="tab" data-tab="moi">Mon compte</button>
+    </nav>
+
+    <!-- Manifeste -->
+    <section class="panel" id="tab-manifeste" role="tabpanel">
+      <div class="stats">
+        <div class="stat"><span>Réponses</span><strong id="s-total">–</strong></div>
+        <div class="stat"><span>Passagers à bord</span><strong id="s-pax">–</strong></div>
+        <div class="stat"><span>Restent au sol</span><strong id="s-no">–</strong></div>
+        <div class="stat"><span>Repas spéciaux</span><strong id="s-meal">–</strong></div>
+      </div>
+
+      <div class="toolbar">
+        <input type="search" id="m-search" placeholder="Rechercher un passager…" aria-label="Rechercher" />
+        <select id="m-filter" aria-label="Filtrer">
+          <option value="">Tous</option>
+          <option value="oui">À bord</option>
+          <option value="non">Au sol</option>
+          <option value="special">Repas spéciaux</option>
+        </select>
+        <span class="toolbar__grow"></span>
+        <button class="btn btn--small btn--line" id="m-add">+ Ajouter un passager</button>
+        <button class="btn btn--small btn--gold" id="m-export">Exporter (Excel)</button>
+      </div>
+
+      <form class="card add-pax" id="add-pax" hidden novalidate>
+        <h3>Ajouter une réponse reçue hors site</h3>
+        <div class="grid-4">
+          <div class="field"><label for="a-nom">Nom</label><input id="a-nom" name="nom" required /></div>
+          <div class="field"><label for="a-pres">Présence</label>
+            <select id="a-pres" name="presence"><option value="oui">À bord</option><option value="non">Au sol</option></select></div>
+          <div class="field"><label for="a-nb">Passagers</label>
+            <select id="a-nb" name="passagers"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
+          <div class="field"><label for="a-repas">Repas spécial</label>
+            <select id="a-repas" name="repas"></select></div>
+        </div>
+        <div class="field"><label for="a-all">Allergies / précisions</label><input id="a-all" name="allergies" /></div>
+        <p class="form-error" role="alert" hidden></p>
+        <div class="row-end">
+          <button type="button" class="btn btn--small btn--line" data-close>Annuler</button>
+          <button type="submit" class="btn btn--small btn--gold">Ajouter</button>
+        </div>
+      </form>
+
+      <div class="card table-wrap">
+        <table class="table" id="m-table">
+          <thead>
+            <tr><th>Passager</th><th>Statut</th><th>Nb</th><th>Repas spécial</th><th>Allergies</th><th>Message</th><th>Reçu le</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="empty" id="m-empty" hidden>Aucune réponse pour l'instant. Les enregistrements du site apparaîtront ici en direct.</p>
+      </div>
+    </section>
+
+    <!-- Plan de cabine -->
+    <section class="panel" id="tab-cabine" role="tabpanel" hidden>
+      <div class="toolbar">
+        <p class="hint">Glissez les passagers confirmés dans les rangs (tables). Chaque déplacement est enregistré automatiquement.</p>
+        <span class="toolbar__grow"></span>
+        <span class="save-state" id="c-state"></span>
+        <button class="btn btn--small btn--line" id="c-add">+ Ajouter un rang</button>
+      </div>
+
+      <div class="cabin">
+        <aside class="card cabin__pool">
+          <h3>À placer <span class="pill" id="c-pool-count">0</span></h3>
+          <div class="dropzone dropzone--pool" id="c-pool" data-table=""></div>
+        </aside>
+
+        <div class="fuselage">
+          <div class="fuselage__nose"><span>Cockpit</span></div>
+          <div class="fuselage__body" id="c-rows"></div>
+          <div class="fuselage__tail"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comptes -->
+    <section class="panel" id="tab-comptes" role="tabpanel" hidden>
+      <form class="card" id="acc-form" novalidate>
+        <h3>Créer un compte</h3>
+        <div class="grid-4">
+          <div class="field"><label for="acc-name">Prénom</label><input id="acc-name" name="name" required /></div>
+          <div class="field"><label for="acc-user">Identifiant</label><input id="acc-user" name="username" autocapitalize="none" spellcheck="false" placeholder="auto" /></div>
+          <div class="field"><label for="acc-role">Rôle</label>
+            <select id="acc-role" name="role">
+              <option value="equipage">Équipage : manifeste et plan</option>
+              <option value="admin">Commandant : tout, y compris les comptes</option>
+            </select></div>
+          <div class="field field--end"><button class="btn btn--small btn--gold btn--block" type="submit">Créer le compte</button></div>
+        </div>
+        <p class="form-error" role="alert" hidden></p>
+      </form>
+
+      <div class="card table-wrap">
+        <table class="table" id="acc-table">
+          <thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Mon compte -->
+    <section class="panel" id="tab-moi" role="tabpanel" hidden>
+      <form class="card narrow" id="pass-form" novalidate>
+        <h3>Changer mon mot de passe</h3>
+        <div class="field"><label for="p-current">Mot de passe actuel</label><input id="p-current" name="current" type="password" autocomplete="current-password" required /></div>
+        <div class="field"><label for="p-next">Nouveau mot de passe</label><input id="p-next" name="next" type="password" autocomplete="new-password" minlength="8" required /></div>
+        <div class="field"><label for="p-confirm">Confirmer</label><input id="p-confirm" name="confirm" type="password" autocomplete="new-password" required /></div>
+        <p class="form-error" role="alert" hidden></p>
+        <p class="form-ok" hidden>Mot de passe mis à jour.</p>
+        <button class="btn btn--small btn--gold" type="submit">Mettre à jour</button>
+      </form>
+    </section>
+  </div>
+
+  <!-- Code provisoire à transmettre -->
+  <dialog class="modal" id="code-modal">
+    <p class="eyebrow">Code provisoire</p>
+    <h3 id="code-title"></h3>
+    <p>À transmettre à la personne. Il ne sera plus affiché ensuite.</p>
+    <dl class="code-box">
+      <div><dt>Adresse</dt><dd id="code-url"></dd></div>
+      <div><dt>Identifiant</dt><dd id="code-user"></dd></div>
+      <div><dt>Code</dt><dd id="code-value"></dd></div>
+    </dl>
+    <div class="row-end">
+      <button class="btn btn--small btn--line" id="code-copy" type="button">Copier le message</button>
+      <button class="btn btn--small btn--gold" type="button" data-close-modal>Fermer</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

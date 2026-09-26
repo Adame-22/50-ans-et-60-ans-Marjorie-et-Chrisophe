@@ -19,11 +19,4 @@ window.EVENT = {
   rsvpAvant: "1er mai 2027",
   hebergement: "Une liste d'hôtels à proximité sera communiquée prochainement.",
   parking: "Parking disponible sur place.",
-
-  // Réponses au formulaire d'enregistrement (RSVP).
-  // Option 1 : créez un formulaire gratuit sur https://formspree.io
-  //            et collez l'URL ici (ex. "https://formspree.io/f/abcdwxyz").
-  formspreeEndpoint: "",
-  // Option 2 : sinon, les réponses ouvrent un e-mail vers cette adresse.
-  contactEmail: "",
 };

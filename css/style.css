@@ -434,6 +434,7 @@ h3 { font-size: 1.6rem; }
 .choice input:checked + span { border-color: var(--navy); background: var(--navy); color: var(--ivory); }
 .choice input:focus-visible + span { box-shadow: 0 0 0 4px rgba(184, 149, 90, .3); }
 .form-error { margin: 0; color: #a3412f; font-size: .9rem; }
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .btn[disabled] { opacity: .6; cursor: progress; transform: none; }
 
 .checkin-done {
@@ -454,6 +455,8 @@ h3 { font-size: 1.6rem; }
 .footer { background: var(--navy); color: rgba(247, 243, 234, .75); text-align: center; padding: 72px 20px 56px; }
 .footer__mono { font-family: var(--serif); font-size: 2.6rem; color: var(--ivory); margin: 0 0 1rem; }
 .footer p { margin: .4rem 0; font-family: var(--serif); font-style: italic; font-size: 1.2rem; }
+.footer__crew { text-decoration: none; opacity: .7; }
+.footer__crew:hover { color: var(--gold-light); opacity: 1; }
 .footer .footer__small { font-family: var(--mono); font-style: normal; font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; opacity: .6; margin-top: 1.6rem; }
 
 /* ───────── Reveal ───────── */

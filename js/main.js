@@ -195,42 +195,27 @@
       presence: form.presence.value,
       passagers: form.presence.value === "oui" ? parseInt(form.passagers.value, 10) : 0,
       repas: form.presence.value === "oui" ? form.repas.value : "",
+      allergies: form.presence.value === "oui" ? form.allergies.value.trim() : "",
       email: form.email.value.trim(),
-      message: form.message.value.trim()
+      message: form.message.value.trim(),
+      website: form.website.value
     };
     if (!data.nom) { showError("Merci d'indiquer le nom du passager."); form.nom.focus(); return; }
     if (data.email && !form.email.checkValidity()) { showError("L'adresse e-mail semble incorrecte."); form.email.focus(); return; }
 
     var btn = form.querySelector("button[type=submit]");
-
-    if (CFG.formspreeEndpoint) {
-      btn.disabled = true;
-      fetch(CFG.formspreeEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(data)
-      }).then(function (r) {
-        if (!r.ok) throw new Error();
+    btn.disabled = true;
+    fetch("/api/rsvp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (res) {
+        if (!r.ok) throw new Error(res.error || "");
         finish(data);
-      }).catch(function () {
-        showError("Oups, l'envoi a échoué. Réessayez dans un instant.");
-      }).then(function () { btn.disabled = false; });
-      return;
-    }
-
-    if (CFG.contactEmail) {
-      var subject = "Enregistrement vol MC 5060 — " + data.nom;
-      var body = [
-        "Passager : " + data.nom,
-        "Présence : " + (data.presence === "oui" ? "Oui" : "Non"),
-        data.presence === "oui" ? "Nombre de passagers : " + data.passagers : "",
-        data.presence === "oui" ? "Repas : " + data.repas : "",
-        data.email ? "E-mail : " + data.email : "",
-        data.message ? "\nMessage :\n" + data.message : ""
-      ].filter(Boolean).join("\n");
-      window.location.href = "mailto:" + CFG.contactEmail + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-    }
-
-    finish(data);
+      });
+    }).catch(function (err) {
+      showError(err.message || "Oups, l'envoi a échoué. Réessayez dans un instant.");
+    }).then(function () { btn.disabled = false; });
   });
 })();

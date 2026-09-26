@@ -19,17 +19,32 @@ Toutes les informations pratiques se trouvent dans **`js/config.js`** : date, he
 - **Photos** : déposez `marjorie.jpg` et `christophe.jpg` dans `assets/`, puis suivez le commentaire dans `index.html` (section « Passagers »).
 - **Programme** : modifiez les horaires directement dans `index.html` (section « Plan de vol »).
 
-### Recevoir les réponses du formulaire
+## Tour de contrôle (`/admin`)
 
-Il y a deux options, à configurer dans `js/config.js` :
+Espace privé pour suivre la fête :
 
-1. **Formspree** (recommandé, gratuit) : créez un formulaire sur [formspree.io](https://formspree.io) et collez son URL dans `formspreeEndpoint`. Les réponses arrivent par e-mail.
-2. **E-mail** : indiquez une adresse dans `contactEmail`. Le formulaire ouvre alors la messagerie de l'invité avec la réponse déjà rédigée.
+- **Manifeste** : toutes les réponses en direct, avec compteurs (passagers à bord, repas spéciaux…), recherche, ajout manuel et export Excel.
+- **Plan de cabine** : glisser-déposer des invités confirmés dans les rangs (tables), avec enregistrement automatique.
+- **Comptes** (commandants uniquement) : créer des comptes, changer les rôles, générer un nouveau code, supprimer.
+
+Deux rôles existent : **Commandant**, qui a accès à tout, et **Équipage**, qui voit le manifeste et le plan mais ne gère pas les comptes.
+
+Les comptes de Marjorie, Christophe, Lucie et Adame sont créés automatiquement au premier démarrage, avec un code provisoire. À la première connexion, chacun choisit son propre mot de passe.
+
+### Base de données (à faire une fois)
+
+Les réponses et les comptes sont stockés dans Redis (Upstash, gratuit) :
+
+1. Sur Vercel, ouvrez le projet → **Storage** → **Create Database** → **Upstash for Redis** (offre gratuite).
+2. Reliez-la au projet (environnements Production et Preview).
+3. Relancez un déploiement (**Deployments** → **⋯** → **Redeploy**).
+
+Les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN` sont ajoutées automatiquement.
 
 ## Voir le site en local
 
-Ouvrez simplement `index.html` dans un navigateur. Aucune installation n'est nécessaire.
+Ouvrez `index.html` dans un navigateur pour voir la vitrine. Pour tester le formulaire et `/admin`, utilisez `vercel dev` : sans base Redis, un fichier JSON local sert de base de secours.
 
-## Mettre en ligne (GitHub Pages)
+## Mise en ligne
 
-Dans le dépôt GitHub : **Settings → Pages → Build and deployment → Deploy from a branch**, choisissez la branche et le dossier `/ (root)`. Le site sera disponible à l'adresse `https://<utilisateur>.github.io/<depot>/`.
+Le site est déployé sur Vercel à chaque push. Les routes `/api/*` sont des fonctions Vercel, donc GitHub Pages ne suffit plus.
