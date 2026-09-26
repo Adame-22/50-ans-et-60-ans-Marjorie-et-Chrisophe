@@ -29,19 +29,57 @@
     document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("is-visible"); });
   }
 
-  /* ───────── Split-flap ───────── */
-  var CHARSET = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:-&";
+  /* ───────── Split-flap ─────────
+     Chaque case affiche un caractère (.ch__v). Pour changer de caractère,
+     le volet du haut (ancien caractère) bascule vers le bas, puis le volet
+     du bas (nouveau caractère) se rabat, comme un vrai panneau Solari. */
+  var CHARSET = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:-&'";
 
   function buildFlap(el, len) {
     el.innerHTML = "";
     for (var i = 0; i < len; i++) {
       var c = document.createElement("span");
       c.className = "ch";
-      c.textContent = " ";
+      c.dataset.c = " ";
+      c.innerHTML = '<span class="ch__v"> </span>';
       el.appendChild(c);
     }
     el.setAttribute("aria-label", "");
   }
+
+  function leaf(cls, ch) {
+    var l = document.createElement("span");
+    l.className = "ch__leaf " + cls;
+    l.setAttribute("aria-hidden", "true");
+    var t = document.createElement("span");
+    t.className = "ch__t";
+    t.textContent = ch;
+    l.appendChild(t);
+    return l;
+  }
+
+  function clearLeaves(cell) {
+    cell.querySelectorAll(".ch__leaf").forEach(function (l) { l.remove(); });
+  }
+
+  function flipTo(cell, next, dur) {
+    var prev = cell.dataset.c;
+    if (prev === next) return;
+    cell.dataset.c = next;
+    clearLeaves(cell);
+    cell.firstChild.textContent = next;
+    if (reduceMotion || !dur) return;
+    cell.style.setProperty("--d", dur + "ms");
+    var old = leaf("ch__leaf--old", prev);
+    var bottom = leaf("ch__leaf--bottom", next);
+    var top = leaf("ch__leaf--top", prev);
+    cell.appendChild(old);
+    cell.appendChild(bottom);
+    cell.appendChild(top);
+    setTimeout(function () { old.remove(); bottom.remove(); top.remove(); }, dur + 20);
+  }
+
+  var STEP = 75; // durée d'un battement de volet (ms)
 
   function setFlap(el, text, animate) {
     var cells = el.querySelectorAll(".ch");
@@ -49,33 +87,35 @@
     el.setAttribute("aria-label", text);
     cells.forEach(function (cell, i) {
       var final = str[i];
-      if (cell.textContent === final) return;
-      if (!animate || reduceMotion) { cell.textContent = final; return; }
-      var steps = 6 + Math.floor(Math.random() * 10) + i;
-      var n = 0;
+      var run = (cell._run = (cell._run || 0) + 1);
+      if (!animate || reduceMotion) { flipTo(cell, final, 0); return; }
+      // Les volets défilent dans l'ordre du jeu de caractères jusqu'à la cible
+      var steps = 6 + Math.floor(Math.random() * 9) + Math.floor(i / 2);
+      var target = Math.max(0, CHARSET.indexOf(final));
+      var k = (target - steps + CHARSET.length * 4) % CHARSET.length;
       (function tick() {
-        cell.classList.remove("is-flipping");
-        void cell.offsetWidth;
-        cell.classList.add("is-flipping");
-        if (n++ >= steps) { cell.textContent = final; return; }
-        cell.textContent = CHARSET[Math.floor(Math.random() * CHARSET.length)];
-        setTimeout(tick, 55);
+        if (cell._run !== run) return;
+        k = (k + 1) % CHARSET.length;
+        var ch = steps-- <= 0 ? final : CHARSET[k];
+        flipTo(cell, ch, STEP - 5);
+        if (ch !== final || steps >= 0) setTimeout(tick, STEP);
       })();
     });
   }
 
+  function resetFlap(el) {
+    el.querySelectorAll(".ch").forEach(function (cell) {
+      cell._run = (cell._run || 0) + 1;
+      clearLeaves(cell);
+      cell.dataset.c = " ";
+      cell.firstChild.textContent = " ";
+    });
+  }
+
   function tickDigits(el, text) {
-    var cells = el.querySelectorAll(".ch");
     el.setAttribute("aria-label", text);
-    cells.forEach(function (cell, i) {
-      if (cell.textContent !== text[i]) {
-        cell.textContent = text[i];
-        if (!reduceMotion) {
-          cell.classList.remove("is-flipping");
-          void cell.offsetWidth;
-          cell.classList.add("is-flipping");
-        }
-      }
+    el.querySelectorAll(".ch").forEach(function (cell, i) {
+      flipTo(cell, text[i], 260);
     });
   }
 
@@ -98,23 +138,32 @@
     buildFlap(el, parseInt(el.getAttribute("data-len"), 10));
   });
 
-  var boardStarted = false;
+  var boardTimers = [];
   function runBoard() {
-    if (boardStarted) return;
-    boardStarted = true;
+    boardTimers.forEach(clearTimeout);
+    boardTimers = [];
     boardFlaps.forEach(function (el, idx) {
       var key = el.getAttribute("data-flap");
       var text = dynamic[key] !== undefined ? dynamic[key] : key;
-      setTimeout(function () { setFlap(el, text, true); }, idx * 120);
+      resetFlap(el);
+      boardTimers.push(setTimeout(function () { setFlap(el, text, true); }, 150 + idx * 140));
       if (key === "status") el.classList.toggle("is-boarding", text !== "A L'HEURE");
     });
   }
 
+  // L'animation se rejoue à chaque fois que le tableau revient à l'écran.
   var board = document.querySelector(".board");
   if ("IntersectionObserver" in window) {
-    new IntersectionObserver(function (entries, obs) {
-      if (entries[0].isIntersecting) { runBoard(); obs.disconnect(); }
-    }, { threshold: 0.3 }).observe(board);
+    var boardVisible = false;
+    new IntersectionObserver(function (entries) {
+      var e = entries[0];
+      if (e.isIntersecting && e.intersectionRatio >= 0.35 && !boardVisible) {
+        boardVisible = true;
+        runBoard();
+      } else if (!e.isIntersecting) {
+        boardVisible = false;
+      }
+    }, { threshold: [0, 0.35] }).observe(board);
   } else {
     runBoard();
   }
