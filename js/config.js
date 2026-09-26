@@ -19,4 +19,14 @@ window.EVENT = {
   rsvpAvant: "30 septembre 2026",
   hebergement: "Une liste d'hôtels à proximité sera communiquée prochainement.",
   parking: "Parking disponible sur place.",
+
+  // Heures de vol des passeports : avec les dates de naissance (AAAA-MM-JJ),
+  // le compteur est exact et avance en direct. Sinon : âge × 8 766 h.
+  naissanceMarjorie: "",
+  naissanceChristophe: "",
+
+  // Police Sweet Fancy Script (Adobe Fonts) : créez un « projet web » sur
+  // fonts.adobe.com avec cette police et collez son identifiant ici (ex. "abc1def").
+  // Sans identifiant, la police gratuite Monsieur La Doulaise est utilisée.
+  adobeFontsKit: "",
 };

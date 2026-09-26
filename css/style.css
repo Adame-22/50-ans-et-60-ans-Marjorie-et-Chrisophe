@@ -20,7 +20,8 @@
   --kraft: #bf9468;
 
   --serif: "Cormorant Garamond", Georgia, serif;
-  --script: "Pinyon Script", "Snell Roundhand", cursive;
+  /* Sweet Fancy Script (Adobe Fonts, si un kit est configuré) sinon Monsieur La Doulaise */
+  --script: "sweet-fancy-script", "Monsieur La Doulaise", "Snell Roundhand", cursive;
   --sans: "Manrope", system-ui, -apple-system, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
 
@@ -279,6 +280,11 @@ h3 { font-size: 1.6rem; }
   display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0 .3em;
 }
 .hero__title em { color: var(--gold); font-weight: 400; font-size: .8em; }
+/* Noms en calligraphie (police choisie par Lucie) */
+.script { font-family: var(--script); font-weight: 400; letter-spacing: 0; }
+.hero__title.script { font-size: clamp(3.6rem, 12.5vw, 9.5rem); line-height: 1.1; gap: 0 .22em; margin-top: .2em; }
+.hero__title.script em { font-style: normal; font-size: 1em; }
+.passport h3.script { font-size: 2.8rem; line-height: 1.1; }
 .hero__ages {
   display: flex; align-items: center; justify-content: center; gap: 2rem;
   margin: 1.8rem 0 1.4rem;

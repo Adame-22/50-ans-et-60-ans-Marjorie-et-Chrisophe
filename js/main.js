@@ -51,6 +51,27 @@
   if (gmap) gmap.href = "https://www.google.com/maps/search/?api=1&query=" + dest;
   if (waze) waze.href = "https://waze.com/ul?navigate=yes&q=" + dest;
 
+  /* ───────── Police Adobe (Sweet Fancy Script) ───────── */
+  if (CFG.adobeFontsKit) {
+    var tk = document.createElement("link");
+    tk.rel = "stylesheet";
+    tk.href = "https://use.typekit.net/" + encodeURIComponent(CFG.adobeFontsKit) + ".css";
+    document.head.appendChild(tk);
+  }
+
+  /* ───────── Heures de vol des passeports ───────── */
+  var hourCells = document.querySelectorAll("[data-flight-hours]");
+  function updateFlightHours() {
+    hourCells.forEach(function (dd) {
+      var birth = CFG[dd.getAttribute("data-birth")];
+      var t = birth ? new Date(birth + "T00:00:00") : null;
+      var hours = t && !isNaN(t) ? Math.floor((Date.now() - t) / 36e5) : Math.round(parseInt(dd.getAttribute("data-flight-hours"), 10) * 365.25 * 24);
+      dd.textContent = hours.toLocaleString("fr-FR") + " h";
+    });
+  }
+  updateFlightHours();
+  if (CFG.naissanceMarjorie || CFG.naissanceChristophe) setInterval(updateFlightHours, 60000);
+
   /* ───────── Nav background on scroll ───────── */
   var nav = document.getElementById("nav");
   function onScroll() { nav.classList.toggle("is-scrolled", window.scrollY > 40); }
