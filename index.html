@@ -12,11 +12,28 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <script>
-    /* Ciel de jour entre 7 h et 19 h (ou choix mémorisé), appliqué avant l'affichage */
+    /* Ciel de jour entre le lever et le coucher du soleil à Draveil (calcul
+       astronomique selon la date, algorithme de SunCalc), ou choix mémorisé.
+       Appliqué avant l'affichage pour éviter tout clignotement. */
     (function () {
-      var saved = null, h = new Date().getHours();
+      var saved = null;
       try { saved = localStorage.getItem("mc-sky"); } catch (e) {}
-      if (saved ? saved === "day" : h >= 7 && h < 19) document.documentElement.classList.add("is-day");
+      function isDaylight(now, lat, lng) {
+        var PI = Math.PI, rad = PI / 180, day = 864e5, J1970 = 2440588, J2000 = 2451545, J0 = 0.0009, e = rad * 23.4397;
+        var lw = rad * -lng, phi = rad * lat;
+        var n = Math.round(now / day - 0.5 + J1970 - J2000 - J0 - lw / (2 * PI));
+        var ds = J0 + lw / (2 * PI) + n;
+        var M = rad * (357.5291 + 0.98560028 * ds);
+        var L = M + rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M)) + rad * 102.9372 + PI;
+        var dec = Math.asin(Math.sin(e) * Math.sin(L));
+        var noon = J2000 + ds + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+        var w = Math.acos((Math.sin(-0.833 * rad) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec)));
+        var half = w / (2 * PI); // demi-durée du jour, en jours
+        var j = now / day - 0.5 + J1970;
+        return j > noon - half && j < noon + half;
+      }
+      var day = saved ? saved === "day" : isDaylight(Date.now(), 48.6853, 2.4107);
+      if (day) document.documentElement.classList.add("is-day");
     })();
   </script>
 </head>

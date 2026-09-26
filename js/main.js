@@ -12,7 +12,8 @@
   });
 
   /* ───────── Ciel jour / nuit ─────────
-     L'état initial est posé dans <head> (jour de 7 h à 19 h, ou choix mémorisé).
+     L'état initial est posé dans <head> (jour entre le lever et le coucher
+     du soleil à Draveil, ou choix mémorisé).
      Le bouton du menu bascule, et le choix est retenu sur cet appareil. */
   var starsBox = document.getElementById("sky-stars");
   if (starsBox) {
