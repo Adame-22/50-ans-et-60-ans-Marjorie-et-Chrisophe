@@ -22,8 +22,8 @@ window.EVENT = {
 
   // Heures de vol des passeports : avec les dates de naissance (AAAA-MM-JJ),
   // le compteur est exact et avance en direct. Sinon : âge × 8 766 h.
-  naissanceMarjorie: "",
-  naissanceChristophe: "",
+  naissanceMarjorie: "1976-02-20",
+  naissanceChristophe: "1966-10-12",
 
   // Police Sweet Fancy Script (Adobe Fonts) : créez un « projet web » sur
   // fonts.adobe.com avec cette police et collez son identifiant ici (ex. "abc1def").
