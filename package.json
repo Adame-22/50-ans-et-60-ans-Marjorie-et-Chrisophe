@@ -1,0 +1,9 @@
+{
+  "name": "vol-mc5060",
+  "private": true,
+  "description": "Site d'anniversaire de Marjorie (50 ans) et Christophe (60 ans)",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "pg": "^8.23.0"
+  }
+}

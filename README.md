@@ -31,15 +31,13 @@ Deux rôles existent : **Commandant**, qui a accès à tout, et **Équipage**, q
 
 Les comptes de Marjorie, Christophe, Lucie et Adame sont créés automatiquement au premier démarrage, avec un code provisoire. À la première connexion, chacun choisit son propre mot de passe.
 
-### Base de données (à faire une fois)
+### Base de données
 
-Les réponses et les comptes sont stockés dans Redis (Upstash, gratuit) :
+Les réponses, les comptes et le plan de cabine sont stockés dans **Supabase (Postgres)**, relié au projet depuis l'onglet **Storage** de Vercel. La variable `POSTGRES_URL` est ajoutée automatiquement.
 
-1. Sur Vercel, ouvrez le projet → **Storage** → **Create Database** → **Upstash for Redis** (offre gratuite).
-2. Reliez-la au projet (environnements Production et Preview).
-3. Relancez un déploiement (**Deployments** → **⋯** → **Redeploy**).
+Au premier appel, le site crée lui-même sa table `mc.kv`. Il n'y a aucun script SQL à lancer. La table est dans un schéma non exposé par l'API publique de Supabase et la sécurité par ligne (RLS) y est activée : seul le serveur du site peut la lire.
 
-Les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN` sont ajoutées automatiquement.
+Redis (Upstash) reste pris en charge en solution de repli (`KV_REST_API_URL` et `KV_REST_API_TOKEN`).
 
 ## Voir le site en local
 

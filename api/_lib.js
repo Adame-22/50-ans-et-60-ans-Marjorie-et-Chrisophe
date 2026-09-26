@@ -2,15 +2,16 @@
  * Outils partagés par les fonctions /api (Vercel Functions, Node).
  * Les fichiers préfixés par « _ » ne sont pas exposés comme routes.
  *
- * Stockage : Redis (Upstash) via son API REST. Sur Vercel, connectez une base
- * « Upstash for Redis » au projet : les variables KV_REST_API_URL / KV_REST_API_TOKEN
- * (ou UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN) sont ajoutées automatiquement.
- * En local, sans ces variables, un fichier JSON sert de base de secours.
+ * Stockage, par ordre de priorité :
+ *   1. Postgres / Supabase (POSTGRES_URL, ajoutée par l'intégration Supabase de Vercel) — voir _pg.js
+ *   2. Redis / Upstash (KV_REST_API_URL + KV_REST_API_TOKEN)
+ *   3. En local uniquement : un fichier JSON de secours.
  */
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const SEED = require("./_seed");
+const PG = require("./_pg");
 
 const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -30,6 +31,7 @@ class HttpError extends Error {
 }
 
 async function redis(command) {
+  if (PG.enabled) return PG.pgCommand(command);
   if (REDIS_URL && REDIS_TOKEN) {
     const r = await fetch(REDIS_URL, {
       method: "POST",
@@ -41,7 +43,7 @@ async function redis(command) {
     return data.result;
   }
   if (process.env.VERCEL) {
-    throw new HttpError(503, "Base de données non connectée. Ajoutez « Upstash for Redis » au projet Vercel.");
+    throw new HttpError(503, "Base de données non connectée. Reliez Supabase au projet Vercel puis redéployez.");
   }
   return localRedis(command);
 }
