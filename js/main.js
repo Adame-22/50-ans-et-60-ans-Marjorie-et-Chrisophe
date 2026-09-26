@@ -11,6 +11,39 @@
     if (v) el.textContent = v;
   });
 
+  /* ───────── Ciel jour / nuit ─────────
+     L'état initial est posé dans <head> (jour de 7 h à 19 h, ou choix mémorisé).
+     Le bouton du menu bascule, et le choix est retenu sur cet appareil. */
+  var starsBox = document.getElementById("sky-stars");
+  if (starsBox) {
+    var frag = document.createDocumentFragment();
+    for (var si = 0; si < 90; si++) {
+      var st = document.createElement("span");
+      var size = Math.random() < 0.85 ? 1 + Math.random() : 2 + Math.random() * 1.2;
+      st.className = "star";
+      st.style.cssText = "left:" + (Math.random() * 100).toFixed(2) + "%;top:" + (Math.random() * 78).toFixed(2) + "%;width:" + size.toFixed(1) + "px;height:" + size.toFixed(1) + "px;--tw:" + (2.5 + Math.random() * 4).toFixed(1) + "s;animation-delay:-" + (Math.random() * 6).toFixed(1) + "s";
+      frag.appendChild(st);
+    }
+    starsBox.appendChild(frag);
+  }
+
+  var skyBtn = document.getElementById("sky-toggle");
+  function setSky(day) {
+    document.documentElement.classList.toggle("is-day", day);
+    if (skyBtn) {
+      skyBtn.setAttribute("aria-pressed", String(day));
+      skyBtn.setAttribute("aria-label", day ? "Passer au ciel de nuit" : "Passer au ciel de jour");
+    }
+  }
+  setSky(document.documentElement.classList.contains("is-day")); // état choisi dans <head>
+  if (skyBtn) {
+    skyBtn.addEventListener("click", function () {
+      var day = !document.documentElement.classList.contains("is-day");
+      setSky(day);
+      try { localStorage.setItem("mc-sky", day ? "day" : "night"); } catch (e) { /* ignoré */ }
+    });
+  }
+
   /* ───────── Liens d'itinéraire ───────── */
   var dest = encodeURIComponent([CFG.lieu, CFG.adresse].filter(Boolean).join(", "));
   var gmap = document.getElementById("map-google"), waze = document.getElementById("map-waze");
