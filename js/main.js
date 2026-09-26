@@ -11,6 +11,12 @@
     if (v) el.textContent = v;
   });
 
+  /* ───────── Liens d'itinéraire ───────── */
+  var dest = encodeURIComponent([CFG.lieu, CFG.adresse].filter(Boolean).join(", "));
+  var gmap = document.getElementById("map-google"), waze = document.getElementById("map-waze");
+  if (gmap) gmap.href = "https://www.google.com/maps/search/?api=1&query=" + dest;
+  if (waze) waze.href = "https://waze.com/ul?navigate=yes&q=" + dest;
+
   /* ───────── Nav background on scroll ───────── */
   var nav = document.getElementById("nav");
   function onScroll() { nav.classList.toggle("is-scrolled", window.scrollY > 40); }

@@ -317,7 +317,6 @@ h3 { font-size: 1.6rem; }
   .flap--big .ch { font-size: 1.45rem; }
   .countdown__unit > span { font-size: .56rem; letter-spacing: .18em; }
 }
-}
 
 /* ───────── Boarding pass ───────── */
 .pass {
@@ -453,6 +452,9 @@ h3 { font-size: 1.6rem; }
 .info h3 { margin: 1.2rem 0 .7rem; }
 .info p { margin: 0; color: var(--muted); font-size: .95rem; }
 .info strong { color: var(--ink); font-weight: 600; }
+.info .info__links { margin-top: .8rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+.info__links a { color: var(--gold); text-decoration: none; border-bottom: 1px solid rgba(184, 149, 90, .4); }
+.info__links a:hover { color: var(--ink); border-color: var(--ink); }
 @media (max-width: 960px) { .infos { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .infos { grid-template-columns: 1fr; } }
 
