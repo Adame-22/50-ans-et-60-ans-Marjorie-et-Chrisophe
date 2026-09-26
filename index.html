@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vol MC 5060 · Marjorie & Christophe</title>
+  <meta name="description" content="Embarquement pour les 50 ans de Marjorie et les 60 ans de Christophe." />
+  <meta name="theme-color" content="#0e1a2b" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ───────── Navigation ───────── -->
+  <header class="nav" id="nav">
+    <a href="#top" class="nav__brand" aria-label="Retour en haut">
+      <span class="nav__mono">M<span>&</span>C</span>
+      <span class="nav__flight">Vol MC 5060</span>
+    </a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#depart">Départ</a>
+      <a href="#carte">Invitation</a>
+      <a href="#passagers">Passagers</a>
+      <a href="#plan">Plan de vol</a>
+      <a href="#infos">Infos</a>
+      <a href="#enregistrement" class="nav__cta">Enregistrement</a>
+    </nav>
+  </header>
+
+  <!-- ───────── Hero ───────── -->
+  <section class="hero" id="top">
+    <div class="hero__sky" aria-hidden="true"></div>
+
+    <svg class="hero__route" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <path id="route" d="M60 330 C 320 60, 880 60, 1140 330" fill="none" />
+      <circle cx="60" cy="330" r="5" class="hero__dot" />
+      <circle cx="1140" cy="330" r="5" class="hero__dot" />
+      <g class="hero__plane">
+        <path transform="translate(-12,-12)" d="M22 12c0-1-1-1.5-2-1.5h-6L9 3H7l3.5 7.5H5L3 8H1.5l1 4-1 4H3l2-2.5h5.5L7 21h2l5-7.5h6c1 0 2-.5 2-1.5z" />
+        <animateMotion dur="9s" repeatCount="indefinite" rotate="auto" keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines="0.45 0 0.55 1">
+          <mpath href="#route" />
+        </animateMotion>
+      </g>
+      <text x="60" y="370" class="hero__iata" text-anchor="middle">MAR</text>
+      <text x="1140" y="370" class="hero__iata" text-anchor="middle">CHR</text>
+    </svg>
+
+    <div class="hero__content">
+      <p class="eyebrow">Embarquement immédiat</p>
+      <h1 class="hero__title">
+        <span>Marjorie</span>
+        <em>&amp;</em>
+        <span>Christophe</span>
+      </h1>
+      <div class="hero__ages">
+        <div><strong>50</strong><span>ans</span></div>
+        <i></i>
+        <div><strong>60</strong><span>ans</span></div>
+      </div>
+      <p class="hero__date"><span data-cfg="dateLabel"></span> · <span data-cfg="ville"></span></p>
+      <a href="#enregistrement" class="btn btn--gold">Confirmer ma présence</a>
+    </div>
+
+    <a href="#depart" class="hero__scroll" aria-label="Défiler vers le bas"><span></span></a>
+  </section>
+
+  <!-- ───────── Tableau des départs ───────── -->
+  <section class="section section--dark" id="depart">
+    <div class="container">
+      <header class="section__head reveal">
+        <p class="eyebrow">Départs · Departures</p>
+        <h2>Prochain décollage</h2>
+      </header>
+
+      <div class="board reveal" role="table" aria-label="Tableau des départs">
+        <div class="board__row board__row--head" role="row">
+          <span role="columnheader">Heure</span>
+          <span role="columnheader">Vol</span>
+          <span role="columnheader">Destination</span>
+          <span role="columnheader">Porte</span>
+          <span role="columnheader">Statut</span>
+        </div>
+        <div class="board__row" role="row">
+          <span role="cell" data-label="Heure" class="flap" data-flap="heure-board" data-len="5"></span>
+          <span role="cell" data-label="Vol" class="flap" data-flap="MC5060" data-len="6"></span>
+          <span role="cell" data-label="Destination" class="flap" data-flap="50 & 60 ANS" data-len="14"></span>
+          <span role="cell" data-label="Porte" class="flap" data-flap="porte" data-len="3"></span>
+          <span role="cell" data-label="Statut" class="flap flap--status" data-flap="status" data-len="12"></span>
+        </div>
+        <div class="board__row board__row--ghost" role="row" aria-hidden="true">
+          <span class="flap" data-flap="--:--" data-len="5"></span>
+          <span class="flap" data-flap="MC1976" data-len="6"></span>
+          <span class="flap" data-flap="SOUVENIRS" data-len="14"></span>
+          <span class="flap" data-flap="B12" data-len="3"></span>
+          <span class="flap" data-flap="ARRIVE" data-len="12"></span>
+        </div>
+      </div>
+
+      <div class="countdown reveal" aria-live="polite">
+        <div class="countdown__unit"><div class="flap flap--big" id="cd-days"></div><span>Jours</span></div>
+        <div class="countdown__unit"><div class="flap flap--big" id="cd-hours"></div><span>Heures</span></div>
+        <div class="countdown__unit"><div class="flap flap--big" id="cd-min"></div><span>Minutes</span></div>
+        <div class="countdown__unit"><div class="flap flap--big" id="cd-sec"></div><span>Secondes</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Carte d'embarquement ───────── -->
+  <section class="section section--paper" id="carte">
+    <div class="container">
+      <header class="section__head reveal">
+        <p class="eyebrow">Votre invitation</p>
+        <h2>Carte d'embarquement</h2>
+        <p class="lead">Deux anniversaires, un seul vol. Nous vous invitons à rejoindre l'équipage pour célébrer ensemble une destination rare&nbsp;: 110 années de voyages cumulées.</p>
+      </header>
+
+      <article class="pass reveal" aria-label="Carte d'embarquement">
+        <div class="pass__main">
+          <div class="pass__top">
+            <span class="pass__airline">M<span>&</span>C Airlines</span>
+            <span class="pass__class">Première classe</span>
+          </div>
+
+          <div class="pass__route">
+            <div>
+              <small>De</small>
+              <strong>MAR</strong>
+              <span>Marjorie · 50</span>
+            </div>
+            <svg viewBox="0 0 120 24" class="pass__arc" aria-hidden="true">
+              <line x1="4" y1="12" x2="116" y2="12" />
+              <path transform="translate(48,0)" d="M22 12c0-1-1-1.5-2-1.5h-6L9 3H7l3.5 7.5H5L3 8H1.5l1 4-1 4H3l2-2.5h5.5L7 21h2l5-7.5h6c1 0 2-.5 2-1.5z" />
+            </svg>
+            <div class="pass__right">
+              <small>À</small>
+              <strong>CHR</strong>
+              <span>Christophe · 60</span>
+            </div>
+          </div>
+
+          <dl class="pass__grid">
+            <div><dt>Passager</dt><dd id="pass-name">Invité·e d'honneur</dd></div>
+            <div><dt>Vol</dt><dd>MC 5060</dd></div>
+            <div><dt>Date</dt><dd data-cfg="dateLabel"></dd></div>
+            <div><dt>Embarquement</dt><dd data-cfg="heure"></dd></div>
+            <div><dt>Porte</dt><dd data-cfg="porte"></dd></div>
+            <div><dt>Siège</dt><dd>Au cœur de la fête</dd></div>
+            <div class="pass__wide"><dt>Terminal</dt><dd><span data-cfg="lieu"></span> — <span data-cfg="ville"></span></dd></div>
+          </dl>
+        </div>
+
+        <div class="pass__stub">
+          <span class="pass__airline pass__airline--small">MC 5060</span>
+          <dl>
+            <div><dt>Date</dt><dd data-cfg="dateLabel"></dd></div>
+            <div><dt>Porte</dt><dd data-cfg="porte"></dd></div>
+            <div><dt>Réponse avant</dt><dd data-cfg="rsvpAvant"></dd></div>
+          </dl>
+          <svg class="barcode" viewBox="0 0 200 48" preserveAspectRatio="none" data-code="MC5060-MARJORIE-CHRISTOPHE" aria-hidden="true"></svg>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ───────── Les passagers ───────── -->
+  <section class="section" id="passagers">
+    <div class="container">
+      <header class="section__head reveal">
+        <p class="eyebrow">Manifeste passagers</p>
+        <h2>Nos commandants de bord</h2>
+      </header>
+
+      <div class="passports">
+        <article class="passport reveal">
+          <div class="passport__photo" aria-hidden="true">
+            <!-- Pour ajouter une photo : remplacez le span par <img src="assets/marjorie.jpg" alt="Marjorie" /> -->
+            <span>M</span>
+          </div>
+          <div class="passport__body">
+            <p class="passport__type">Passeport · Passport</p>
+            <h3>Marjorie</h3>
+            <dl>
+              <div><dt>Heures de vol</dt><dd>50 ans</dd></div>
+              <div><dt>Siège</dt><dd>5A · Hublot</dd></div>
+              <div><dt>Statut</dt><dd>Membre Platinum</dd></div>
+              <div><dt>Bagage</dt><dd>Élégance & bonne humeur</dd></div>
+            </dl>
+            <p class="passport__mrz" aria-hidden="true">P&lt;FRA&lt;MARJORIE&lt;&lt;&lt;&lt;&lt;&lt;&lt;50&lt;&lt;&lt;&lt;&lt;</p>
+          </div>
+        </article>
+
+        <article class="passport reveal">
+          <div class="passport__photo" aria-hidden="true">
+            <!-- Pour ajouter une photo : remplacez le span par <img src="assets/christophe.jpg" alt="Christophe" /> -->
+            <span>C</span>
+          </div>
+          <div class="passport__body">
+            <p class="passport__type">Passeport · Passport</p>
+            <h3>Christophe</h3>
+            <dl>
+              <div><dt>Heures de vol</dt><dd>60 ans</dd></div>
+              <div><dt>Siège</dt><dd>6A · Hublot</dd></div>
+              <div><dt>Statut</dt><dd>Membre Diamond</dd></div>
+              <div><dt>Bagage</dt><dd>Expérience & sagesse</dd></div>
+            </dl>
+            <p class="passport__mrz" aria-hidden="true">P&lt;FRA&lt;CHRISTOPHE&lt;&lt;&lt;&lt;&lt;&lt;60&lt;&lt;&lt;&lt;&lt;</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Plan de vol ───────── -->
+  <section class="section section--dark" id="plan">
+    <div class="container">
+      <header class="section__head reveal">
+        <p class="eyebrow">Programme</p>
+        <h2>Plan de vol</h2>
+      </header>
+
+      <ol class="timeline">
+        <li class="reveal">
+          <time>18h30</time>
+          <div><h3>Enregistrement</h3><p>Accueil des passagers et remise des cartes d'embarquement.</p></div>
+        </li>
+        <li class="reveal">
+          <time>19h00</time>
+          <div><h3>Embarquement</h3><p>Cocktail et champagne au salon première classe.</p></div>
+        </li>
+        <li class="reveal">
+          <time>20h30</time>
+          <div><h3>Service à bord</h3><p>Dîner servi à table. Le commandant vous souhaite bon appétit.</p></div>
+        </li>
+        <li class="reveal">
+          <time>22h00</time>
+          <div><h3>Altitude de croisière</h3><p>Discours, surprises et gâteau d'anniversaire.</p></div>
+        </li>
+        <li class="reveal">
+          <time>23h00</time>
+          <div><h3>Zone de turbulences</h3><p>La piste de danse est ouverte. Ceintures détachées.</p></div>
+        </li>
+        <li class="reveal">
+          <time>Tard</time>
+          <div><h3>Atterrissage</h3><p>Dernier verre et retour en douceur.</p></div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ───────── Infos pratiques ───────── -->
+  <section class="section section--paper" id="infos">
+    <div class="container">
+      <header class="section__head reveal">
+        <p class="eyebrow">Informations voyageurs</p>
+        <h2>Avant le départ</h2>
+      </header>
+
+      <div class="infos">
+        <article class="info reveal">
+          <span class="info__code">01</span>
+          <h3>Terminal</h3>
+          <p><strong data-cfg="lieu"></strong><br /><span data-cfg="adresse"></span><br /><span data-cfg="ville"></span></p>
+        </article>
+        <article class="info reveal">
+          <span class="info__code">02</span>
+          <h3>Dress code</h3>
+          <p data-cfg="dressCode"></p>
+        </article>
+        <article class="info reveal">
+          <span class="info__code">03</span>
+          <h3>Escale de nuit</h3>
+          <p data-cfg="hebergement"></p>
+        </article>
+        <article class="info reveal">
+          <span class="info__code">04</span>
+          <h3>Stationnement</h3>
+          <p data-cfg="parking"></p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Enregistrement / RSVP ───────── -->
+  <section class="section" id="enregistrement">
+    <div class="container container--narrow">
+      <header class="section__head reveal">
+        <p class="eyebrow">Check-in en ligne</p>
+        <h2>Enregistrement</h2>
+        <p class="lead">Merci de confirmer votre présence avant le <strong data-cfg="rsvpAvant"></strong>.</p>
+      </header>
+
+      <form class="checkin reveal" id="checkin" novalidate>
+        <div class="field">
+          <label for="f-name">Nom du passager</label>
+          <input id="f-name" name="nom" type="text" autocomplete="name" required placeholder="Prénom Nom" />
+        </div>
+
+        <fieldset class="field field--choice">
+          <legend>Serez-vous à bord&nbsp;?</legend>
+          <label class="choice"><input type="radio" name="presence" value="oui" checked /><span>Oui, j'embarque</span></label>
+          <label class="choice"><input type="radio" name="presence" value="non" /><span>Je reste au sol</span></label>
+        </fieldset>
+
+        <div class="field-row" data-show-if="oui">
+          <div class="field">
+            <label for="f-count">Nombre de passagers</label>
+            <select id="f-count" name="passagers">
+              <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-meal">Préférence repas</label>
+            <select id="f-meal" name="repas">
+              <option>Standard</option>
+              <option>Végétarien</option>
+              <option>Sans gluten</option>
+              <option>Autre (préciser)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-email">E-mail</label>
+          <input id="f-email" name="email" type="email" autocomplete="email" placeholder="vous@exemple.fr" />
+        </div>
+
+        <div class="field">
+          <label for="f-msg">Un mot pour Marjorie & Christophe</label>
+          <textarea id="f-msg" name="message" rows="4" placeholder="Allergies, souvenirs, vœux…"></textarea>
+        </div>
+
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+        <button type="submit" class="btn btn--gold btn--block">Valider mon enregistrement</button>
+      </form>
+
+      <div class="checkin-done" id="checkin-done" hidden>
+        <div class="stamp" aria-hidden="true">Enregistré</div>
+        <h3 id="done-title">Bon vol&nbsp;!</h3>
+        <p id="done-text"></p>
+        <a href="#carte" class="btn btn--ghost">Voir ma carte d'embarquement</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── Footer ───────── -->
+  <footer class="footer">
+    <p class="footer__mono">M<span>&</span>C</p>
+    <p>« Le voyage le plus merveilleux est celui que l'on fait ensemble. »</p>
+    <p class="footer__small">Vol MC 5060 · <span data-cfg="dateLabel"></span></p>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
