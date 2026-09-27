@@ -2,6 +2,7 @@
  * /api/rsvp — réponses des invités
  *   POST   (public)  { nom, presence, passagers, repas, allergies, email, message }
  *   GET    (équipage) → toutes les réponses
+ *   PATCH  (équipage) { id, arrived }  → pointage à l'arrivée
  *   DELETE (équipage) ?id=…
  */
 const crypto = require("crypto");
@@ -39,6 +40,16 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "GET") {
     const rsvps = Object.values(await L.hgetallJson(L.K.rsvps)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return L.send(res, 200, { rsvps });
+  }
+
+  if (req.method === "PATCH") {
+    const b = await L.readBody(req);
+    const raw = await L.redis(["HGET", L.K.rsvps, L.str(b.id, 64)]);
+    if (!raw) throw new L.HttpError(404, "Réponse introuvable.");
+    const entry = JSON.parse(raw);
+    entry.arrivedAt = b.arrived ? new Date().toISOString() : null;
+    await L.redis(["HSET", L.K.rsvps, entry.id, JSON.stringify(entry)]);
+    return L.send(res, 200, { rsvp: entry });
   }
 
   if (req.method === "DELETE") {

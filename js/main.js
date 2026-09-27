@@ -5,6 +5,20 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var target = new Date(CFG.date);
 
+  /* ───────── Programme (Plan de vol) ───────── */
+  var progList = document.getElementById("programme");
+  if (progList && CFG.programme) {
+    progList.innerHTML = CFG.programme.map(function (st) {
+      var el = document.createElement("div");
+      el.textContent = st.texte || "";
+      var t = document.createElement("div");
+      t.textContent = st.titre || "";
+      var h = document.createElement("div");
+      h.textContent = st.heure || "";
+      return '<li class="reveal"><time>' + h.innerHTML + "</time><div><h3>" + t.innerHTML + "</h3><p>" + el.innerHTML + "</p></div></li>";
+    }).join("");
+  }
+
   /* ───────── Fill config values ───────── */
   document.querySelectorAll("[data-cfg]").forEach(function (el) {
     var v = CFG[el.getAttribute("data-cfg")];
@@ -44,6 +58,31 @@
       try { localStorage.setItem("mc-sky", day ? "day" : "night"); } catch (e) { /* ignoré */ }
     });
   }
+
+  /* ───────── Mode Jour J : étape en cours ───────── */
+  var heroEyebrow = document.getElementById("hero-eyebrow");
+  var nowBanner = document.getElementById("now-banner");
+  function updateJourJ() {
+    if (!window.McProgramme) return;
+    var st = window.McProgramme.status();
+    var items = progList ? progList.querySelectorAll("li") : [];
+    items.forEach(function (li, i) { li.classList.toggle("is-now", st.mode === "jourj" && i === st.index); });
+    var cdBox = document.querySelector(".countdown");
+    if (cdBox) cdBox.hidden = st.mode === "apres" || (st.mode === "jourj" && !!st.current);
+    if (st.mode !== "jourj") { nowBanner.hidden = true; return; }
+    if (st.current) {
+      heroEyebrow.textContent = "En vol · " + st.current.titre;
+      nowBanner.innerHTML = "<b>Maintenant</b> " + escapeHtml(st.current.titre) +
+        (st.next ? '<span class="now-banner__next">Ensuite · ' + escapeHtml(st.next.titre) + (st.next.at ? " à " + escapeHtml(st.next.heure) : "") + "</span>" : "");
+    } else {
+      heroEyebrow.textContent = "Aujourd'hui · embarquement " + (CFG.heure || "");
+      nowBanner.innerHTML = "<b>Aujourd'hui</b> Embarquement à " + escapeHtml(CFG.heure || "") + " · " + escapeHtml(CFG.lieu || "");
+    }
+    nowBanner.hidden = false;
+  }
+  function escapeHtml(v) { var d = document.createElement("div"); d.textContent = v == null ? "" : v; return d.innerHTML; }
+  updateJourJ();
+  setInterval(updateJourJ, 30000);
 
   /* ───────── Liens d'itinéraire ───────── */
   var dest = encodeURIComponent([CFG.lieu, CFG.adresse].filter(Boolean).join(", "));

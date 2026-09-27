@@ -168,6 +168,8 @@
     $("#s-pax").textContent = yes.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
     $("#s-no").textContent = list.length - yes.length;
     $("#s-meal").textContent = list.filter(isSpecial).length;
+    var paxIn = yes.filter(function (r) { return r.arrivedAt; }).reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
+    $("#s-arrived").textContent = paxIn + " / " + yes.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
 
     var q = $("#m-search").value.trim().toLowerCase();
     var f = $("#m-filter").value;
@@ -175,12 +177,15 @@
       if (q && (r.nom + " " + r.email + " " + r.message + " " + r.allergies).toLowerCase().indexOf(q) === -1) return false;
       if (f === "oui" || f === "non") return r.presence === f;
       if (f === "special") return isSpecial(r);
+      if (f === "attendus") return r.presence === "oui" && !r.arrivedAt;
+      if (f === "arrives") return !!r.arrivedAt;
       return true;
     });
 
     $("#m-table tbody").innerHTML = rows.map(function (r) {
       var yesR = r.presence === "oui";
       return "<tr>" +
+        "<td>" + (yesR ? '<button class="checkin-btn' + (r.arrivedAt ? " is-in" : "") + '" data-checkin="' + esc(r.id) + '" title="' + (r.arrivedAt ? "Arrivé à " + fmtDate(r.arrivedAt) : "Pointer l'arrivée") + '" aria-label="Pointer l\'arrivée de ' + esc(r.nom) + '">✓</button>' : "") + "</td>" +
         "<td><b>" + esc(r.nom) + "</b>" + (r.email ? "<small>" + esc(r.email) + "</small>" : "") + "</td>" +
         "<td>" + (yesR ? '<span class="tag tag--ok">À bord</span>' : '<span class="tag tag--no">Au sol</span>') + "</td>" +
         "<td>" + (yesR ? r.passagers : "—") + "</td>" +
@@ -198,6 +203,17 @@
   $("#m-filter").addEventListener("change", renderRsvps);
 
   $("#m-table").addEventListener("click", function (e) {
+    var ci = e.target.getAttribute("data-checkin");
+    if (ci) {
+      var entry = state.rsvps.find(function (x) { return x.id === ci; });
+      var arrived = !entry.arrivedAt;
+      entry.arrivedAt = arrived ? new Date().toISOString() : null; // affichage immédiat
+      renderRsvps();
+      api("/api/rsvp", { method: "PATCH", body: { id: ci, arrived: arrived } })
+        .then(function (d) { entry.arrivedAt = d.rsvp.arrivedAt; })
+        .catch(function (err) { entry.arrivedAt = arrived ? null : new Date().toISOString(); renderRsvps(); toast(err.message, true); });
+      return;
+    }
     var id = e.target.getAttribute("data-del");
     if (!id) return;
     var r = state.rsvps.find(function (x) { return x.id === id; });

@@ -87,7 +87,7 @@
     </svg>
 
     <div class="hero__content">
-      <p class="eyebrow">Embarquement immédiat</p>
+      <p class="eyebrow" id="hero-eyebrow">Embarquement immédiat</p>
       <h1 class="hero__title script">
         <span>Marjorie</span>
         <em>&amp;</em>
@@ -136,6 +136,8 @@
           <span class="flap" data-flap="ARRIVE" data-len="12"></span>
         </div>
       </div>
+
+      <p class="now-banner" id="now-banner" hidden></p>
 
       <div class="countdown reveal" aria-live="polite">
         <div class="countdown__unit"><div class="flap flap--big" id="cd-days"></div><span>Jours</span></div>
@@ -260,32 +262,7 @@
           <p class="eyebrow">Programme</p>
           <h2>Plan de vol</h2>
 
-          <ol class="timeline">
-        <li class="reveal">
-          <time>12h30</time>
-          <div><h3>Enregistrement</h3><p>Accueil des passagers et remise des cartes d'embarquement.</p></div>
-        </li>
-        <li class="reveal">
-          <time>13h00</time>
-          <div><h3>Embarquement</h3><p>Apéritif et champagne au salon première classe.</p></div>
-        </li>
-        <li class="reveal">
-          <time>14h00</time>
-          <div><h3>Service à bord</h3><p>Déjeuner servi à table. Le commandant vous souhaite bon appétit.</p></div>
-        </li>
-        <li class="reveal">
-          <time>16h30</time>
-          <div><h3>Altitude de croisière</h3><p>Discours, surprises et gâteau d'anniversaire.</p></div>
-        </li>
-        <li class="reveal">
-          <time>17h30</time>
-          <div><h3>Zone de turbulences</h3><p>La piste de danse est ouverte. Ceintures détachées.</p></div>
-        </li>
-        <li class="reveal">
-          <time>Tard</time>
-          <div><h3>Atterrissage</h3><p>Dernier verre et retour en douceur.</p></div>
-        </li>
-          </ol>
+          <ol class="timeline" id="programme"></ol>
         </div>
       </article>
     </div>
@@ -409,6 +386,7 @@
   </footer>
 
   <script src="js/config.js"></script>
+  <script src="js/programme.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

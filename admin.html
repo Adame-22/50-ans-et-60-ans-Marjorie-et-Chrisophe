@@ -90,6 +90,7 @@
         <div class="stat"><span>Passagers à bord</span><strong id="s-pax">–</strong></div>
         <div class="stat"><span>Restent au sol</span><strong id="s-no">–</strong></div>
         <div class="stat"><span>Repas spéciaux</span><strong id="s-meal">–</strong></div>
+        <div class="stat"><span>Arrivés</span><strong id="s-arrived">–</strong></div>
       </div>
 
       <div class="toolbar">
@@ -99,6 +100,8 @@
           <option value="oui">À bord</option>
           <option value="non">Au sol</option>
           <option value="special">Repas spéciaux</option>
+          <option value="attendus">Pas encore arrivés</option>
+          <option value="arrives">Arrivés</option>
         </select>
         <span class="toolbar__grow"></span>
         <button class="btn btn--small btn--line" id="m-add">+ Ajouter un passager</button>
@@ -127,7 +130,7 @@
       <div class="card table-wrap">
         <table class="table" id="m-table">
           <thead>
-            <tr><th>Passager</th><th>Statut</th><th>Nb</th><th>Repas spécial</th><th>Allergies</th><th>Message</th><th>Reçu le</th><th></th></tr>
+            <tr><th>Arrivé</th><th>Passager</th><th>Statut</th><th>Nb</th><th>Repas spécial</th><th>Allergies</th><th>Message</th><th>Reçu le</th><th></th></tr>
           </thead>
           <tbody></tbody>
         </table>

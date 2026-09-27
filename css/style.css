@@ -566,6 +566,18 @@ h3 { font-size: 1.6rem; }
   .timeline time { font-size: .8rem; padding-right: 1rem; }
 }
 
+/* ───────── Jour J ───────── */
+.now-banner {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: .4rem 1rem;
+  margin: 18px auto 0; padding: .8rem 1.2rem; max-width: 760px; text-align: center;
+  border: 1px solid rgba(255, 177, 0, .35); border-radius: 999px; color: var(--paper);
+  font-family: var(--mono); font-size: .8rem; letter-spacing: .12em; text-transform: uppercase;
+}
+.now-banner b { color: var(--gold-light); font-weight: 500; }
+.now-banner__next { color: rgba(255, 251, 254, .6); }
+.menu-card .timeline li.is-now h3 { color: var(--gold); }
+.menu-card .timeline li.is-now::before { background: var(--gold-light); border-color: var(--gold-light); box-shadow: 0 0 0 4px rgba(255, 177, 0, .25); }
+
 /* ───────── Carte programme sur papier kraft ───────── */
 .section--kraft {
   background-color: var(--kraft);

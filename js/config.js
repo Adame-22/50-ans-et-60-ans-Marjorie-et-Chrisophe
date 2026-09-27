@@ -29,4 +29,16 @@ window.EVENT = {
   // fonts.adobe.com avec cette police et collez son identifiant ici (ex. "abc1def").
   // Sans identifiant, la police gratuite Monsieur La Doulaise est utilisée.
   adobeFontsKit: "",
+
+  // Programme (« Plan de vol »). Les heures servent aussi, le jour J, à
+  // afficher l'étape en cours sur le site et sur l'écran géant.
+  // Une étape sans heure (ex. « Tard ») suit simplement la précédente.
+  programme: [
+    { heure: "12h30", titre: "Enregistrement", texte: "Accueil des passagers et remise des cartes d'embarquement." },
+    { heure: "13h00", titre: "Embarquement", texte: "Apéritif et champagne au salon première classe." },
+    { heure: "14h00", titre: "Service à bord", texte: "Déjeuner servi à table. Le commandant vous souhaite bon appétit." },
+    { heure: "16h30", titre: "Altitude de croisière", texte: "Discours, surprises et gâteau d'anniversaire." },
+    { heure: "17h30", titre: "Zone de turbulences", texte: "La piste de danse est ouverte. Ceintures détachées." },
+    { heure: "Tard", titre: "Atterrissage", texte: "Dernier verre et retour en douceur." },
+  ],
 };
