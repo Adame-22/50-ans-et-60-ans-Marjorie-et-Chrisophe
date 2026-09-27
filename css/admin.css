@@ -195,6 +195,44 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .row__del:hover { color: #a3412f; background: #f3e6e2; }
 .row .dropzone:empty::after { content: "Glissez des passagers ici"; color: #b7b0a2; font-size: .85rem; padding: .8rem .2rem; }
 
+/* ───────── Constellation ───────── */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: #fff; padding: 3px; }
+.seg button {
+  border: 0; background: none; cursor: pointer; padding: .45rem .9rem; border-radius: 999px;
+  font-family: var(--mono); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+.seg button[aria-pressed="true"] { background: var(--navy); color: var(--gold-light); }
+
+.graph {
+  position: relative; height: min(72vh, 760px); min-height: 420px;
+  border-radius: var(--radius); overflow: hidden; background: #04041c;
+  box-shadow: inset 0 0 0 1px rgba(255, 251, 254, .06), 0 30px 60px -30px rgba(0, 0, 51, .6);
+}
+.graph canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.graph__legend {
+  position: absolute; left: 14px; bottom: 12px; display: flex; flex-wrap: wrap; gap: .4rem 1rem;
+  font-size: .75rem; color: rgba(255, 251, 254, .6); pointer-events: none;
+}
+.graph__legend span { display: inline-flex; align-items: center; gap: .4rem; }
+.graph__legend em { font-style: normal; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.dot--center { background: #fffbfe; box-shadow: 0 0 8px rgba(255, 177, 0, .6); }
+.dot--hub { background: #a67046; }
+.dot--guest { background: #b8bac4; width: 7px; height: 7px; }
+.dot--ring { width: 9px; height: 9px; border: 1.5px solid #ffb100; }
+.graph__empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: rgba(255, 251, 254, .6); pointer-events: none; }
+.graph__info {
+  position: absolute; top: 14px; right: 14px; width: min(280px, calc(100% - 28px));
+  background: rgba(8, 8, 40, .92); color: var(--paper); border: 1px solid rgba(255, 177, 0, .25);
+  border-radius: 12px; padding: 16px 18px; backdrop-filter: blur(6px);
+}
+.graph__info .eyebrow { margin: 0 0 .3rem; }
+.graph__info h3 { font-size: 1.5rem; margin: 0 0 .8rem; color: var(--paper); }
+.graph__info dl { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem 1rem; margin: 0; }
+.graph__info .wide { grid-column: 1 / -1; }
+.graph__info dt { font-family: var(--mono); font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(255, 251, 254, .5); }
+.graph__info dd { margin: .15rem 0 0; font-size: .9rem; }
+
 /* ───────── Modale & toast ───────── */
 .modal {
   border: 0; border-radius: 20px; padding: clamp(24px, 5vw, 36px); width: min(460px, calc(100% - 32px));

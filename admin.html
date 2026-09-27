@@ -75,6 +75,7 @@
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" data-tab="manifeste" aria-selected="true">Manifeste</button>
       <button role="tab" data-tab="cabine">Plan de cabine</button>
+      <button role="tab" data-tab="constellation">Constellation</button>
       <button role="tab" data-tab="comptes" data-admin-only>Comptes</button>
       <button role="tab" data-tab="moi">Mon compte</button>
     </nav>
@@ -154,6 +155,31 @@
       </div>
     </section>
 
+    <!-- Constellation (graphe façon Obsidian) -->
+    <section class="panel" id="tab-constellation" role="tabpanel" hidden>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Regrouper par">
+          <button type="button" data-group="table" aria-pressed="true">Par table</button>
+          <button type="button" data-group="repas" aria-pressed="false">Par repas</button>
+        </div>
+        <p class="hint">Faites glisser les points, zoomez à la molette ou en pinçant, cliquez sur un invité pour le détail.</p>
+        <span class="toolbar__grow"></span>
+        <button class="btn btn--small btn--line" id="g-fit" type="button">Recentrer</button>
+      </div>
+      <div class="graph">
+        <canvas id="g-canvas" aria-label="Constellation des invités confirmés"></canvas>
+        <aside class="graph__info" id="g-info" hidden></aside>
+        <div class="graph__legend" aria-hidden="true">
+          <span><i class="dot dot--center"></i>Marjorie &amp; Christophe</span>
+          <span><i class="dot dot--hub"></i><em id="g-hub-label">Table</em></span>
+          <span><i class="dot dot--guest"></i>Invité (taille = nb de personnes)</span>
+          <span><i class="dot dot--ring"></i>Repas spécial</span>
+        </div>
+        <p class="graph__empty" id="g-empty" hidden>Aucun invité confirmé pour l'instant.</p>
+      </div>
+      <p class="hint" id="g-stats"></p>
+    </section>
+
     <!-- Comptes -->
     <section class="panel" id="tab-comptes" role="tabpanel" hidden>
       <form class="card" id="acc-form" novalidate>
@@ -212,6 +238,7 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="js/graph.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

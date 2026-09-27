@@ -144,6 +144,7 @@
     if (name === "manifeste") loadRsvps();
     if (name === "cabine") loadCabin();
     if (name === "comptes") loadUsers();
+    if (name === "constellation") loadGraph(); else destroyGraph();
   }
   $all("[data-tab]").forEach(function (b) {
     b.addEventListener("click", function () { selectTab(b.getAttribute("data-tab")); });
@@ -373,6 +374,91 @@
     var rows = $all(".row");
     rows[rows.length - 1].scrollIntoView({ behavior: "smooth", block: "center" });
   });
+
+  /* ───────── Constellation ───────── */
+  var graph = null;
+  var graphGroup = "table";
+
+  function destroyGraph() {
+    if (graph) { graph.destroy(); graph = null; }
+  }
+
+  function loadGraph() {
+    return Promise.all([api("/api/rsvp"), api("/api/seating")]).then(function (res) {
+      state.rsvps = res[0].rsvps;
+      state.plan = res[1];
+      renderGraph();
+    }).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
+  }
+
+  function renderGraph() {
+    destroyGraph();
+    $("#g-info").hidden = true;
+    var confirmed = state.rsvps.filter(function (r) { return r.presence === "oui"; });
+    var tableName = {};
+    state.plan.tables.forEach(function (t) { tableName[t.id] = t.name; });
+
+    var nodes = [{ id: "mc", label: "Marjorie & Christophe", kind: "center" }];
+    var links = [];
+    var hubs = {};
+    function hub(key, label) {
+      if (!hubs[key]) {
+        hubs[key] = true;
+        nodes.push({ id: "h:" + key, label: label, kind: "hub" });
+        links.push(["mc", "h:" + key]);
+      }
+      return "h:" + key;
+    }
+    confirmed.forEach(function (r) {
+      var h;
+      if (graphGroup === "table") {
+        var t = state.plan.assign[r.id];
+        h = tableName[t] ? hub(t, tableName[t]) : hub("_none", "À placer");
+      } else {
+        var m = r.repas || "Standard";
+        h = hub(m, m);
+      }
+      nodes.push({
+        id: r.id, kind: "guest", weight: r.passagers || 1, special: isSpecial(r),
+        label: r.nom + (r.passagers > 1 ? " ×" + r.passagers : ""), data: r
+      });
+      links.push([h, r.id]);
+    });
+
+    var pax = confirmed.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
+    $("#g-stats").textContent = confirmed.length + " réponse" + (confirmed.length > 1 ? "s" : "") + " à bord · " + pax + " passager" + (pax > 1 ? "s" : "");
+    $("#g-hub-label").textContent = graphGroup === "table" ? "Table (rang)" : "Type de repas";
+    $("#g-empty").hidden = confirmed.length > 0;
+
+    graph = window.McGraph.mount($("#g-canvas"), { nodes: nodes, links: links }, { onSelect: showGraphInfo });
+  }
+
+  function showGraphInfo(n) {
+    var box = $("#g-info");
+    if (!n || n.kind !== "guest") { box.hidden = true; return; }
+    var r = n.data;
+    var t = state.plan.assign[r.id];
+    var table = state.plan.tables.find(function (x) { return x.id === t; });
+    box.innerHTML =
+      '<p class="eyebrow">Passager</p><h3>' + esc(r.nom) + "</h3>" +
+      "<dl>" +
+      "<div><dt>Personnes</dt><dd>" + r.passagers + "</dd></div>" +
+      "<div><dt>Table</dt><dd>" + (table ? esc(table.name) : "À placer") + "</dd></div>" +
+      "<div><dt>Repas</dt><dd>" + esc(r.repas || "Standard") + "</dd></div>" +
+      (r.allergies ? "<div><dt>Allergies</dt><dd>" + esc(r.allergies) + "</dd></div>" : "") +
+      (r.message ? '<div class="wide"><dt>Message</dt><dd>' + esc(r.message) + "</dd></div>" : "") +
+      "</dl>";
+    box.hidden = false;
+  }
+
+  $all("[data-group]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      graphGroup = b.getAttribute("data-group");
+      $all("[data-group]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      if (state.plan) renderGraph();
+    });
+  });
+  $("#g-fit").addEventListener("click", function () { if (graph) graph.fit(); });
 
   /* ───────── Comptes ───────── */
   function loadUsers() {
