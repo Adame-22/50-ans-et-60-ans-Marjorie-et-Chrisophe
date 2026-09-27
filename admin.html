@@ -76,6 +76,7 @@
       <button role="tab" data-tab="manifeste" aria-selected="true">Manifeste</button>
       <button role="tab" data-tab="cabine">Plan de cabine</button>
       <button role="tab" data-tab="constellation">Constellation</button>
+      <button role="tab" data-tab="quiz">Quiz</button>
       <button role="tab" data-tab="comptes" data-admin-only>Comptes</button>
       <button role="tab" data-tab="moi">Mon compte</button>
     </nav>
@@ -178,6 +179,41 @@
         <p class="graph__empty" id="g-empty" hidden>Aucun invité confirmé pour l'instant.</p>
       </div>
       <p class="hint" id="g-stats"></p>
+    </section>
+
+    <!-- Quiz -->
+    <section class="panel" id="tab-quiz" role="tabpanel" hidden>
+      <div class="card quiz-host">
+        <div class="quiz-host__status">
+          <div><span>Phase</span><strong id="qz-phase">–</strong></div>
+          <div><span>Question</span><strong id="qz-index">–</strong></div>
+          <div><span>Joueurs</span><strong id="qz-players">–</strong></div>
+          <div><span>Réponses</span><strong id="qz-answered">–</strong></div>
+          <div><span>Chrono</span><strong id="qz-left">–</strong></div>
+        </div>
+        <p class="hint" id="qz-current"></p>
+        <div class="quiz-host__actions">
+          <button class="btn btn--small btn--line" data-qz="lobby">1 · Ouvrir l'embarquement</button>
+          <button class="btn btn--small btn--gold" data-qz="start">2 · Question suivante</button>
+          <button class="btn btn--small btn--line" data-qz="reveal">3 · Révéler la réponse</button>
+          <button class="btn btn--small btn--line" data-qz="board">4 · Classement</button>
+          <button class="btn btn--small btn--line" data-qz="podium">Podium final</button>
+          <button class="btn btn--small btn--line" data-qz="off">Fermer le quiz</button>
+          <button class="btn btn--small btn--line btn--danger" data-qz="reset">Tout remettre à zéro</button>
+        </div>
+        <p class="hint">Joueurs : <a href="/quiz" target="_blank" rel="noopener">/quiz</a> · Écran géant : <a href="/ecran" target="_blank" rel="noopener">/ecran</a></p>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <h3 style="margin:0">Questions</h3>
+          <span class="toolbar__grow"></span>
+          <span class="save-state" id="qz-save-state"></span>
+          <button class="btn btn--small btn--line" id="qz-add" type="button">+ Ajouter une question</button>
+          <button class="btn btn--small btn--gold" id="qz-save" type="button">Enregistrer les questions</button>
+        </div>
+        <ol class="qz-list" id="qz-list"></ol>
+      </div>
     </section>
 
     <!-- Comptes -->

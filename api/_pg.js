@@ -91,6 +91,13 @@ async function pgCommand([cmd, key, ...args]) {
     case "HDEL":
       await q(`delete from mc.kv where k = $1 and f = $2`, [key, args[0]]);
       return 1;
+    case "HINCRBY": {
+      const r = await q(`
+        insert into mc.kv (k, f, v) values ($1, $2, $3::text)
+        on conflict (k, f) do update set v = (coalesce(mc.kv.v, '0')::int + $3::int)::text
+        returning v`, [key, args[0], parseInt(args[1], 10)]);
+      return parseInt(r.rows[0].v, 10);
+    }
     case "HLEN": {
       const r = await q(`select count(*)::int as n from mc.kv where k = $1 and f <> ''`, [key]);
       return r.rows[0].n;

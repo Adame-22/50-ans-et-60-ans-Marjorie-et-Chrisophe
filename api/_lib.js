@@ -66,6 +66,7 @@ function localRedis([cmd, key, ...args]) {
     case "HSET": h()[args[0]] = args[1]; save(); return 1;
     case "HSETNX": if (h()[args[0]] !== undefined) return 0; h()[args[0]] = args[1]; save(); return 1;
     case "HDEL": delete h()[args[0]]; save(); return 1;
+    case "HINCRBY": h()[args[0]] = String((parseInt(h()[args[0]], 10) || 0) + parseInt(args[1], 10)); save(); return parseInt(h()[args[0]], 10);
     case "HLEN": return Object.keys(h()).length;
     case "HGETALL": return Object.entries(h()).flat();
     default: throw new Error("Commande locale non gérée : " + cmd);

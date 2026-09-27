@@ -233,6 +233,28 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .graph__info dt { font-family: var(--mono); font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(255, 251, 254, .5); }
 .graph__info dd { margin: .15rem 0 0; font-size: .9rem; }
 
+/* ───────── Quiz (animateur) ───────── */
+.quiz-host { display: grid; gap: 1rem; }
+.quiz-host__status { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.quiz-host__status div { background: var(--navy); color: var(--paper); border-radius: 12px; padding: 12px 14px; }
+.quiz-host__status span { display: block; font-family: var(--mono); font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(255, 251, 254, .6); }
+.quiz-host__status strong { font-family: var(--mono); font-size: 1.3rem; font-weight: 500; color: var(--gold-light); }
+@media (max-width: 720px) { .quiz-host__status { grid-template-columns: repeat(2, 1fr); } }
+.quiz-host__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.qz-list { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 12px; counter-reset: qz; }
+.qz-item { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: .6rem; counter-increment: qz; background: var(--paper); }
+.qz-item.is-current { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(166, 112, 70, .15); }
+.qz-item__head { display: flex; align-items: center; gap: .6rem; }
+.qz-item__head::before { content: counter(qz); font-family: var(--mono); color: var(--gold); min-width: 1.6em; }
+.qz-item input[type=text], .qz-item input[type=number] { font: inherit; padding: .55rem .7rem; border: 1px solid var(--line); border-radius: 8px; background: #fff; width: 100%; }
+.qz-item__q { flex: 1; }
+.qz-item__time { width: 5.5em !important; }
+.qz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+@media (max-width: 600px) { .qz-choices { grid-template-columns: 1fr; } }
+.qz-choice { display: flex; align-items: center; gap: .5rem; }
+.qz-choice input[type=radio] { accent-color: var(--gold); width: 18px; height: 18px; flex: none; }
+.qz-item__actions { display: flex; gap: .4rem; justify-content: flex-end; }
+
 /* ───────── Modale & toast ───────── */
 .modal {
   border: 0; border-radius: 20px; padding: clamp(24px, 5vw, 36px); width: min(460px, calc(100% - 32px));

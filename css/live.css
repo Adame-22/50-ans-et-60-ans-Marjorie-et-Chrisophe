@@ -1,0 +1,112 @@
+/* ─────────────────────────────────────────────
+   Pages de la soirée (quiz, place, boîte noire, radio)
+   — pensées d'abord pour le téléphone
+   ───────────────────────────────────────────── */
+
+body.live {
+  min-height: 100vh; min-height: 100svh;
+  background:
+    radial-gradient(ellipse 90% 50% at 50% 115%, rgba(166, 112, 70, .28), transparent 65%),
+    linear-gradient(180deg, #00001f 0%, var(--navy) 60%, #0a0d45 100%);
+  background-attachment: fixed;
+  color: var(--paper);
+}
+.live__top {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 16px clamp(16px, 4vw, 32px);
+}
+.live__top .nav__brand { color: var(--paper); }
+.live__tag { font-family: var(--mono); font-size: .66rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-light); }
+.live__main { width: min(560px, 100% - 32px); margin: 0 auto; padding: 8px 0 48px; }
+.live__title { font-family: var(--serif); font-size: clamp(2.2rem, 9vw, 3rem); text-align: center; margin: .4rem 0 .2rem; }
+.live__sub { text-align: center; color: rgba(255, 251, 254, .7); margin: 0 0 1.6rem; }
+
+.live-card {
+  background: rgba(255, 251, 254, .06); border: 1px solid rgba(255, 251, 254, .12);
+  border-radius: 18px; padding: clamp(18px, 5vw, 26px);
+  backdrop-filter: blur(6px);
+}
+.live-card + .live-card { margin-top: 14px; }
+.live .field label { color: rgba(255, 251, 254, .6); }
+.live .field input, .live .field textarea, .live .field select {
+  background: rgba(255, 251, 254, .95); color: var(--ink); border-color: transparent;
+}
+.live .form-error { color: #ffb4a3; }
+.live .btn--block { margin-top: .4rem; }
+.center { text-align: center; }
+.muted { color: rgba(255, 251, 254, .6); }
+.big-number { font-family: var(--mono); font-size: 2.6rem; color: var(--gold-light); line-height: 1; }
+
+/* ───────── Quiz ───────── */
+.q-text { font-family: var(--serif); font-size: clamp(1.5rem, 6vw, 2rem); line-height: 1.2; text-align: center; margin: .2rem 0 1rem; }
+.q-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: .7rem; letter-spacing: .15em; text-transform: uppercase; color: rgba(255, 251, 254, .6); margin-bottom: .6rem; }
+.q-timer { height: 6px; border-radius: 6px; background: rgba(255, 251, 254, .12); overflow: hidden; margin-bottom: 1.2rem; }
+.q-timer i { display: block; height: 100%; width: 100%; background: var(--gold-light); transform-origin: left; }
+
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice-btn {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: .6rem;
+  min-height: 110px; padding: 14px; border: 0; border-radius: 14px; cursor: pointer; text-align: left;
+  font: 600 1rem/1.25 var(--sans); color: #fff; transition: transform .12s, opacity .3s, filter .3s;
+}
+.choice-btn:active { transform: scale(.97); }
+.choice-btn .shape { font-size: 1.4rem; line-height: 1; }
+.c0 { background: #1b1f7a; }
+.c1 { background: var(--gold); }
+.c2 { background: var(--gold-light); color: var(--navy); }
+.c3 { background: var(--muted); }
+.choice-btn[disabled] { cursor: default; }
+.choices.is-locked .choice-btn:not(.is-picked) { opacity: .25; filter: grayscale(.4); }
+.choice-btn.is-picked { outline: 3px solid var(--paper); outline-offset: 2px; }
+.choices.is-revealed .choice-btn:not(.is-correct) { opacity: .25; }
+.choice-btn.is-correct::after { content: "✓"; position: absolute; top: 10px; right: 12px; font-size: 1.4rem; }
+
+.result { text-align: center; padding: 1.4rem 0 .6rem; }
+.result__icon { font-size: 3rem; line-height: 1; }
+.result__title { font-family: var(--serif); font-size: 2.2rem; margin: .4rem 0; }
+.result__pts { font-family: var(--mono); color: var(--gold-light); font-size: 1.2rem; }
+.rankline { display: flex; justify-content: space-between; gap: 1rem; padding: .9rem 1rem; margin-top: 1rem; border-radius: 12px; background: rgba(255, 251, 254, .08); font-family: var(--mono); font-size: .85rem; }
+
+.lb { list-style: none; margin: 0; padding: 0; counter-reset: lb; }
+.lb li { display: flex; align-items: center; gap: .8rem; padding: .6rem .2rem; border-bottom: 1px solid rgba(255, 251, 254, .08); counter-increment: lb; }
+.lb li::before { content: counter(lb); width: 1.8em; font-family: var(--mono); color: rgba(255, 251, 254, .5); }
+.lb li b { flex: 1; font-weight: 600; }
+.lb li span { font-family: var(--mono); color: var(--gold-light); }
+.lb li.is-me { background: rgba(255, 177, 0, .12); border-radius: 8px; }
+
+.pulse { width: 14px; height: 14px; border-radius: 50%; background: var(--gold-light); margin: 0 auto 1rem; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { transform: scale(.8); opacity: .5; } 50% { transform: scale(1.2); opacity: 1; } }
+
+/* ───────── Trouver ma place ───────── */
+.seat-result { text-align: center; }
+.seat-result .big-table { font-family: var(--serif); font-size: clamp(2.6rem, 12vw, 3.6rem); color: var(--gold-light); margin: .2rem 0 .6rem; }
+.neighbours { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: .8rem; }
+.neighbours span { padding: .35rem .7rem; border-radius: 999px; background: rgba(255, 251, 254, .1); font-size: .9rem; }
+.pick-list { display: grid; gap: 8px; }
+.pick-list button {
+  text-align: left; padding: .9rem 1rem; border-radius: 12px; border: 1px solid rgba(255, 251, 254, .15);
+  background: rgba(255, 251, 254, .05); color: var(--paper); font: inherit; cursor: pointer;
+}
+
+/* ───────── Boîte noire ───────── */
+.photo-pick { display: flex; align-items: center; gap: .8rem; }
+.photo-pick img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
+.wall { columns: 2 160px; column-gap: 10px; margin-top: 18px; }
+.wall-item { break-inside: avoid; margin: 0 0 10px; background: rgba(255, 251, 254, .07); border-radius: 12px; overflow: hidden; }
+.wall-item img { width: 100%; display: block; }
+.wall-item p { margin: 0; padding: .7rem .8rem .2rem; font-size: .92rem; }
+.wall-item small { display: block; padding: 0 .8rem .7rem; color: var(--gold-light); font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; }
+
+/* ───────── Radio de bord ───────── */
+.songs { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 8px; }
+.song { display: flex; align-items: center; gap: .8rem; padding: .8rem .9rem; border-radius: 12px; background: rgba(255, 251, 254, .07); }
+.song__txt { flex: 1; min-width: 0; }
+.song__txt b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song__txt small { color: rgba(255, 251, 254, .6); }
+.song.is-played { opacity: .45; }
+.vote {
+  display: flex; flex-direction: column; align-items: center; min-width: 52px; padding: .4rem .5rem; border-radius: 10px;
+  border: 1px solid rgba(255, 177, 0, .5); background: transparent; color: var(--gold-light); font: 600 .95rem var(--mono); cursor: pointer;
+}
+.vote.is-voted { background: var(--gold-light); color: var(--navy); }
+.vote small { font-size: .55rem; letter-spacing: .1em; }

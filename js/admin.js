@@ -145,6 +145,7 @@
     if (name === "cabine") loadCabin();
     if (name === "comptes") loadUsers();
     if (name === "constellation") loadGraph(); else destroyGraph();
+    if (name === "quiz") startQuizAdmin(); else stopQuizAdmin();
   }
   $all("[data-tab]").forEach(function (b) {
     b.addEventListener("click", function () { selectTab(b.getAttribute("data-tab")); });
@@ -459,6 +460,104 @@
     });
   });
   $("#g-fit").addEventListener("click", function () { if (graph) graph.fit(); });
+
+  /* ───────── Quiz (animateur) ───────── */
+  var PHASES = { off: "Fermé", lobby: "Embarquement", question: "Question", reveal: "Réponse", board: "Classement", podium: "Podium" };
+  var qz = { timer: 0, questions: null, state: null, offset: 0, dirty: false, raf: 0 };
+
+  function startQuizAdmin() {
+    stopQuizAdmin();
+    (function poll() {
+      api("/api/quiz?view=admin").then(function (d) {
+        qz.state = d.state; qz.offset = d.serverNow - Date.now();
+        if (!qz.questions || !qz.dirty) { qz.questions = d.questions; renderQuizList(); }
+        renderQuizStatus(d);
+      }).catch(function (e) { onAuthError(e); }).then(function () {
+        if (!$("#tab-quiz").hidden) qz.timer = setTimeout(poll, 1500);
+      });
+    })();
+  }
+  function stopQuizAdmin() { clearTimeout(qz.timer); cancelAnimationFrame(qz.raf); }
+
+  function renderQuizStatus(d) {
+    var st = d.state, q = d.questions[st.index];
+    $("#qz-phase").textContent = PHASES[st.phase] || st.phase;
+    $("#qz-index").textContent = st.index >= 0 ? (st.index + 1) + " / " + d.questions.length : "– / " + d.questions.length;
+    $("#qz-players").textContent = d.players;
+    $("#qz-answered").textContent = st.phase === "question" ? d.answered : (st.counts ? st.counts.reduce(function (a, b) { return a + b; }, 0) : "–");
+    $("#qz-current").innerHTML = q && st.phase !== "off" && st.phase !== "lobby"
+      ? "En cours : <b>" + esc(q.q) + "</b> — bonne réponse : <b>" + esc(q.choices[q.answer]) + "</b>" : "";
+    $all(".qz-item").forEach(function (li, i) { li.classList.toggle("is-current", i === st.index && st.phase !== "off"); });
+    cancelAnimationFrame(qz.raf);
+    (function tick() {
+      var rest = st.phase === "question" ? Math.max(0, st.endsAt - (Date.now() + qz.offset)) : 0;
+      $("#qz-left").textContent = st.phase === "question" ? Math.ceil(rest / 1000) + " s" : "–";
+      if (rest > 0) qz.raf = requestAnimationFrame(tick);
+    })();
+  }
+
+  function renderQuizList() {
+    $("#qz-list").innerHTML = qz.questions.map(function (q, i) {
+      var ch = q.choices.concat(["", "", "", ""]).slice(0, 4);
+      return '<li class="qz-item" data-i="' + i + '">' +
+        '<div class="qz-item__head"><input type="text" class="qz-item__q" data-f="q" value="' + esc(q.q) + '" placeholder="Question" maxlength="200" />' +
+        '<input type="number" class="qz-item__time" data-f="time" min="5" max="60" value="' + q.time + '" title="Secondes" /></div>' +
+        '<div class="qz-choices">' + ch.map(function (c, j) {
+          return '<label class="qz-choice"><input type="radio" name="qz-ok-' + i + '" data-f="answer" value="' + j + '"' + (q.answer === j ? " checked" : "") + ' title="Bonne réponse" />' +
+            '<input type="text" data-f="c' + j + '" value="' + esc(c) + '" placeholder="Réponse ' + "ABCD"[j] + '" maxlength="80" /></label>';
+        }).join("") + "</div>" +
+        '<div class="qz-item__actions"><button type="button" class="btn btn--small btn--line" data-launch="' + i + '">Lancer celle-ci</button>' +
+        '<button type="button" class="btn btn--small btn--line btn--danger" data-del-q="' + i + '">Supprimer</button></div></li>';
+    }).join("");
+  }
+
+  function readQuizList() {
+    return $all(".qz-item").map(function (li) {
+      var get = function (f) { var el = li.querySelector('[data-f="' + f + '"]'); return el ? el.value : ""; };
+      var ok = li.querySelector('[data-f="answer"]:checked');
+      var choices = [0, 1, 2, 3].map(function (j) { return get("c" + j).trim(); });
+      var answer = ok ? parseInt(ok.value, 10) : 0;
+      // On retire les réponses vides en gardant l'index de la bonne réponse cohérent
+      var kept = [], newAnswer = 0;
+      choices.forEach(function (c, j) { if (c) { if (j === answer) newAnswer = kept.length; kept.push(c); } });
+      return { q: get("q").trim(), choices: kept, answer: newAnswer, time: parseInt(get("time"), 10) || 20 };
+    });
+  }
+
+  $("#qz-list").addEventListener("input", function () { qz.dirty = true; $("#qz-save-state").textContent = "Modifications non enregistrées"; });
+  $("#qz-list").addEventListener("click", function (e) {
+    var del = e.target.getAttribute("data-del-q"), launch = e.target.getAttribute("data-launch");
+    if (del !== null) {
+      qz.questions = readQuizList(); qz.questions.splice(parseInt(del, 10), 1); qz.dirty = true; renderQuizList();
+      $("#qz-save-state").textContent = "Modifications non enregistrées";
+    }
+    if (launch !== null) {
+      if (qz.dirty) return toast("Enregistrez d'abord les questions.", true);
+      quizAction("start", { index: parseInt(launch, 10) });
+    }
+  });
+  $("#qz-add").addEventListener("click", function () {
+    qz.questions = readQuizList().concat([{ q: "", choices: ["", "", "", ""], answer: 0, time: 20 }]);
+    qz.dirty = true; renderQuizList();
+    var items = $all(".qz-item"); items[items.length - 1].querySelector("input").focus();
+  });
+  $("#qz-save").addEventListener("click", function () {
+    var list = readQuizList();
+    api("/api/quiz", { method: "PUT", body: { questions: list } }).then(function (d) {
+      qz.questions = d.questions; qz.dirty = false; renderQuizList();
+      $("#qz-save-state").textContent = "Enregistré ✓"; toast("Questions enregistrées.");
+    }).catch(function (err) { toast(err.message, true); });
+  });
+
+  function quizAction(action, extra) {
+    if (action === "reset" && !confirm("Remettre le quiz à zéro ? Les joueurs et les scores seront effacés.")) return;
+    var body = Object.assign({ action: action }, extra || {});
+    api("/api/quiz", { method: "POST", body: body }).then(function () { startQuizAdmin(); })
+      .catch(function (err) { toast(err.message, true); });
+  }
+  $all("[data-qz]").forEach(function (b) {
+    b.addEventListener("click", function () { quizAction(b.getAttribute("data-qz")); });
+  });
 
   /* ───────── Comptes ───────── */
   function loadUsers() {
