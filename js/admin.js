@@ -146,6 +146,7 @@
     if (name === "comptes") loadUsers();
     if (name === "constellation") loadGraph(); else destroyGraph();
     if (name === "quiz") startQuizAdmin(); else stopQuizAdmin();
+    if (name === "boite") loadBoite();
   }
   $all("[data-tab]").forEach(function (b) {
     b.addEventListener("click", function () { selectTab(b.getAttribute("data-tab")); });
@@ -557,6 +558,29 @@
   }
   $all("[data-qz]").forEach(function (b) {
     b.addEventListener("click", function () { quizAction(b.getAttribute("data-qz")); });
+  });
+
+  /* ───────── Boîte noire (modération) ───────── */
+  function loadBoite() {
+    return fetch("/api/boite", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+      var list = d.entries || [];
+      $("#bn-count").textContent = list.length;
+      $("#bn-empty").hidden = list.length > 0;
+      $("#bn-admin").innerHTML = list.map(function (e) {
+        return '<article class="bn-card">' +
+          (e.photo ? '<img loading="lazy" src="/api/boite?photo=' + encodeURIComponent(e.id) + '" alt="" />' : "") +
+          (e.message ? "<p>" + esc(e.message) + "</p>" : "") +
+          "<footer><small>" + esc(e.name) + " · " + fmtDate(e.createdAt) + "</small>" +
+          '<button class="btn btn--small btn--line btn--danger" data-bn-del="' + esc(e.id) + '">Supprimer</button></footer></article>';
+      }).join("");
+    }).catch(function () { toast("Impossible de charger la boîte noire.", true); });
+  }
+  $("#bn-admin").addEventListener("click", function (e) {
+    var id = e.target.getAttribute("data-bn-del");
+    if (!id || !confirm("Supprimer ce message (et sa photo) ?")) return;
+    api("/api/boite?id=" + encodeURIComponent(id), { method: "DELETE" })
+      .then(function () { toast("Supprimé."); e.target.closest(".bn-card").remove(); })
+      .catch(function (err) { toast(err.message, true); });
   });
 
   /* ───────── Comptes ───────── */

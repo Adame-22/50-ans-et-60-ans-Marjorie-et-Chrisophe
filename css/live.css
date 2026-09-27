@@ -3,6 +3,7 @@
    — pensées d'abord pour le téléphone
    ───────────────────────────────────────────── */
 
+html:has(> body.live) { background: #000033; }
 body.live {
   min-height: 100vh; min-height: 100svh;
   background:
@@ -27,7 +28,9 @@ body.live {
   backdrop-filter: blur(6px);
 }
 .live-card + .live-card { margin-top: 14px; }
-.live .field label { color: rgba(255, 251, 254, .6); }
+form.live-card { display: grid; gap: 1rem; }
+.live .field label, .live .field__label { color: rgba(255, 251, 254, .6); }
+.field__label { font-family: var(--mono); font-size: .66rem; letter-spacing: .2em; text-transform: uppercase; }
 .live .field input, .live .field textarea, .live .field select {
   background: rgba(255, 251, 254, .95); color: var(--ink); border-color: transparent;
 }
@@ -90,6 +93,12 @@ body.live {
 
 /* ───────── Boîte noire ───────── */
 .photo-pick { display: flex; align-items: center; gap: .8rem; }
+.photo-pick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.photo-btn {
+  display: inline-flex; align-items: center; gap: .5rem; padding: .8rem 1.1rem; border-radius: 12px; cursor: pointer;
+  border: 1px dashed rgba(255, 251, 254, .4); color: var(--paper); font-size: .95rem;
+}
+.photo-btn:hover, .photo-pick input:focus-visible + .photo-btn { border-color: var(--gold-light); color: var(--gold-light); }
 .photo-pick img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
 .wall { columns: 2 160px; column-gap: 10px; margin-top: 18px; }
 .wall-item { break-inside: avoid; margin: 0 0 10px; background: rgba(255, 251, 254, .07); border-radius: 12px; overflow: hidden; }
@@ -110,3 +119,5 @@ body.live {
 }
 .vote.is-voted { background: var(--gold-light); color: var(--navy); }
 .vote small { font-size: .55rem; letter-spacing: .1em; }
+.live .field .photo-btn { font: 500 .95rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--paper); padding: .8rem 1.1rem; }
+.live .field .photo-btn:hover { color: var(--gold-light); }

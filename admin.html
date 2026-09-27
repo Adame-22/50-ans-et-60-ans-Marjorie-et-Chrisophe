@@ -77,6 +77,7 @@
       <button role="tab" data-tab="cabine">Plan de cabine</button>
       <button role="tab" data-tab="constellation">Constellation</button>
       <button role="tab" data-tab="quiz">Quiz</button>
+      <button role="tab" data-tab="boite">Boîte noire</button>
       <button role="tab" data-tab="comptes" data-admin-only>Comptes</button>
       <button role="tab" data-tab="moi">Mon compte</button>
     </nav>
@@ -214,6 +215,17 @@
         </div>
         <ol class="qz-list" id="qz-list"></ol>
       </div>
+    </section>
+
+    <!-- Boîte noire (modération) -->
+    <section class="panel" id="tab-boite" role="tabpanel" hidden>
+      <div class="toolbar">
+        <p class="hint">Messages et photos laissés par les invités sur <a href="/boite" target="_blank" rel="noopener">/boite</a>. Supprimez ce qui ne doit pas apparaître sur l'écran géant.</p>
+        <span class="toolbar__grow"></span>
+        <span class="pill" id="bn-count">0</span>
+      </div>
+      <div class="bn-grid" id="bn-admin"></div>
+      <p class="empty card" id="bn-empty" hidden>La boîte noire est encore vide.</p>
     </section>
 
     <!-- Comptes -->

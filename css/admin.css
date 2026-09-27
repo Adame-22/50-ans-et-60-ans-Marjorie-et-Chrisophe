@@ -255,6 +255,14 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .qz-choice input[type=radio] { accent-color: var(--gold); width: 18px; height: 18px; flex: none; }
 .qz-item__actions { display: flex; gap: .4rem; justify-content: flex-end; }
 
+/* ───────── Boîte noire (modération) ───────── */
+.bn-grid { columns: 4 220px; column-gap: 12px; }
+.bn-card { break-inside: avoid; margin: 0 0 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.bn-card img { width: 100%; display: block; }
+.bn-card p { margin: 0; padding: .7rem .9rem .3rem; font-size: .92rem; }
+.bn-card footer { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .4rem .9rem .8rem; }
+.bn-card small { color: var(--muted); font-size: .78rem; }
+
 /* ───────── Modale & toast ───────── */
 .modal {
   border: 0; border-radius: 20px; padding: clamp(24px, 5vw, 36px); width: min(460px, calc(100% - 32px));
