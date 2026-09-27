@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Trouver ma place · Vol MC 5060</title>
+  <meta name="theme-color" content="#000033" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/live.css" />
+</head>
+<body class="live">
+  <header class="live__top">
+    <a href="/" class="nav__brand"><span class="nav__mono">M<span>&amp;</span>C</span></a>
+    <span class="live__tag">Carte d'embarquement</span>
+  </header>
+  <main class="live__main">
+    <h1 class="live__title">Trouver ma place</h1>
+    <p class="live__sub">Tapez votre nom pour découvrir votre rang à bord.</p>
+    <form class="live-card" id="seek" role="search" novalidate>
+      <div class="field">
+        <label for="s-name">Votre nom ou prénom</label>
+        <input id="s-name" type="search" autocomplete="name" placeholder="Ex. Dupont" minlength="2" />
+      </div>
+    </form>
+    <div id="out" aria-live="polite"></div>
+  </main>
+  <script src="js/place.js"></script>
+</body>
+</html>
