@@ -8,17 +8,19 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="css/fonts.css" />
   <style>
-    /* Page d'impression : 1 planche de 4 cartes A6 + 2 affiches A4.
+    /* Page d'impression : une carte A6 par table (4 par feuille A4), une planche
+       Boîte noire / Radio / Quiz / À table, puis deux affiches A4.
        Ouvrir puis Fichier → Imprimer (A4, marges « aucune », graphiques d'arrière-plan activés). */
     :root { --navy: #000033; --gold: #a67046; --amber: #ffb100; --grey: #7a7d7d; --paper: #fffbfe; }
     @page { size: A4; margin: 0; }
     * { box-sizing: border-box; }
     html, body { margin: 0; background: #e9e4de; }
     body { font-family: "Manrope", system-ui, sans-serif; color: var(--navy); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .sheet { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; position: relative; overflow: hidden; page-break-after: always; }
-    .sheet:last-child { page-break-after: auto; }
+    .sheet { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; position: relative; overflow: hidden; page-break-after: always; break-after: page; }
+    .sheet:last-child { page-break-after: auto; break-after: auto; }
     @media print { html, body { background: #fff; } .sheet { margin: 0; } .screen-only { display: none; } }
-    .screen-only { max-width: 210mm; margin: 16px auto 0; font-size: 14px; color: #444; }
+    .screen-only { max-width: 210mm; margin: 16px auto 0; font-size: 14px; line-height: 1.5; color: #444; }
+    .screen-only b { color: var(--navy); }
 
     /* ── Planche de 4 cartes A6 ── */
     .grid { display: grid; grid-template-columns: 105mm 105mm; grid-template-rows: 148.5mm 148.5mm; }
@@ -26,84 +28,111 @@
     .grid::before { left: 105mm; top: 0; bottom: 0; border-left-width: .3mm; }
     .grid::after { top: 148.5mm; left: 0; right: 0; border-top-width: .3mm; }
     .card { padding: 6mm; }
-    .frame { height: 100%; border: 1.1mm solid var(--navy); padding: 7mm 6mm 6mm; display: grid; grid-template-rows: auto auto 1fr auto; justify-items: center; text-align: center; }
+    .frame { height: 100%; border: 1.1mm solid var(--navy); padding: 7mm 6mm 6mm; display: grid; grid-template-rows: auto auto 1fr auto; justify-items: center; text-align: center; position: relative; }
     .script { font-family: "Monsieur La Doulaise", cursive; color: var(--gold); line-height: 1.1; }
     .card .script { font-size: 9.5mm; margin: 0; }
     .card h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 8.4mm; margin: 1.5mm 0 0; }
     .card .qr { width: 52mm; height: 52mm; align-self: center; }
     .card p { margin: 0; font-size: 3.2mm; line-height: 1.4; color: #333; }
+    .card p.script, .card p.eyebrow, .card p.url { color: var(--gold); }
     .url { font-family: "JetBrains Mono", monospace; font-size: 2.6mm; letter-spacing: .2mm; color: var(--gold); margin-top: 1.6mm !important; }
-    .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 2.4mm; letter-spacing: .8mm; text-transform: uppercase; color: var(--gold); }
+    .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 2.4mm; letter-spacing: .8mm; text-transform: uppercase; color: var(--gold); margin: 0; }
+
+    /* ── Carte de table ── */
+    .table-card .frame { grid-template-rows: auto auto auto 1fr auto; padding-top: 6mm; }
+    .table-card .eyebrow { margin-top: 1.2mm; }
+    .table-card h2 { font-size: 15mm; line-height: 1; margin: 1mm 0 0; }
+    .table-card .qr { width: 50mm; height: 50mm; }
+    .table-card .corner { position: absolute; top: 3mm; font-family: "JetBrains Mono", monospace; font-size: 2.2mm; letter-spacing: .5mm; color: var(--grey); }
+    .table-card .corner--l { left: 3.5mm; }
+    .table-card .corner--r { right: 3.5mm; }
 
     /* ── Affiches A4 ── */
     .poster { padding: 12mm; }
     .poster .frame { border-width: 1.6mm; padding: 18mm 16mm 14mm; grid-template-rows: auto auto auto 1fr auto; }
     .poster .script { font-size: 17mm; margin: 0; }
     .poster h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 17mm; margin: 4mm 0 2mm; }
-    .poster .lead { font-size: 5mm; color: #333; max-width: 140mm; margin: 0; line-height: 1.45; }
+    .poster .lead { font-size: 5mm; color: #333; max-width: 150mm; margin: 0; line-height: 1.45; }
     .poster .qr { width: 118mm; height: 118mm; align-self: center; }
     .poster .url { font-size: 4mm; }
     .poster .foot { display: grid; gap: 2mm; justify-items: center; }
     .qr svg { width: 100%; height: 100%; display: block; }
-    .plane { width: 9mm; height: 9mm; fill: var(--gold); }
   </style>
 </head>
 <body>
-  <p class="screen-only">Aperçu avant impression — imprimez en A4, sans marges, avec les couleurs d'arrière-plan. Page 1 : 4 cartes de table à découper (A6). Pages 2 et 3 : affiches pour l'entrée.</p>
-
-  <section class="sheet grid">
-    <div class="card"><div class="frame">
-      <p class="script">Vol MC 5060</p><h2>Trouver ma place</h2>
-      <div class="qr" data-path="/place"></div>
-      <div><p>Scannez, tapez votre nom :<br />votre rang et vos voisins de table.</p><p class="url" data-url="/place"></p></div>
-    </div></div>
-    <div class="card"><div class="frame">
-      <p class="script">Vol MC 5060</p><h2>La Boîte noire</h2>
-      <div class="qr" data-path="/boite"></div>
-      <div><p>Un mot, un souvenir, une photo<br />pour Marjorie &amp; Christophe.</p><p class="url" data-url="/boite"></p></div>
-    </div></div>
-    <div class="card"><div class="frame">
-      <p class="script">Vol MC 5060</p><h2>Radio de bord</h2>
-      <div class="qr" data-path="/radio"></div>
-      <div><p>Proposez vos chansons, votez,<br />retrouvez la playlist Spotify.</p><p class="url" data-url="/radio"></p></div>
-    </div></div>
-    <div class="card"><div class="frame">
-      <p class="script">Vol MC 5060</p><h2>Quiz de bord</h2>
-      <div class="qr" data-path="/quiz"></div>
-      <div><p>Connaissez-vous vos commandants de bord&nbsp;?<br />Rendez-vous sur l'écran géant.</p><p class="url" data-url="/quiz"></p></div>
-    </div></div>
-  </section>
-
-  <section class="sheet poster"><div class="frame">
-    <p class="script">Anniversaires Christophe &amp; Marjorie</p>
-    <p class="eyebrow" style="margin-top:6mm">Carte d'embarquement · Vol MC 5060</p>
-    <h2>Trouver ma place</h2>
-    <div class="qr" data-path="/place"></div>
-    <div class="foot"><p class="lead">Scannez avec l'appareil photo de votre téléphone, tapez votre nom : votre rang et vos voisins de table s'affichent.</p><p class="url" data-url="/place"></p></div>
-  </div></section>
-
-  <section class="sheet poster"><div class="frame">
-    <p class="script">Anniversaires Christophe &amp; Marjorie</p>
-    <p class="eyebrow" style="margin-top:6mm">Enregistreur de vol · Vol MC 5060</p>
-    <h2>La Boîte noire</h2>
-    <div class="qr" data-path="/boite"></div>
-    <div class="foot"><p class="lead">Laissez un message, un souvenir ou une photo : ils apparaîtront sur l'écran géant et resteront dans la boîte noire du vol.</p><p class="url" data-url="/boite"></p></div>
-  </div></section>
+  <p class="screen-only" id="intro">Préparation des QR codes…</p>
+  <main id="sheets"></main>
 
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
   <script>
     (function () {
-      // ?base=https://… permet de générer les QR vers le site en ligne depuis une copie locale
-      var base = (new URLSearchParams(location.search).get("base") || location.origin).replace(/\/$/, "");
-      document.querySelectorAll("[data-path]").forEach(function (el) {
-        var q = window.qrcode(0, "Q");
-        q.addData(base + el.getAttribute("data-path"));
-        q.make();
-        el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }).replace(/fill="black"|fill="#000000"/g, 'fill="#000033"');
-      });
-      document.querySelectorAll("[data-url]").forEach(function (el) {
-        el.textContent = base.replace(/^https?:\/\//, "") + el.getAttribute("data-url");
-      });
+      "use strict";
+      var params = new URLSearchParams(location.search);
+      // ?base=https://… : QR codes vers le site en ligne, même depuis une copie locale
+      var base = (params.get("base") || location.origin).replace(/\/$/, "");
+      var host = base.replace(/^https?:\/\//, "");
+      var DEFAULT = Array.from({ length: 10 }, function (_, i) { return { id: "t" + (i + 1), name: "Table " + (i + 1) }; });
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function card(title, path, text, cls, extra) {
+        return '<div class="card ' + (cls || "") + '"><div class="frame">' + (extra || "") +
+          '<p class="script">Vol MC 5060</p>' + title +
+          '<div class="qr" data-path="' + esc(path) + '"></div>' +
+          "<div><p>" + text + '</p><p class="url" data-url="' + esc(path) + '"></p></div></div></div>';
+      }
+      function tableCard(t, i, n) {
+        return card('<p class="eyebrow">À table !</p><h2>' + esc(t.name) + "</h2>", "/table?t=" + encodeURIComponent(t.id),
+          "Installé·e à cette table&nbsp;? Scannez pour le signaler<br />et découvrir vos voisins de table.", "table-card",
+          '<span class="corner corner--l">MC 5060</span><span class="corner corner--r">' + (i + 1) + " / " + n + "</span>");
+      }
+      var GENERIC = card("<h2>À table&nbsp;!</h2>", "/table", "Signalez à quelle table vous êtes installé·e<br />et retrouvez vos voisins de table.");
+      var SERVICES = [
+        card("<h2>La Boîte noire</h2>", "/boite", "Un mot, un souvenir, une photo<br />pour Marjorie &amp; Christophe."),
+        card("<h2>Radio de bord</h2>", "/radio", "Proposez vos chansons, votez,<br />retrouvez la playlist Spotify."),
+        card("<h2>Quiz de bord</h2>", "/quiz", "Connaissez-vous vos commandants de bord&nbsp;?<br />Rendez-vous sur l'écran géant."),
+        GENERIC,
+      ];
+      function poster(eyebrow, title, path, lead) {
+        return '<section class="sheet poster"><div class="frame"><p class="script">Anniversaires Christophe &amp; Marjorie</p>' +
+          '<p class="eyebrow" style="margin-top:6mm;font-size:3.4mm">' + eyebrow + "</p><h2>" + title + "</h2>" +
+          '<div class="qr" data-path="' + path + '"></div><div class="foot"><p class="lead">' + lead + '</p><p class="url" data-url="' + path + '"></p></div></div></section>';
+      }
+
+      function build(tables) {
+        var cards = tables.map(function (t, i) { return tableCard(t, i, tables.length); });
+        while (cards.length % 4) cards.push(GENERIC);
+        cards = cards.concat(SERVICES);
+        var html = "";
+        for (var i = 0; i < cards.length; i += 4) html += '<section class="sheet grid">' + cards.slice(i, i + 4).join("") + "</section>";
+        html += poster("Plan de cabine · Vol MC 5060", "À table&nbsp;!", "/table",
+          "Installez-vous où vous le souhaitez, puis scannez le QR code posé sur votre table&nbsp;: vous verrez qui vous entoure, et les équipes des jeux se formeront toutes seules.");
+        html += poster("Enregistreur de vol · Vol MC 5060", "La Boîte noire", "/boite",
+          "Laissez un message, un souvenir ou une photo&nbsp;: ils apparaîtront sur l'écran géant et resteront dans la boîte noire du vol.");
+        document.getElementById("sheets").innerHTML = html;
+
+        document.querySelectorAll("[data-path]").forEach(function (el) {
+          var q = window.qrcode(0, "Q");
+          q.addData(base + el.getAttribute("data-path"));
+          q.make();
+          el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }).replace(/fill="black"|fill="#000000"/g, 'fill="#000033"');
+        });
+        document.querySelectorAll("[data-url]").forEach(function (el) { el.textContent = host + el.getAttribute("data-url"); });
+
+        var sheets = document.querySelectorAll(".sheet").length;
+        document.getElementById("intro").innerHTML = "Aperçu avant impression — imprimez en <b>A4, sans marges, avec les couleurs d'arrière-plan</b>. " +
+          "<b>" + tables.length + " carte" + (tables.length > 1 ? "s" : "") + " de table</b> (une par table, à découper au format A6), " +
+          "une planche Boîte noire · Radio · Quiz · À table, puis deux affiches pour l'entrée — " + sheets + " pages en tout. " +
+          "Les cartes suivent la liste des tables du Plan de cabine : si vous en ajoutez, réimprimez cette page.";
+        document.body.setAttribute("data-ready", String(sheets));
+      }
+
+      fetch("/api/tables").then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { build(d && d.tables && d.tables.length ? d.tables : DEFAULT); })
+        .catch(function () { build(DEFAULT); });
     })();
   </script>
 </body>
