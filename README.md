@@ -31,6 +31,26 @@ Deux rôles existent : **Commandant**, qui a accès à tout, et **Équipage**, q
 
 Les comptes de Marjorie, Christophe, Lucie et Adame sont créés automatiquement au premier démarrage, avec un code provisoire. À la première connexion, chacun choisit son propre mot de passe.
 
+### Pendant la soirée
+
+| Page | Pour qui | À quoi ça sert |
+|---|---|---|
+| `/place` | Invités | Taper son nom pour trouver son rang (table) et ses voisins |
+| `/boite` | Invités | La « Boîte noire » : laisser un message et/ou une photo |
+| `/radio` | Invités | Proposer des chansons et voter ; le DJ suit l'onglet Radio de l'admin |
+| `/quiz` | Invités | Quiz en direct façon Kahoot, sur téléphone |
+| `/ecran` | TV / vidéoprojecteur | Diaporama (photos, messages, QR codes, étape en cours, radio) qui bascule tout seul sur le quiz |
+
+Dans l'admin :
+- **Quiz** : préparer les questions, puis piloter en direct (embarquement → question → réponse → classement → podium).
+- **Boîte noire** : supprimer un message ou une photo.
+- **Radio** : vue DJ, avec les chansons les plus votées en premier.
+- **Manifeste** : bouton ✓ pour pointer les arrivées à l'entrée.
+
+Le jour J, la page d'accueil et l'écran géant affichent l'étape en cours du programme, défini dans `js/config.js` (`programme`).
+
+Le quiz tient la charge : l'état du jeu est mis en cache une seconde par Vercel, donc les téléphones ne sollicitent presque pas le serveur, qu'il y ait 70 joueurs ou plus.
+
 ### Base de données
 
 Les réponses, les comptes et le plan de cabine sont stockés dans **Supabase (Postgres)**, relié au projet depuis l'onglet **Storage** de Vercel. La variable `POSTGRES_URL` est ajoutée automatiquement.
