@@ -14,6 +14,7 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "POST") {
     const b = await L.readBody(req);
     if (b.website) return L.send(res, 200, { ok: true }); // pot de miel anti-robots
+    await L.rateLimit(req, "rsvp", 60, 600);
     const nom = L.str(b.nom, 80);
     if (!nom) throw new L.HttpError(400, "Merci d'indiquer le nom du passager.");
     const oui = b.presence === "oui";

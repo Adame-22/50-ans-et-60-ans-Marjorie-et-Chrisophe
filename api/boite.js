@@ -34,10 +34,7 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "POST") {
     const b = await L.readBody(req);
     if (b.website) return L.send(res, 201, { ok: true }); // pot de miel
-    const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").split(",")[0].trim();
-    const hits = await L.redis(["INCR", K.ip(ip)]);
-    if (hits === 1) await L.redis(["EXPIRE", K.ip(ip), 60]);
-    if (hits > 8) throw new L.HttpError(429, "Doucement ! Réessayez dans une minute.");
+    await L.rateLimit(req, "boite", 80, 60);
 
     const name = L.str(b.name, 60);
     const message = L.str(b.message, 1000);

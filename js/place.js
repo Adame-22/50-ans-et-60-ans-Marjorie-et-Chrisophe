@@ -24,7 +24,7 @@
 
   function search() {
     var q = input.value.trim();
-    if (q.length < 2) { out.innerHTML = ""; return; }
+    if (q.length < 3) { out.innerHTML = ""; return; }
     var my = ++seq;
     fetch("/api/place?q=" + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (d) {
       if (my !== seq) return;

@@ -105,6 +105,7 @@ module.exports = L.handler(async (req, res) => {
     if (state.phase === "off") throw new L.HttpError(409, "Le quiz n'a pas encore commencé.");
     const name = L.str(body.name, 24);
     if (!name) throw new L.HttpError(400, "Choisissez un pseudo.");
+    await L.rateLimit(req, "quiz-join", 200, 60);
     const count = await L.redis(["HLEN", K.players]);
     if (count >= 300) throw new L.HttpError(409, "Le quiz est complet.");
     const pid = crypto.randomUUID();

@@ -184,6 +184,22 @@ async function requireUser(req, { admin = false, allowMustChange = false } = {})
 
 /* ───────── HTTP ───────── */
 
+/* ───────── Limite de débit ───────── */
+
+// Sur Vercel, x-real-ip contient l'IP réelle du visiteur (non falsifiable par le client).
+function clientIp(req) {
+  return String(req.headers["x-real-ip"] || String(req.headers["x-forwarded-for"] || "").split(",")[0] || (req.socket && req.socket.remoteAddress) || "?").trim();
+}
+
+// Au plus `max` requêtes par IP et par fenêtre de `windowSec` secondes pour un même « seau ».
+// Les seuils sont larges : le jour J, toute la salle peut partager la même IP (wifi, 4G).
+async function rateLimit(req, bucket, max, windowSec) {
+  const key = "mc:rl:" + bucket + ":" + clientIp(req);
+  const hits = await redis(["INCR", key]);
+  if (hits === 1) await redis(["EXPIRE", key, windowSec]);
+  if (hits > max) throw new HttpError(429, "Trop de demandes. Réessayez dans un instant.");
+}
+
 async function readBody(req) {
   if (req.body !== undefined) {
     if (typeof req.body === "string") { try { return JSON.parse(req.body || "{}"); } catch (e) { return {}; } }
@@ -225,5 +241,5 @@ function str(v, max) {
 module.exports = {
   K, HttpError, redis, hgetallJson, hashPassword, verifyPassword, tempCode,
   ensureSeed, getUser, saveUser, publicUser, signSession, sessionCookie, requireUser,
-  readBody, send, handler, query, str,
+  readBody, send, handler, query, str, clientIp, rateLimit,
 };

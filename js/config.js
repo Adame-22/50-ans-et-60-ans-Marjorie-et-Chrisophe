@@ -30,6 +30,13 @@ window.EVENT = {
   // Sans identifiant, la police gratuite Monsieur La Doulaise est utilisée.
   adobeFontsKit: "",
 
+  // Page « Mentions légales & confidentialité » : contact pour les demandes
+  // (données, retrait d'une photo…) et, si vous le souhaitez, le nom de l'éditeur.
+  // Laissés vides : l'éditeur reste anonyme (autorisé pour un particulier, LCEN)
+  // et le contact renvoie vers les organisateurs.
+  contactLegal: "",
+  editeurLegal: "",
+
   // Playlist Spotify de la soirée (identifiant visible dans le lien
   // open.spotify.com/playlist/<identifiant>). Affichée sur la page /radio.
   spotifyPlaylist: "4uputorzDEUxb8xpZmzif9",

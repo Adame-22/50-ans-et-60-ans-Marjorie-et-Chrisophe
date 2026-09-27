@@ -59,6 +59,17 @@ Au premier appel, le site crée lui-même sa table `mc.kv`. Il n'y a aucun scrip
 
 Redis (Upstash) reste pris en charge en solution de repli (`KV_REST_API_URL` et `KV_REST_API_TOKEN`).
 
+## Sécurité et vie privée
+
+- **Aucune requête vers des services tiers** pour les polices et bibliothèques : elles sont hébergées sur le site (`assets/fonts`, `js/vendor`). Les seules exceptions sont le lecteur Spotify (page Radio) et la police Adobe, si elle est configurée.
+- **Site non référencé** par les moteurs de recherche (`X-Robots-Tag`, `robots.txt`).
+- **En-têtes de sécurité** définis dans `vercel.json` : nosniff, politique de référent, permissions, `frame-ancestors`.
+- **Limites anti-abus par IP** sur toutes les routes publiques. Les seuils sont larges, car toute la salle peut partager le même wifi.
+- **Mots de passe chiffrés** (scrypt), sessions signées et invalidées au changement de mot de passe, blocage après plusieurs échecs.
+- **Base de données** : table dans un schéma non exposé, avec la sécurité par ligne (RLS) activée.
+- **Page `/mentions-legales`** : mentions légales (LCEN), droits réservés, conditions d'utilisation, données personnelles (RGPD), cookies et crédits. Le contact et l'éditeur se règlent dans `js/config.js` (`contactLegal`, `editeurLegal`).
+- **Durée de conservation annoncée** : suppression des données du serveur au plus tard le 31 mars 2027.
+
 ## Voir le site en local
 
 Ouvrez `index.html` dans un navigateur pour voir la vitrine. Pour tester le formulaire et `/admin`, utilisez `vercel dev` : sans base Redis, un fichier JSON local sert de base de secours.

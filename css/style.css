@@ -663,6 +663,8 @@ h3 { font-size: 1.6rem; }
 .choice input:checked + span { border-color: var(--navy); background: var(--navy); color: var(--ivory); }
 .choice input:focus-visible + span { box-shadow: 0 0 0 4px rgba(166, 112, 70, .3); }
 .form-error { margin: 0; color: #a3412f; font-size: .9rem; }
+.consent { margin: 0; font-size: .78rem; line-height: 1.5; color: var(--muted); }
+.consent a { color: var(--gold); }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .btn[disabled] { opacity: .6; cursor: progress; transform: none; }
 

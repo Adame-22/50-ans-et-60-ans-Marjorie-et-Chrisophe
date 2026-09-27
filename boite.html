@@ -2,13 +2,12 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
+  <meta name="robots" content="noindex, nofollow" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Boîte noire · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/fonts.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/live.css" />
 </head>
@@ -41,10 +40,12 @@
       <div class="hp" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off" /></div>
       <p class="form-error" role="alert" hidden></p>
       <button class="btn btn--gold btn--block" type="submit">Enregistrer</button>
+      <p class="consent">Votre message et votre photo seront visibles sur le site et l'écran de la soirée, puis offerts à Marjorie &amp; Christophe. Ne publiez que des photos où chacun est d'accord pour apparaître. <a href="/mentions-legales#droits">Droits et retrait</a>.</p>
     </form>
 
     <div class="wall" id="bn-wall" aria-live="polite"></div>
   </main>
+  <p class="live__legal"><a href="/mentions-legales">Mentions légales &amp; confidentialité</a></p>
   <script src="js/boite.js"></script>
 </body>
 </html>

@@ -26,6 +26,7 @@ module.exports = L.handler(async (req, res) => {
     await L.ensureSeed();
     const username = L.str(body.username, 40).toLowerCase();
     const password = String(body.password || "");
+    await L.rateLimit(req, "login", 40, 900);
     const fails = parseInt(await L.redis(["GET", L.K.fail(username)]), 10) || 0;
     if (fails >= MAX_FAILS) throw new L.HttpError(429, "Trop de tentatives. Réessayez dans 15 minutes.");
 

@@ -1,7 +1,9 @@
 /*
  * /api/place?q=nom — « Trouver ma place » (public)
  * Renvoie au plus 6 invités confirmés dont le nom contient la recherche,
- * avec leur table et leurs voisins de table. Au moins 2 caractères requis.
+ * avec leur table et leurs voisins de table. Au moins 3 caractères requis,
+ * et 400 recherches par minute et par IP (assez pour une salle entière derrière
+ * le même wifi, trop peu pour aspirer la liste des invités à grande échelle).
  */
 const L = require("./_lib");
 
@@ -10,7 +12,8 @@ const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-
 module.exports = L.handler(async (req, res) => {
   if (req.method !== "GET") return L.send(res, 405, { error: "Méthode non autorisée." });
   const q = norm(L.query(req).get("q")).slice(0, 40);
-  if (q.length < 2) return L.send(res, 200, { results: [] });
+  if (q.length < 3) return L.send(res, 200, { results: [] });
+  await L.rateLimit(req, "place", 400, 60);
 
   const [rsvps, rawPlan] = await Promise.all([L.hgetallJson(L.K.rsvps), L.redis(["GET", L.K.seating])]);
   const plan = rawPlan ? JSON.parse(rawPlan) : { tables: [], assign: {} };

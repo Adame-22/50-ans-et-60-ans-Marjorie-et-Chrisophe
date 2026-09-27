@@ -41,10 +41,7 @@ module.exports = L.handler(async (req, res) => {
     }
     if (b.action === "add") {
       if (b.website) return L.send(res, 201, { ok: true });
-      const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "?").split(",")[0].trim();
-      const hits = await L.redis(["INCR", K.ip(ip)]);
-      if (hits === 1) await L.redis(["EXPIRE", K.ip(ip), 60]);
-      if (hits > 6) throw new L.HttpError(429, "Doucement ! Réessayez dans une minute.");
+      await L.rateLimit(req, "radio", 80, 60);
       const title = L.str(b.title, 100), artist = L.str(b.artist, 80);
       if (!title) throw new L.HttpError(400, "Indiquez le titre de la chanson.");
       const key = norm(title) + "|" + norm(artist);
