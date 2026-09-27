@@ -121,3 +121,8 @@ form.live-card { display: grid; gap: 1rem; }
 .vote small { font-size: .55rem; letter-spacing: .1em; }
 .live .field .photo-btn { font: 500 .95rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--paper); padding: .8rem 1.1rem; }
 .live .field .photo-btn:hover { color: var(--gold-light); }
+
+/* ───────── Playlist Spotify ───────── */
+.spotify { display: grid; gap: .9rem; margin-bottom: 14px; }
+.spotify .live__tag { margin: 0; }
+.spotify__frame iframe { display: block; width: 100%; height: 352px; border: 0; border-radius: 12px; background: rgba(255, 251, 254, .06); }

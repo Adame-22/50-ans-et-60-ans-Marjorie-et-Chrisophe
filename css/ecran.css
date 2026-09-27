@@ -114,3 +114,7 @@ body.is-fullscreen .screen__fs { display: none; }
 .podium__step:nth-child(2) .podium__block { height: 32vh; background: var(--gold-light); animation-delay: 1.2s; }
 .podium__step:nth-child(3) .podium__block { height: 15vh; background: var(--gold); animation-delay: 0s; }
 @keyframes rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+.radio-slide.has-spotify { position: relative; }
+.radio-spotify { position: absolute; right: 0; bottom: 0; }
+.radio-spotify .qr__code { width: 10vw; }

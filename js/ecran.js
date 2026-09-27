@@ -18,7 +18,7 @@
     });
   }
   function qr(path) {
-    var url = location.origin + path;
+    var url = /^https?:/.test(path) ? path : location.origin + path;
     if (!window.qrcode) return '<div class="qr__code"></div>';
     var q = window.qrcode(0, "M");
     q.addData(url); q.make();
@@ -59,7 +59,9 @@
   }
   function slideRadio() {
     var top = songs.filter(function (s) { return !s.played; }).slice(0, 5);
-    return '<section class="slide radio-slide"><div class="center"><p class="eyebrow-xl">Radio de bord · /radio</p><h2 class="title-xl">Vos demandes</h2></div>' +
+    var pl = String(CFG.spotifyPlaylist || "").replace(/[^A-Za-z0-9]/g, "");
+    return '<section class="slide radio-slide' + (pl ? " has-spotify" : "") + '"><div class="center"><p class="eyebrow-xl">Radio de bord · /radio</p><h2 class="title-xl">Vos demandes</h2></div>' +
+      (pl ? '<div class="qr radio-spotify">' + qr("https://open.spotify.com/playlist/" + pl) + "<span>La playlist sur Spotify</span></div>" : "") +
       '<ol class="radio-list">' + top.map(function (s) {
         return "<li><div><b>" + esc(s.title) + "</b><small>" + esc(s.artist || "") + '</small></div><span class="votes">▲ ' + s.votes + "</span></li>";
       }).join("") + "</ol></section>";

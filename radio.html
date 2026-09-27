@@ -21,6 +21,12 @@
     <h1 class="live__title">Radio de bord</h1>
     <p class="live__sub">Proposez une chanson ou votez pour celles des autres passagers. Le DJ s'occupe du reste.</p>
 
+    <section class="live-card spotify" id="spotify" hidden>
+      <p class="live__tag">La playlist de la soirée</p>
+      <div class="spotify__frame"></div>
+      <a class="btn btn--gold btn--block" id="spotify-open" target="_blank" rel="noopener">Ouvrir dans Spotify</a>
+    </section>
+
     <form class="live-card" id="r-form" novalidate>
       <div class="field"><label for="r-title">Titre</label><input id="r-title" maxlength="100" placeholder="Ex. Les Champs-Élysées" /></div>
       <div class="field"><label for="r-artist">Artiste</label><input id="r-artist" maxlength="80" placeholder="Ex. Joe Dassin" /></div>
@@ -31,6 +37,7 @@
 
     <ol class="songs" id="r-list" aria-live="polite"></ol>
   </main>
+  <script src="js/config.js"></script>
   <script src="js/radio.js"></script>
 </body>
 </html>

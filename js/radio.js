@@ -12,6 +12,20 @@
   } catch (e) { voter = String(Math.random()).slice(2); mine = {}; }
   var songs = [];
 
+  // Playlist Spotify (lecteur intégré + lien vers l'application)
+  var playlist = String((window.EVENT || {}).spotifyPlaylist || "").replace(/[^A-Za-z0-9]/g, "");
+  if (playlist) {
+    var box = document.getElementById("spotify");
+    var frame = document.createElement("iframe");
+    frame.src = "https://open.spotify.com/embed/playlist/" + playlist + "?utm_source=generator&theme=0";
+    frame.title = "Playlist Spotify de la soirée";
+    frame.loading = "lazy";
+    frame.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+    box.querySelector(".spotify__frame").appendChild(frame);
+    document.getElementById("spotify-open").href = "https://open.spotify.com/playlist/" + playlist;
+    box.hidden = false;
+  }
+
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];

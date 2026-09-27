@@ -30,6 +30,10 @@ window.EVENT = {
   // Sans identifiant, la police gratuite Monsieur La Doulaise est utilisée.
   adobeFontsKit: "",
 
+  // Playlist Spotify de la soirée (identifiant visible dans le lien
+  // open.spotify.com/playlist/<identifiant>). Affichée sur la page /radio.
+  spotifyPlaylist: "4uputorzDEUxb8xpZmzif9",
+
   // Programme (« Plan de vol »). Les heures servent aussi, le jour J, à
   // afficher l'étape en cours sur le site et sur l'écran géant.
   // Une étape sans heure (ex. « Tard ») suit simplement la précédente.
