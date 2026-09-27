@@ -142,7 +142,7 @@
     $all(".panel").forEach(function (p) { p.hidden = p.id !== "tab-" + name; });
     history.replaceState(null, "", "#" + name);
     if (name === "manifeste") loadRsvps();
-    if (name === "cabine") loadCabin();
+    if (name === "cabine") startCabin(); else stopCabin();
     if (name === "comptes") loadUsers();
     if (name === "constellation") loadGraph(); else destroyGraph();
     if (name === "quiz") startQuizAdmin(); else stopQuizAdmin();
@@ -250,12 +250,17 @@
   }
 
   $("#m-export").addEventListener("click", function () {
+    api("/api/seating").catch(function () { return state.plan || { tables: [], assign: {} }; }).then(exportCsv);
+  });
+
+  function exportCsv(plan) {
     var tableOf = {};
-    if (state.plan) state.plan.tables.forEach(function (t) { tableOf[t.id] = t.name; });
-    var head = ["Nom", "Présence", "Passagers", "Repas spécial", "Allergies", "E-mail", "Message", "Rang / table", "Reçu le"];
+    plan.tables.forEach(function (t) { tableOf[t.id] = t.name; });
+    var head = ["Nom", "Présence", "Passagers", "Repas spécial", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
     var lines = [head.join(";")].concat(state.rsvps.map(function (r) {
-      var table = state.plan && state.plan.assign[r.id] ? tableOf[state.plan.assign[r.id]] : "";
-      return [r.nom, r.presence === "oui" ? "À bord" : "Au sol", r.passagers, r.repas, r.allergies, r.email, r.message, table, fmtDate(r.createdAt)]
+      var table = plan.assign[r.id] ? tableOf[plan.assign[r.id]] || "" : "";
+      return [r.nom, r.presence === "oui" ? "À bord" : "Au sol", r.passagers, r.repas, r.allergies, r.email, r.message, table,
+        r.arrivedAt ? fmtDate(r.arrivedAt) : "", fmtDate(r.createdAt)]
         .map(csvCell).join(";");
     }));
     // BOM pour qu'Excel lise correctement les accents
@@ -267,25 +272,51 @@
     a.click();
     a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-  });
-
-  /* ───────── Plan de cabine ───────── */
-  var sortables = [];
-  var saveTimer;
-
-  function loadCabin() {
-    return Promise.all([api("/api/rsvp"), api("/api/seating")]).then(function (res) {
-      state.rsvps = res[0].rsvps;
-      state.plan = res[1];
-      renderCabin();
-    }).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
   }
 
-  function paxHtml(r) {
+  /* ───────── Plan de cabine ─────────
+     Les invités se placent eux-mêmes (page /table). Ici : vue en direct + corrections par glisser-déposer.
+     Chaque déplacement est enregistré seul (PATCH), la liste des tables à part (PUT). */
+  var sortables = [];
+  var saveTimer, cabinTimer, cabinSig = "", seenAssign = null, pendingPatches = 0, tablesSaving = false;
+
+  function cabinSignature(rsvps, plan) {
+    return JSON.stringify([plan.tables, plan.assign, rsvps.map(function (r) { return [r.id, r.nom, r.passagers, r.presence, !!r.arrivedAt]; })]);
+  }
+
+  function loadCabin(quiet) {
+    return Promise.all([api("/api/rsvp"), api("/api/seating")]).then(function (res) {
+      var sig = cabinSignature(res[0].rsvps, res[1]);
+      state.rsvps = res[0].rsvps;
+      state.plan = res[1];
+      if (!quiet || sig !== cabinSig) renderCabin();
+      cabinSig = sig;
+    }).catch(function (e) { if (!onAuthError(e) && !quiet) toast(e.message, true); });
+  }
+
+  function cabinBusy() {
+    var a = document.activeElement;
+    return document.body.classList.contains("is-dragging") || pendingPatches > 0 || tablesSaving ||
+      (a && a.closest && a.closest("#c-rows") && a.tagName === "INPUT");
+  }
+
+  function startCabin() {
+    stopCabin();
+    loadCabin();
+    cabinTimer = setInterval(function () {
+      if (!document.hidden && !cabinBusy()) loadCabin(true);
+    }, 5000);
+  }
+  function stopCabin() { clearInterval(cabinTimer); seenAssign = null; }
+
+  function paxHtml(r, isNew) {
+    var src = state.plan.src && state.plan.src[r.id];
     var meal = r.repas && r.repas !== "Standard" ? '<span class="pax__meal">' + esc(r.repas) + "</span>" : "";
-    var title = r.allergies ? ' title="Allergies : ' + esc(r.allergies) + '"' : "";
-    return '<div class="pax" data-id="' + esc(r.id) + '"' + title + "><b>" + esc(r.nom) + "</b>" +
-      '<span class="pax__n">×' + r.passagers + "</span>" + meal + (r.allergies ? " ⚠" : "") + "</div>";
+    var title = (r.allergies ? "Allergies : " + r.allergies + " · " : "") + (src === "invite" ? "S'est installé·e depuis son téléphone" : src === "equipage" ? "Placé·e par l'équipage" : "");
+    return '<div class="pax' + (r.arrivedAt ? " pax--arrived" : "") + (isNew ? " is-new" : "") + '" data-id="' + esc(r.id) + '"' +
+      (title ? ' title="' + esc(title.replace(/ · $/, "")) + '"' : "") + "><b>" + esc(r.nom) + "</b>" +
+      '<span class="pax__n">×' + r.passagers + "</span>" + meal + (r.allergies ? " ⚠" : "") +
+      "</div>";
   }
 
   function renderCabin() {
@@ -296,20 +327,25 @@
       .sort(function (a, b) { return a.nom.localeCompare(b.nom, "fr"); });
     var ids = {};
     plan.tables.forEach(function (t) { ids[t.id] = true; });
+    // surligne ceux qui viennent de changer de table depuis le dernier affichage
+    var fresh = {};
+    if (seenAssign) Object.keys(plan.assign).forEach(function (k) { if (seenAssign[k] !== plan.assign[k]) fresh[k] = true; });
+    seenAssign = Object.assign({}, plan.assign);
 
-    var pool = confirmed.filter(function (r) { return !ids[plan.assign[r.id]]; });
-    $("#c-pool").innerHTML = pool.map(paxHtml).join("");
+    var pool = confirmed.filter(function (r) { return !ids[plan.assign[r.id]]; })
+      .sort(function (a, b) { return (b.arrivedAt ? 1 : 0) - (a.arrivedAt ? 1 : 0); });
+    $("#c-pool").innerHTML = pool.map(function (r) { return paxHtml(r, false); }).join("");
 
     $("#c-rows").innerHTML = plan.tables.map(function (t) {
       var inRow = confirmed.filter(function (r) { return plan.assign[r.id] === t.id; });
       return '<div class="row" data-row="' + esc(t.id) + '">' +
         '<div class="row__head">' +
-        '<input class="row__name" value="' + esc(t.name) + '" aria-label="Nom du rang" maxlength="40" />' +
+        '<input class="row__name" value="' + esc(t.name) + '" aria-label="Nom de la table" maxlength="40" />' +
         '<span class="row__count"></span>' +
         '<input class="row__seats" type="number" min="1" max="40" value="' + t.seats + '" aria-label="Nombre de places" title="Places" />' +
-        '<button class="row__del" type="button" title="Supprimer ce rang" aria-label="Supprimer ce rang">×</button>' +
+        '<button class="row__del" type="button" title="Supprimer cette table" aria-label="Supprimer cette table">×</button>' +
         "</div>" +
-        '<div class="dropzone" data-table="' + esc(t.id) + '">' + inRow.map(paxHtml).join("") + "</div>" +
+        '<div class="dropzone" data-table="' + esc(t.id) + '">' + inRow.map(function (r) { return paxHtml(r, fresh[r.id]); }).join("") + "</div>" +
         "</div>";
     }).join("");
 
@@ -324,8 +360,11 @@
           var id = evt.item.getAttribute("data-id");
           var table = zone.getAttribute("data-table");
           if (table) state.plan.assign[id] = table; else delete state.plan.assign[id];
+          if (!state.plan.src) state.plan.src = {};
+          if (table) state.plan.src[id] = "equipage"; else delete state.plan.src[id];
+          seenAssign[id] = table || undefined;
           updateCounts();
-          scheduleSave();
+          saveAssign(id, table);
         },
       }));
     });
@@ -340,13 +379,24 @@
   }
 
   function updateCounts() {
-    $("#c-pool-count").textContent = paxCount($("#c-pool"));
+    var pool = paxCount($("#c-pool"));
+    $("#c-pool-count").textContent = pool;
+    var seated = 0, full = 0;
     $all(".row").forEach(function (row) {
       var t = state.plan.tables.find(function (x) { return x.id === row.getAttribute("data-row"); });
       var n = paxCount($(".dropzone", row));
+      seated += n;
+      if (n >= t.seats) full++;
       $(".row__count", row).textContent = n + " / " + t.seats;
       row.classList.toggle("is-full", n > t.seats);
     });
+    var total = seated + pool;
+    var pct = total ? Math.round((seated / total) * 100) : 0;
+    $("#c-stats").innerHTML =
+      '<div><strong>' + seated + "</strong><span>à table</span></div>" +
+      '<div><strong>' + pool + "</strong><span>pas encore à table</span></div>" +
+      '<div><strong>' + state.plan.tables.length + "</strong><span>tables" + (full ? " · " + full + " complète" + (full > 1 ? "s" : "") : "") + "</span></div>" +
+      '<div class="cabin-stats__bar" role="img" aria-label="' + pct + ' % des passagers sont à table"><i style="width:' + pct + '%"></i><em>' + pct + " %</em></div>";
   }
 
   function setSaveState(text, cls) {
@@ -355,13 +405,36 @@
     el.className = "save-state" + (cls ? " " + cls : "");
   }
 
+  function saveAssign(id, table) {
+    pendingPatches++;
+    setSaveState("Enregistrement…");
+    api("/api/seating", { method: "PATCH", body: { id: id, table: table || null } })
+      .then(function () { setSaveState("Enregistré ✓", "is-ok"); })
+      .catch(function (e) {
+        if (onAuthError(e)) return;
+        setSaveState("Échec de l'enregistrement", "is-err");
+        toast(e.message, true);
+      })
+      .then(function () {
+        pendingPatches--;
+        if (!pendingPatches) loadCabin(true);
+      });
+  }
+
+  // Noms et nombre de places des tables : enregistrés ensemble, avec un léger délai pendant la saisie
   function scheduleSave() {
     setSaveState("Enregistrement…");
     clearTimeout(saveTimer);
+    tablesSaving = true;
     saveTimer = setTimeout(function () {
-      api("/api/seating", { method: "PUT", body: state.plan })
-        .then(function (plan) { state.plan = plan; setSaveState("Enregistré ✓", "is-ok"); })
-        .catch(function (e) { if (!onAuthError(e)) setSaveState("Échec de l'enregistrement", "is-err"); });
+      api("/api/seating", { method: "PUT", body: { tables: state.plan.tables } })
+        .then(function (d) {
+          state.plan.tables = d.tables;
+          state.plan.assign = d.assign;
+          setSaveState("Enregistré ✓", "is-ok");
+        })
+        .catch(function (e) { if (!onAuthError(e)) setSaveState("Échec de l'enregistrement", "is-err"); })
+        .then(function () { tablesSaving = false; });
     }, 500);
   }
 
@@ -370,7 +443,7 @@
     if (!row) return;
     var t = state.plan.tables.find(function (x) { return x.id === row.getAttribute("data-row"); });
     if (e.target.classList.contains("row__name")) t.name = e.target.value;
-    if (e.target.classList.contains("row__seats")) t.seats = Math.max(1, parseInt(e.target.value, 10) || 1);
+    if (e.target.classList.contains("row__seats")) t.seats = Math.min(40, Math.max(1, parseInt(e.target.value, 10) || 1));
     updateCounts();
     scheduleSave();
   });
@@ -379,7 +452,7 @@
     if (!e.target.classList.contains("row__del")) return;
     var id = e.target.closest(".row").getAttribute("data-row");
     var t = state.plan.tables.find(function (x) { return x.id === id; });
-    if (!confirm("Supprimer « " + t.name + " » ? Ses passagers retourneront dans la liste « À placer ».")) return;
+    if (!confirm("Supprimer « " + t.name + " » ? Les passagers installés à cette table repasseront dans « Pas encore à table », et son QR code ne fonctionnera plus.")) return;
     state.plan.tables = state.plan.tables.filter(function (x) { return x.id !== id; });
     Object.keys(state.plan.assign).forEach(function (k) { if (state.plan.assign[k] === id) delete state.plan.assign[k]; });
     renderCabin();
@@ -387,7 +460,11 @@
   });
 
   $("#c-add").addEventListener("click", function () {
-    state.plan.tables.push({ id: "t" + Date.now().toString(36), name: "Rang " + (state.plan.tables.length + 1), seats: 8 });
+    var used = {};
+    state.plan.tables.forEach(function (t) { used[t.name] = true; });
+    var n = state.plan.tables.length + 1;
+    while (used["Table " + n]) n++;
+    state.plan.tables.push({ id: "t" + Date.now().toString(36), name: "Table " + n, seats: 8 });
     renderCabin();
     scheduleSave();
     var rows = $all(".row");
@@ -432,7 +509,7 @@
       var h;
       if (graphGroup === "table") {
         var t = state.plan.assign[r.id];
-        h = tableName[t] ? hub(t, tableName[t]) : hub("_none", "À placer");
+        h = tableName[t] ? hub(t, tableName[t]) : hub("_none", "Pas encore à table");
       } else {
         var m = r.repas || "Standard";
         h = hub(m, m);
@@ -446,7 +523,7 @@
 
     var pax = confirmed.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
     $("#g-stats").textContent = confirmed.length + " réponse" + (confirmed.length > 1 ? "s" : "") + " à bord · " + pax + " passager" + (pax > 1 ? "s" : "");
-    $("#g-hub-label").textContent = graphGroup === "table" ? "Table (rang)" : "Type de repas";
+    $("#g-hub-label").textContent = graphGroup === "table" ? "Table" : "Type de repas";
     $("#g-empty").hidden = confirmed.length > 0;
 
     graph = window.McGraph.mount($("#g-canvas"), { nodes: nodes, links: links }, { onSelect: showGraphInfo });
@@ -462,7 +539,7 @@
       '<p class="eyebrow">Passager</p><h3>' + esc(r.nom) + "</h3>" +
       "<dl>" +
       "<div><dt>Personnes</dt><dd>" + r.passagers + "</dd></div>" +
-      "<div><dt>Table</dt><dd>" + (table ? esc(table.name) : "À placer") + "</dd></div>" +
+      "<div><dt>Table</dt><dd>" + (table ? esc(table.name) : "Pas encore à table") + "</dd></div>" +
       "<div><dt>Repas</dt><dd>" + esc(r.repas || "Standard") + "</dd></div>" +
       (r.allergies ? "<div><dt>Allergies</dt><dd>" + esc(r.allergies) + "</dd></div>" : "") +
       (r.message ? '<div class="wide"><dt>Message</dt><dd>' + esc(r.message) + "</dd></div>" : "") +

@@ -24,7 +24,7 @@ Toutes les informations pratiques se trouvent dans **`js/config.js`** : date, he
 Espace privé pour suivre la fête :
 
 - **Manifeste** : toutes les réponses en direct, avec compteurs (passagers à bord, repas spéciaux…), recherche, ajout manuel et export Excel.
-- **Plan de cabine** : glisser-déposer des invités confirmés dans les rangs (tables), avec enregistrement automatique.
+- **Plan de cabine** : qui est à quelle table, en direct. Personne n'est placé à l'avance : chaque invité s'installe où il veut et le signale en scannant le QR code de sa table. L'équipage peut corriger par glisser-déposer, renommer les tables, en ajouter ou en retirer.
 - **Comptes** (commandants uniquement) : créer des comptes, changer les rôles, générer un nouveau code, supprimer.
 
 Deux rôles existent : **Commandant**, qui a accès à tout, et **Équipage**, qui voit le manifeste et le plan mais ne gère pas les comptes.
@@ -35,11 +35,11 @@ Les comptes de Marjorie, Christophe, Lucie et Adame sont créés automatiquement
 
 | Page | Pour qui | À quoi ça sert |
 |---|---|---|
-| `/place` | Invités | Taper son nom pour trouver son rang (table) et ses voisins |
+| `/table?t=t1` | Invités | « À table ! » : QR code posé sur chaque table. L'invité tape son nom (ou s'ajoute s'il n'est pas dans la liste) et voit qui est à sa table. S'installer vaut pointage d'arrivée. L'ancienne adresse `/place` y mène aussi. |
 | `/boite` | Invités | La « Boîte noire » : laisser un message et/ou une photo |
 | `/radio` | Invités | Proposer des chansons et voter ; le DJ suit l'onglet Radio de l'admin |
 | `/quiz` | Invités | Quiz en direct façon Kahoot, sur téléphone |
-| `/ecran` | TV / vidéoprojecteur | Diaporama (photos, messages, QR codes, étape en cours, radio) qui bascule tout seul sur le quiz |
+| `/ecran` | TV / vidéoprojecteur | Diaporama (photos, messages, QR codes, qui est à quelle table, étape en cours, radio) qui bascule tout seul sur le quiz |
 
 Dans l'admin :
 - **Quiz** : préparer les questions, puis piloter en direct (embarquement → question → réponse → classement → podium).

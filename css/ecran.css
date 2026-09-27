@@ -115,6 +115,28 @@ body.is-fullscreen .screen__fs { display: none; }
 .podium__step:nth-child(3) .podium__block { height: 15vh; background: var(--gold); animation-delay: 0s; }
 @keyframes rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 
+/* ───────── À table ───────── */
+.tables-slide { grid-template-rows: auto 1fr; gap: 3vh; }
+.tables-slide__head { display: flex; justify-content: space-between; align-items: center; gap: 3vw; }
+.tables-slide__head .qr { grid-template-columns: auto 12vw; align-items: center; justify-items: start; gap: 1.2vw; }
+.tables-slide__head .qr__code { width: 9vw; }
+.tables-slide__head .qr span { font-size: 1.05vw; line-height: 1.4; }
+.tables-slide__sub { font-family: var(--mono); font-size: 1.2vw; letter-spacing: .2em; text-transform: uppercase; color: rgba(255, 251, 254, .6); margin: 1.4vh 0 0; }
+.tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16.5vw, 1fr)); gap: 1.2vw; align-content: start; min-height: 0; overflow: hidden; }
+.tcard { border-radius: 1vw; padding: 1.6vh 1.2vw; background: rgba(255, 251, 254, .07); border: 1px solid rgba(255, 251, 254, .1); animation: slide-in .6s var(--ease) both; }
+.tcard.is-empty { opacity: .5; }
+.tcard__head { display: flex; justify-content: space-between; align-items: baseline; gap: 1vw; }
+.tcard__head b { font-family: var(--serif); font-size: 1.9vw; font-weight: 500; }
+.tcard__head span { font-family: var(--mono); font-size: 1.1vw; color: var(--gold-light); white-space: nowrap; }
+.tables-grid.is-dense { grid-template-columns: repeat(auto-fill, minmax(13.5vw, 1fr)); gap: 1vw; }
+.is-dense .tcard { padding: 1.2vh 1vw; }
+.is-dense .tcard__head b { font-size: 1.5vw; }
+.is-dense .tcard__names { font-size: .95vw; -webkit-line-clamp: 3; }
+.tcard__fill { height: .6vh; border-radius: 1vh; background: rgba(255, 251, 254, .12); overflow: hidden; margin: 1vh 0 1.2vh; }
+.tcard__fill i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); animation: grow 1.4s var(--ease) both .3s; transform-origin: left; }
+@keyframes grow { from { transform: scaleX(0); } }
+.tcard__names { margin: 0; font-size: 1.05vw; line-height: 1.5; color: rgba(255, 251, 254, .82); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+
 .radio-slide.has-spotify { position: relative; }
 .radio-spotify { position: absolute; right: 0; bottom: 0; }
 .radio-spotify .qr__code { width: 10vw; }

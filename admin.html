@@ -140,15 +140,19 @@
     <!-- Plan de cabine -->
     <section class="panel" id="tab-cabine" role="tabpanel" hidden>
       <div class="toolbar">
-        <p class="hint">Glissez les passagers confirmés dans les rangs (tables). Chaque déplacement est enregistré automatiquement.</p>
+        <p class="hint">Les invités s'installent où ils veulent et le déclarent en scannant le QR code de leur table&nbsp;: le plan se remplit tout seul, en direct. Vous pouvez corriger en faisant glisser un passager.</p>
         <span class="toolbar__grow"></span>
         <span class="save-state" id="c-state"></span>
-        <button class="btn btn--small btn--line" id="c-add">+ Ajouter un rang</button>
+        <a class="btn btn--small btn--line" href="/qr" target="_blank" rel="noopener">QR codes des tables</a>
+        <button class="btn btn--small btn--line" id="c-add" type="button">+ Ajouter une table</button>
       </div>
+
+      <div class="cabin-stats" id="c-stats" aria-live="polite"></div>
 
       <div class="cabin">
         <aside class="card cabin__pool">
-          <h3>À placer <span class="pill" id="c-pool-count">0</span></h3>
+          <h3>Pas encore à table <span class="pill" id="c-pool-count">0</span></h3>
+          <p class="hint hint--tiny">Les passagers déjà arrivés (pointés à l'accueil) sont en tête, avec un liseré doré.</p>
           <div class="dropzone dropzone--pool" id="c-pool" data-table=""></div>
         </aside>
 

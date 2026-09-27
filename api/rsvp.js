@@ -7,6 +7,7 @@
  */
 const crypto = require("crypto");
 const L = require("./_lib");
+const T = require("./_seating");
 
 const REPAS = ["Standard", "Végétarien", "Végétalien", "Sans gluten", "Sans porc", "Enfant", "Autre"];
 
@@ -56,6 +57,7 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "DELETE") {
     const id = L.str(L.query(req).get("id"), 64);
     await L.redis(["HDEL", L.K.rsvps, id]);
+    await T.setAssign(id, null);
     return L.send(res, 200, { ok: true });
   }
 

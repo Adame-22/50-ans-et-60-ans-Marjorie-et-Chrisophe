@@ -9,7 +9,8 @@
   var SHAPES = ["▲", "◆", "●", "■"];
   var stage = document.getElementById("stage");
   var quiz = null, offset = 0, quizKey = "", timerRaf = 0;
-  var entries = [], songs = [], shown = {};
+  var entries = [], songs = [], shown = {}, seating = null;
+  var ROTATION = ["info", "tables", "entry", "entry", "radio", "entry", "tables", "entry"];
   var slideTimer = 0, slideIdx = 0, bnIdx = 0, inQuiz = false;
 
   function esc(s) {
@@ -44,7 +45,7 @@
       : "Bienvenue à bord<small>Vol MC 5060 · " + esc(CFG.lieu || "") + "</small>";
     return '<section class="slide info-slide"><p class="step">' + line + "</p>" +
       '<div class="qr-row">' +
-      '<div class="qr">' + qr("/place") + "<b>Trouver ma place</b><span>/place</span></div>" +
+      '<div class="qr">' + qr("/table") + "<b>À table&nbsp;!</b><span>/table</span></div>" +
       '<div class="qr">' + qr("/boite") + "<b>La Boîte noire</b><span>/boite</span></div>" +
       '<div class="qr">' + qr("/radio") + "<b>Radio de bord</b><span>/radio</span></div>" +
       '<div class="qr">' + qr("/quiz") + "<b>Quiz de bord</b><span>/quiz</span></div>" +
@@ -67,6 +68,21 @@
       }).join("") + "</ol></section>";
   }
 
+  function slideTables() {
+    var d = seating;
+    var head = d.seated + " passager" + (d.seated > 1 ? "s" : "") + " à table" + (d.expected ? " sur " + d.expected + " attendus" : "");
+    return '<section class="slide tables-slide"><div class="tables-slide__head">' +
+      '<div><p class="eyebrow-xl">À table&nbsp;!</p><h2 class="title-xl">Qui est à quelle table&nbsp;?</h2><p class="tables-slide__sub">' + head + "</p></div>" +
+      '<div class="qr">' + qr("/table") + "<span>Pas encore signalé&nbsp;? Scannez le QR code posé sur votre table</span></div></div>" +
+      '<div class="tables-grid' + (d.tables.length > 10 ? " is-dense" : "") + '">' + d.tables.map(function (t, i) {
+        var pct = Math.min(100, Math.round((t.count / Math.max(1, t.seats)) * 100));
+        return '<div class="tcard' + (t.count ? "" : " is-empty") + '" style="animation-delay:' + (i * 0.06).toFixed(2) + 's">' +
+          '<div class="tcard__head"><b>' + esc(t.name) + "</b><span>" + t.count + " / " + t.seats + "</span></div>" +
+          '<div class="tcard__fill"><i style="width:' + pct + '%"></i></div>' +
+          '<p class="tcard__names">' + (t.people.length ? t.people.map(function (p) { return esc(p.nom) + (p.passagers > 1 ? " ×" + p.passagers : ""); }).join(" · ") : "En attente de passagers") + "</p></div>";
+      }).join("") + "</div></section>";
+  }
+
   function nextEntry() {
     if (!entries.length) return null;
     // priorité aux messages jamais affichés
@@ -79,22 +95,29 @@
   function nextSlide() {
     clearTimeout(slideTimer);
     if (inQuiz) return;
-    var html, dur = 9000;
-    var step = slideIdx++ % 8;
-    if (step === 0 || !entries.length && !(step === 4 && songs.length)) html = slideInfo();
-    else if (step === 4 && songs.length) html = slideRadio();
-    else {
-      var e = nextEntry();
-      html = e ? slideEntry(e) : slideInfo();
-      if (e && e.photo) dur = 11000;
+    var html = "", dur = 9000;
+    // chaque type de diapositive n'est montré que s'il a du contenu
+    for (var tries = 0; !html && tries < ROTATION.length; tries++) {
+      var kind = ROTATION[slideIdx++ % ROTATION.length];
+      if (kind === "info") html = slideInfo();
+      else if (kind === "tables" && seating && seating.seated > 0) { html = slideTables(); dur = 13000; }
+      else if (kind === "radio" && songs.length) html = slideRadio();
+      else if (kind === "entry") {
+        var e = nextEntry();
+        if (e) { html = slideEntry(e); if (e.photo) dur = 11000; }
+      }
     }
-    stage.innerHTML = html;
+    stage.innerHTML = html || slideInfo();
     slideTimer = setTimeout(nextSlide, dur);
   }
 
   function loadEntries() {
     getJson("/api/boite").then(function (d) { entries = d.entries || []; }).catch(function () {})
       .then(function () { setTimeout(loadEntries, 12000); });
+  }
+  function loadTables() {
+    getJson("/api/tables").then(function (d) { if (d && d.tables) seating = d; }).catch(function () {})
+      .then(function () { setTimeout(loadTables, 10000); });
   }
   function loadSongs() {
     getJson("/api/radio").then(function (d) { songs = d.songs || []; }).catch(function () {})
@@ -211,6 +234,7 @@
 
   loadEntries();
   loadSongs();
+  loadTables();
   pollQuiz();
   setTimeout(function () { if (!inQuiz) nextSlide(); }, 400);
 })();

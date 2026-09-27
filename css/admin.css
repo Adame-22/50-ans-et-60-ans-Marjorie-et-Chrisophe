@@ -67,7 +67,7 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .tabs button:hover { color: var(--ivory); }
 .tabs button[aria-selected="true"] { color: var(--gold-light); border-bottom-color: var(--gold); }
 
-.panel { width: min(1240px, 100% - 32px); margin: 28px auto 60px; display: grid; gap: 20px; }
+.panel { width: min(1240px, 100% - 32px); margin: 28px auto 60px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 
 .card {
   background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
@@ -141,15 +141,16 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .pill { display: inline-block; min-width: 1.6em; padding: .1rem .5rem; border-radius: 999px; background: var(--navy); color: var(--gold-light); font-family: var(--mono); font-size: .75rem; text-align: center; vertical-align: middle; }
 
 /* ───────── Plan de cabine ───────── */
-.cabin { display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start; }
-@media (max-width: 860px) { .cabin { grid-template-columns: 1fr; } }
+.cabin { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .cabin { grid-template-columns: minmax(0, 1fr); } }
 .cabin__pool { position: sticky; top: 16px; }
 @media (max-width: 860px) { .cabin__pool { position: static; } }
 .cabin__pool h3 { display: flex; align-items: center; gap: .6rem; }
 
 .dropzone { display: flex; flex-wrap: wrap; gap: 8px; min-height: 52px; align-content: flex-start; border-radius: 10px; }
 .dropzone--pool { flex-direction: column; flex-wrap: nowrap; min-height: 120px; max-height: 70vh; overflow-y: auto; padding: 4px; }
-.dropzone--pool:empty::after { content: "Tout le monde est placé ✓"; color: var(--muted); font-size: .9rem; padding: 1rem .2rem; }
+.dropzone--pool:empty::after { content: "Tout le monde est à table ✓"; color: var(--muted); font-size: .9rem; padding: 1rem .2rem; }
+.hint--tiny { font-size: .78rem; margin: -.2rem 0 .8rem; }
 
 .pax {
   display: flex; align-items: center; gap: .5rem;
@@ -162,6 +163,13 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .pax__n { font-family: var(--mono); font-size: .72rem; color: var(--gold); }
 .pax__meal { font-size: .72rem; color: #7d5233; background: #f5e6da; border-radius: 6px; padding: .05rem .4rem; }
 .pax.sortable-ghost { opacity: .35; }
+.dropzone--pool .pax--arrived { box-shadow: inset 3px 0 0 var(--gold-light); }
+.pax.is-new { animation: pax-new 2.4s var(--ease); }
+@keyframes pax-new {
+  0% { transform: scale(.7); opacity: 0; background: var(--gold-light); }
+  25% { transform: scale(1.06); opacity: 1; background: #ffe3a6; }
+  100% { transform: none; background: var(--paper); }
+}
 .pax.sortable-chosen { box-shadow: 0 10px 20px -10px rgba(0, 0, 51, .5); }
 
 .fuselage { max-width: 680px; width: 100%; margin: 0 auto; }
@@ -192,7 +200,7 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .row.is-full .row__count { color: #a3412f; }
 .row__head { display: flex; align-items: center; gap: .6rem; margin-bottom: 8px; }
 .row__name {
-  flex: 1; min-width: 0; border: 0; background: transparent; padding: .2rem .3rem; border-radius: 6px;
+  flex: 1; min-width: 0; width: 0; border: 0; background: transparent; padding: .2rem .3rem; border-radius: 6px;
   font-family: var(--serif); font-size: 1.3rem; font-weight: 500; color: var(--ink);
 }
 .row__name:focus { outline: none; background: #fff; box-shadow: 0 0 0 2px rgba(166, 112, 70, .35); }
@@ -200,7 +208,16 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .row__seats { width: 3.4em; font: inherit; font-family: var(--mono); font-size: .75rem; padding: .2rem .3rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .row__del { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 1.1rem; line-height: 1; padding: .2rem .4rem; border-radius: 6px; }
 .row__del:hover { color: #a3412f; background: #f3e6e2; }
-.row .dropzone:empty::after { content: "Glissez des passagers ici"; color: #b7b0a2; font-size: .85rem; padding: .8rem .2rem; }
+.row .dropzone:empty::after { content: "Personne pour l'instant"; color: #b7b0a2; font-size: .85rem; padding: .8rem .2rem; }
+
+.cabin-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin: 0 0 18px; }
+.cabin-stats div { display: grid; gap: .35rem; }
+.cabin-stats strong { font-family: var(--serif); font-size: 2rem; font-weight: 500; line-height: 1; }
+.cabin-stats span { font-family: var(--mono); font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.cabin-stats__bar { position: relative; flex: 1 1 220px; height: 10px; border-radius: 10px; background: var(--line); overflow: visible; }
+.cabin-stats__bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--gold), var(--gold-light)); transition: width .8s var(--ease); }
+.cabin-stats__bar em { position: absolute; right: 0; top: -1.5rem; font-style: normal; font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .pax.is-new { animation: none; } .cabin-stats__bar i { transition: none; } }
 
 /* ───────── Constellation ───────── */
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: #fff; padding: 3px; }

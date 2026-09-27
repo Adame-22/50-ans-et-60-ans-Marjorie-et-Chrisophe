@@ -702,3 +702,31 @@ h3 { font-size: 1.6rem; }
   .star, .shooting, .cloud { animation: none; }
   .ch__leaf, .stamp { animation: none; }
 }
+
+/* ───────── Effets (voir js/fx.js) ───────── */
+.fx-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+.fx-plane { position: fixed; left: 0; top: 0; z-index: 998; width: 40px; height: 40px; color: var(--gold-light); pointer-events: none; filter: drop-shadow(0 4px 12px rgba(0, 0, 0, .35)); }
+.fx-plane svg { width: 100%; height: 100%; display: block; }
+.fx-plane i { position: absolute; left: 50%; top: 100%; width: 2px; height: 120px; margin-left: -1px; background: linear-gradient(180deg, rgba(255, 251, 254, .7), transparent); border-radius: 2px; }
+.fx-rise { animation: fx-rise .6s var(--ease) both; }
+@keyframes fx-rise { from { opacity: 0; transform: translateY(14px); } }
+.fx-pop { animation: fx-pop .45s cubic-bezier(.3, 1.4, .5, 1) both; }
+@keyframes fx-pop { from { opacity: 0; transform: scale(.6); } }
+.fx-land { animation: fx-land 1.1s cubic-bezier(.2, .9, .3, 1.15) both; }
+@keyframes fx-land {
+  0% { opacity: 0; transform: translateY(-60px) scale(.85) rotate(-3deg); }
+  55% { opacity: 1; transform: translateY(6px) scale(1.03) rotate(.5deg); }
+  100% { transform: none; }
+}
+.fx-press { position: relative; overflow: hidden; transition: transform .15s var(--ease); }
+.fx-press:active { transform: scale(.97); }
+.fx-ripple {
+  position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, .45) 0%, rgba(255, 255, 255, 0) 70%);
+  transform: scale(0); opacity: 1; animation: fx-ripple .7s ease-out forwards;
+}
+@keyframes fx-ripple { to { transform: scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .fx-rise, .fx-pop, .fx-land { animation: none; }
+  .fx-ripple { display: none; }
+}
