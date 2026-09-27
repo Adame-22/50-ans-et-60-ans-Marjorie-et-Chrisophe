@@ -187,7 +187,8 @@
       var yesR = r.presence === "oui";
       return "<tr>" +
         "<td>" + (yesR ? '<button class="checkin-btn' + (r.arrivedAt ? " is-in" : "") + '" data-checkin="' + esc(r.id) + '" title="' + (r.arrivedAt ? "Arrivé à " + fmtDate(r.arrivedAt) : "Pointer l'arrivée") + '" aria-label="Pointer l\'arrivée de ' + esc(r.nom) + '">✓</button>' : "") + "</td>" +
-        "<td><b>" + esc(r.nom) + "</b>" + (r.email ? "<small>" + esc(r.email) + "</small>" : "") + "</td>" +
+        "<td><b>" + esc(r.nom) + "</b>" + (r.source === "sur place" ? ' <span class="tag tag--gold" title="Ajouté·e depuis la page À table !, le jour J">sur place</span>' : "") +
+        (r.email ? "<small>" + esc(r.email) + "</small>" : "") + "</td>" +
         "<td>" + (yesR ? '<span class="tag tag--ok">À bord</span>' : '<span class="tag tag--no">Au sol</span>') + "</td>" +
         "<td>" + (yesR ? r.passagers : "—") + "</td>" +
         "<td>" + (yesR ? (r.repas && r.repas !== "Standard" ? '<span class="tag tag--gold">' + esc(r.repas) + "</span>" : "Standard") : "—") + "</td>" +

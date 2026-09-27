@@ -46,9 +46,9 @@ function shuffle(a) {
 const pax = (p) => Math.max(1, p.passagers || 1);
 
 /* Lecture de tout ce qu'il faut pour résoudre les équipes */
-async function loadWorld() {
+async function loadWorld(cfgKnown) {
   const plan = await T.getPlan();
-  const [assign, rsvps, cfg] = await Promise.all([T.getAssign(), L.hgetallJson(L.K.rsvps), getConfig()]);
+  const [assign, rsvps, cfg] = await Promise.all([T.getAssign(), L.hgetallJson(L.K.rsvps), cfgKnown || getConfig()]);
   const people = Object.values(rsvps).filter((r) => r.presence === "oui");
   return { plan, assign, people, cfg };
 }
@@ -150,8 +150,9 @@ function publicView(r) {
 
 /* Classement du quiz par équipe : moyenne des points des joueurs de l'équipe */
 async function quizTeams(players) {
-  const world = await loadWorld();
-  if (!world.cfg.quiz) return null;
+  const cfg = await getConfig(); // lecture seule tant que le jeu par équipe est désactivé
+  if (!cfg.quiz) return null;
+  const world = await loadWorld(cfg);
   const r = resolve(world);
   const byTeam = {};
   r.teams.forEach((tm) => { byTeam[tm.id] = { id: tm.id, name: tm.name, color: tm.color, score: 0, players: 0, sum: 0 }; });

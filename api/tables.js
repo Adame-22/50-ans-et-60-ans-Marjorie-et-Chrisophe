@@ -72,6 +72,7 @@ module.exports = L.handler(async (req, res) => {
       const all = Object.values(await L.hgetallJson(L.K.rsvps));
       entry = all.find((r) => norm(r.nom) === norm(nom)) || null;
       if (!entry) {
+        await L.rateLimit(req, "tables-new", 150, 600); // ajouts sur place : toute la salle, pas plus
         entry = {
           id: crypto.randomUUID(), nom, presence: "oui",
           passagers: Math.min(12, Math.max(1, parseInt(b.passagers, 10) || 1)),

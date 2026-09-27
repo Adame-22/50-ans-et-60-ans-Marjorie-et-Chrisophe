@@ -29,6 +29,14 @@
     .legal__main th, .legal__main td { text-align: left; vertical-align: top; padding: .6rem .5rem; border-bottom: 1px solid var(--line); }
     .legal__main th { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
     .legal__main a { color: var(--gold); }
+    /* Petits écrans : chaque ligne du tableau devient une fiche */
+    @media (max-width: 560px) {
+      .legal__main thead { display: none; }
+      .legal__main tr { display: block; padding: .7rem 0; border-bottom: 1px solid var(--line); }
+      .legal__main td { display: block; padding: .1rem 0; border: 0; hyphens: auto; overflow-wrap: anywhere; }
+      .legal__main td:first-child { font-weight: 600; color: var(--ink); }
+      .legal__main td:last-child { color: var(--muted); }
+    }
     .note { background: var(--ivory); border-left: 3px solid var(--gold); padding: .8rem 1rem; border-radius: 0 8px 8px 0; }
   </style>
 </head>

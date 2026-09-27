@@ -25,6 +25,8 @@ Espace privé pour suivre la fête :
 
 - **Manifeste** : toutes les réponses en direct, avec compteurs (passagers à bord, repas spéciaux…), recherche, ajout manuel et export Excel.
 - **Plan de cabine** : qui est à quelle table, en direct. Personne n'est placé à l'avance : chaque invité s'installe où il veut et le signale en scannant le QR code de sa table. L'équipage peut corriger par glisser-déposer, renommer les tables, en ajouter ou en retirer.
+- **Constellation** : les invités en graphe façon Obsidian, regroupés par table, par équipe ou par repas.
+- **Équipes** : les équipes des jeux, construites à partir de qui est assis où (voir plus bas).
 - **Comptes** (commandants uniquement) : créer des comptes, changer les rôles, générer un nouveau code, supprimer.
 
 Deux rôles existent : **Commandant**, qui a accès à tout, et **Équipage**, qui voit le manifeste et le plan mais ne gère pas les comptes.
@@ -42,18 +44,40 @@ Les comptes de Marjorie, Christophe, Lucie et Adame sont créés automatiquement
 | `/ecran` | TV / vidéoprojecteur | Diaporama (photos, messages, QR codes, qui est à quelle table, étape en cours, radio) qui bascule tout seul sur le quiz |
 
 Dans l'admin :
-- **Quiz** : préparer les questions, puis piloter en direct (embarquement → question → réponse → classement → podium).
+- **Plan de cabine** : se remplit tout seul quand les invités scannent le QR code de leur table ; les nouveaux arrivants s'allument quelques secondes. Glisser un passager pour corriger.
+- **Équipes** : trois façons de former les équipes, puis un interrupteur pour les montrer aux invités et sur l'écran géant, et un autre pour le classement par équipe dans le quiz. Tant que rien n'est publié, les équipes restent secrètes.
+  - *Une table = une équipe* : automatique, suit le plan en direct.
+  - *Regrouper les tables* : N équipes de taille équivalente, chacun joue avec sa tablée sans bouger.
+  - *Mélanger les invités* : N équipes équilibrées qui mélangent les tables, sans jamais séparer une famille (une réponse = un groupe).
+  - Glisser une table (ou un invité) d'une équipe à l'autre pour ajuster ; cliquer sur un nom d'équipe pour le changer.
+- **Quiz** : préparer les questions, puis piloter en direct (embarquement → question → réponse → classement → podium). Avec le classement par équipe, chaque joueur est rattaché à son équipe grâce à la page « À table ! » (ou en choisissant sa table dans le salon du quiz) ; l'équipe gagne à la moyenne des points, et l'écran affiche le podium des équipes.
 - **Boîte noire** : supprimer un message ou une photo.
 - **Radio** : vue DJ, avec les chansons les plus votées en premier.
 - **Manifeste** : bouton ✓ pour pointer les arrivées à l'entrée.
 
 Le jour J, la page d'accueil et l'écran géant affichent l'étape en cours du programme, défini dans `js/config.js` (`programme`).
 
-Le quiz tient la charge : l'état du jeu est mis en cache une seconde par Vercel, donc les téléphones ne sollicitent presque pas le serveur, qu'il y ait 70 joueurs ou plus.
+### QR codes à imprimer
+
+`/qr` (lien « QR codes des tables » dans le Plan de cabine) prépare les impressions : **une carte A6 par table** (4 par feuille A4), qui ouvre directement la bonne table, puis une planche Boîte noire · Radio · Quiz · À table et deux affiches A4. Les cartes suivent la liste des tables du Plan de cabine : si vous ajoutez une table, réimprimez depuis le site en ligne. Une version prête à imprimer se trouve dans `imprimer/qr-codes-vol-mc5060.pdf` (10 tables).
+
+### Check-list du jour J
+
+1. **Avant** : imprimer `imprimer/qr-codes-vol-mc5060.pdf` (A4, sans marges), découper les cartes et en poser une sur chaque table ; afficher l'affiche « À table ! » à l'entrée.
+2. **Écran** : ouvrir `/ecran` sur la TV ou le vidéoprojecteur, cliquer sur « Plein écran ».
+3. **Accueil** : pointer les arrivées dans le Manifeste (bouton ✓). Un invité qui s'installe à table depuis son téléphone est pointé automatiquement.
+4. **Équipes** : une fois tout le monde assis, onglet Équipes → choisir la formule → « Générer » → activer « Montrer les équipes » et, pour le quiz, « Classement par équipe ».
+5. **Quiz** : onglet Quiz → Ouvrir l'embarquement → Question → Réponse → Classement… → Podium.
+
+Le quiz tient la charge : l'état du jeu est mis en cache une seconde par Vercel, donc les téléphones ne sollicitent presque pas le serveur, qu'il y ait 70 joueurs ou plus. Il en va de même pour la page « À table ! » : chaque placement est écrit à part, si bien que 70 invités peuvent s'installer au même moment sans s'écraser.
+
+### Animations
+
+Le site s'anime avec retenue : prénoms tracés à la plume, ciel en parallaxe, trajet d'avion dans la barre de navigation, carte d'embarquement inclinable, tampons sur les passeports, avion qui parcourt le plan de vol, confettis aux couleurs du vol. Tout est coupé automatiquement si le téléphone ou l'ordinateur demande moins d'animations (réglage d'accessibilité). Code : `js/motion.js` (page d'accueil) et `js/fx.js` (effets partagés).
 
 ### Base de données
 
-Les réponses, les comptes et le plan de cabine sont stockés dans **Supabase (Postgres)**, relié au projet depuis l'onglet **Storage** de Vercel. La variable `POSTGRES_URL` est ajoutée automatiquement.
+Les réponses, les comptes, les tables, les placements et les équipes sont stockés dans **Supabase (Postgres)**, relié au projet depuis l'onglet **Storage** de Vercel. La variable `POSTGRES_URL` est ajoutée automatiquement.
 
 Au premier appel, le site crée lui-même sa table `mc.kv`. Il n'y a aucun script SQL à lancer. La table est dans un schéma non exposé par l'API publique de Supabase et la sécurité par ligne (RLS) y est activée : seul le serveur du site peut la lire.
 
