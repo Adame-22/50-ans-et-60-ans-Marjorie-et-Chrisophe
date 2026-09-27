@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Radio de bord · Vol MC 5060</title>
+  <meta name="theme-color" content="#000033" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/live.css" />
+</head>
+<body class="live">
+  <header class="live__top">
+    <a href="/" class="nav__brand"><span class="nav__mono">M<span>&amp;</span>C</span></a>
+    <span class="live__tag">Fréquence MC 50.60</span>
+  </header>
+  <main class="live__main">
+    <h1 class="live__title">Radio de bord</h1>
+    <p class="live__sub">Proposez une chanson ou votez pour celles des autres passagers. Le DJ s'occupe du reste.</p>
+
+    <form class="live-card" id="r-form" novalidate>
+      <div class="field"><label for="r-title">Titre</label><input id="r-title" maxlength="100" placeholder="Ex. Les Champs-Élysées" /></div>
+      <div class="field"><label for="r-artist">Artiste</label><input id="r-artist" maxlength="80" placeholder="Ex. Joe Dassin" /></div>
+      <div class="hp" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off" /></div>
+      <p class="form-error" role="alert" hidden></p>
+      <button class="btn btn--gold btn--block" type="submit">Proposer</button>
+    </form>
+
+    <ol class="songs" id="r-list" aria-live="polite"></ol>
+  </main>
+  <script src="js/radio.js"></script>
+</body>
+</html>

@@ -147,6 +147,7 @@
     if (name === "constellation") loadGraph(); else destroyGraph();
     if (name === "quiz") startQuizAdmin(); else stopQuizAdmin();
     if (name === "boite") loadBoite();
+    if (name === "radio") startRadio(); else clearTimeout(radioTimer);
   }
   $all("[data-tab]").forEach(function (b) {
     b.addEventListener("click", function () { selectTab(b.getAttribute("data-tab")); });
@@ -581,6 +582,35 @@
     api("/api/boite?id=" + encodeURIComponent(id), { method: "DELETE" })
       .then(function () { toast("Supprimé."); e.target.closest(".bn-card").remove(); })
       .catch(function (err) { toast(err.message, true); });
+  });
+
+  /* ───────── Radio de bord (vue DJ) ───────── */
+  var radioTimer = 0;
+  function startRadio() {
+    clearTimeout(radioTimer);
+    fetch("/api/radio", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+      var songs = d.songs || [];
+      $("#radio-empty").hidden = songs.length > 0;
+      $("#radio-table tbody").innerHTML = songs.map(function (s) {
+        return '<tr style="' + (s.played ? "opacity:.45" : "") + '">' +
+          '<td><span class="pill">' + s.votes + "</span></td>" +
+          "<td><b>" + esc(s.title) + "</b></td><td>" + esc(s.artist || "—") + "</td><td>" + fmtDate(s.createdAt) + "</td>" +
+          '<td class="actions"><button class="btn btn--small btn--line" data-played="' + esc(s.id) + '" data-v="' + (s.played ? "0" : "1") + '">' + (s.played ? "Remettre" : "Jouée ✓") + "</button> " +
+          '<button class="btn btn--small btn--line btn--danger" data-song-del="' + esc(s.id) + '">Supprimer</button></td></tr>';
+      }).join("");
+    }).catch(function () { /* on réessaie */ }).then(function () {
+      if (!$("#tab-radio").hidden) radioTimer = setTimeout(startRadio, 5000);
+    });
+  }
+  $("#radio-table").addEventListener("click", function (e) {
+    var played = e.target.getAttribute("data-played"), del = e.target.getAttribute("data-song-del");
+    if (played) {
+      api("/api/radio", { method: "PATCH", body: { id: played, played: e.target.getAttribute("data-v") === "1" } })
+        .then(startRadio).catch(function (err) { toast(err.message, true); });
+    }
+    if (del && confirm("Supprimer cette proposition ?")) {
+      api("/api/radio?id=" + encodeURIComponent(del), { method: "DELETE" }).then(startRadio).catch(function (err) { toast(err.message, true); });
+    }
   });
 
   /* ───────── Comptes ───────── */

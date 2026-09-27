@@ -78,6 +78,7 @@
       <button role="tab" data-tab="constellation">Constellation</button>
       <button role="tab" data-tab="quiz">Quiz</button>
       <button role="tab" data-tab="boite">Boîte noire</button>
+      <button role="tab" data-tab="radio">Radio</button>
       <button role="tab" data-tab="comptes" data-admin-only>Comptes</button>
       <button role="tab" data-tab="moi">Mon compte</button>
     </nav>
@@ -226,6 +227,20 @@
       </div>
       <div class="bn-grid" id="bn-admin"></div>
       <p class="empty card" id="bn-empty" hidden>La boîte noire est encore vide.</p>
+    </section>
+
+    <!-- Radio de bord (vue DJ) -->
+    <section class="panel" id="tab-radio" role="tabpanel" hidden>
+      <div class="toolbar">
+        <p class="hint">Propositions des invités sur <a href="/radio" target="_blank" rel="noopener">/radio</a>, les plus votées en premier. Actualisation automatique.</p>
+      </div>
+      <div class="card table-wrap">
+        <table class="table" id="radio-table">
+          <thead><tr><th>Votes</th><th>Titre</th><th>Artiste</th><th>Proposée</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="empty" id="radio-empty" hidden>Aucune proposition pour l'instant.</p>
+      </div>
     </section>
 
     <!-- Comptes -->
