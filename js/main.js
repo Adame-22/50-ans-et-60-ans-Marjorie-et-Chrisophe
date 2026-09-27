@@ -102,6 +102,7 @@
   var hourCells = document.querySelectorAll("[data-flight-hours]");
   function updateFlightHours() {
     hourCells.forEach(function (dd) {
+      if (dd.hasAttribute("data-hold")) return; // chiffre en train de défiler (js/motion.js)
       var birth = CFG[dd.getAttribute("data-birth")];
       var t = birth ? new Date(birth + "T00:00:00") : null;
       var hours = t && !isNaN(t) ? Math.floor((Date.now() - t) / 36e5) : Math.round(parseInt(dd.getAttribute("data-flight-hours"), 10) * 365.25 * 24);
@@ -324,16 +325,24 @@
 
   function showError(msg) { errorEl.textContent = msg; errorEl.hidden = !msg; }
 
-  function finish(data) {
+  function finish(data, id) {
     var yes = data.presence === "oui";
+    // le jour J, la page « À table ! » reconnaîtra l'invité sur ce téléphone
+    if (yes && id) {
+      try { localStorage.setItem("mc-me", JSON.stringify({ id: id, nom: data.nom, passagers: data.passagers })); } catch (e) { /* ignoré */ }
+    }
     form.hidden = true;
     done.hidden = false;
     document.getElementById("done-title").textContent = yes ? "Bon vol, " + data.nom.split(" ")[0] + " !" : "Merci, " + data.nom.split(" ")[0] + ".";
     document.getElementById("done-text").textContent = yes
       ? "Votre enregistrement est confirmé pour " + data.passagers + " passager" + (data.passagers > 1 ? "s" : "") + ". Rendez-vous porte " + (CFG.porte || "A50") + "."
       : "Vous nous manquerez à bord. Votre message a bien été transmis à l'équipage.";
-    if (yes) passName.textContent = data.nom;
+    if (yes) {
+      passName.textContent = data.nom;
+      passName.classList.add("is-new");
+    }
     done.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    if (window.McFx) setTimeout(function () { yes ? window.McFx.celebrate() : window.McFx.plane({ y: 0.6 }); }, 450);
   }
 
   form.addEventListener("submit", function (e) {
@@ -349,11 +358,15 @@
       message: form.message.value.trim(),
       website: form.website.value
     };
-    if (!data.nom) { showError("Merci d'indiquer le nom du passager."); form.nom.focus(); return; }
+    if (!data.nom) { showError("Merci d'indiquer le nom du passager."); form.nom.focus(); form.classList.remove("is-shake"); void form.offsetWidth; form.classList.add("is-shake"); return; }
     if (data.email && !form.email.checkValidity()) { showError("L'adresse e-mail semble incorrecte."); form.email.focus(); return; }
 
     var btn = form.querySelector("button[type=submit]");
+    var label = btn.querySelector(".btn__label");
+    var labelText = label ? label.textContent : "";
     btn.disabled = true;
+    btn.classList.add("is-loading");
+    if (label) label.textContent = "Enregistrement";
     fetch("/api/rsvp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -361,10 +374,17 @@
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (res) {
         if (!r.ok) throw new Error(res.error || "");
-        finish(data);
+        finish(data, res.id);
       });
     }).catch(function (err) {
       showError(err.message || "Oups, l'envoi a échoué. Réessayez dans un instant.");
-    }).then(function () { btn.disabled = false; });
+      form.classList.remove("is-shake");
+      void form.offsetWidth;
+      form.classList.add("is-shake");
+    }).then(function () {
+      btn.disabled = false;
+      btn.classList.remove("is-loading");
+      if (label) label.textContent = labelText;
+    });
   });
 })();

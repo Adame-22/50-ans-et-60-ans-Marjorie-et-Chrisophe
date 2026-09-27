@@ -58,8 +58,12 @@
       .then(function (d) {
         form.message.value = ""; fileInput.value = ""; photoData = ""; preview.hidden = true;
         document.getElementById("bn-photo-label").textContent = "📷 Ajouter une photo";
-        if (d.entry) wall.insertAdjacentHTML("afterbegin", item(d.entry));
+        if (d.entry) {
+          wall.insertAdjacentHTML("afterbegin", item(d.entry));
+          if (wall.firstElementChild) wall.firstElementChild.classList.add("fx-land");
+        }
         btn.textContent = "Enregistré ✓";
+        if (window.McFx) window.McFx.celebrate();
         setTimeout(function () { btn.textContent = "Enregistrer"; }, 2500);
       })
       .catch(function (err) { errorEl.textContent = err.message; errorEl.hidden = false; btn.textContent = "Enregistrer"; })

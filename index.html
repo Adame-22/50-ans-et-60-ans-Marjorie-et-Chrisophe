@@ -33,6 +33,8 @@
       }
       var day = saved ? saved === "day" : isDaylight(Date.now(), 48.6853, 2.4107);
       if (day) document.documentElement.classList.add("is-day");
+      // animations d'entrée, sauf si l'appareil demande moins d'animations
+      if (!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) document.documentElement.classList.add("motion-ok");
     })();
   </script>
 </head>
@@ -98,7 +100,7 @@
         <div><strong>60</strong><span>ans</span></div>
       </div>
       <p class="hero__date"><span data-cfg="dateLabel"></span> · <span data-cfg="ville"></span></p>
-      <a href="#enregistrement" class="btn btn--gold">Confirmer ma présence</a>
+      <a href="#enregistrement" class="btn btn--gold btn--magnet"><span class="btn__label">Confirmer ma présence</span><svg class="btn__plane" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" transform="rotate(90 12 12)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></a>
     </div>
 
     <a href="#depart" class="hero__scroll" aria-label="Défiler vers le bas"><span></span></a>
@@ -171,7 +173,7 @@
             </div>
             <svg viewBox="0 0 120 24" class="pass__arc" aria-hidden="true">
               <line x1="4" y1="12" x2="116" y2="12" />
-              <path transform="translate(48,0)" d="M22 12c0-1-1-1.5-2-1.5h-6L9 3H7l3.5 7.5H5L3 8H1.5l1 4-1 4H3l2-2.5h5.5L7 21h2l5-7.5h6c1 0 2-.5 2-1.5z" />
+              <g class="pass__arc-plane"><path transform="translate(48,0)" d="M22 12c0-1-1-1.5-2-1.5h-6L9 3H7l3.5 7.5H5L3 8H1.5l1 4-1 4H3l2-2.5h5.5L7 21h2l5-7.5h6c1 0 2-.5 2-1.5z" /></g>
             </svg>
             <div class="pass__right">
               <small>À</small>
@@ -198,7 +200,10 @@
             <div><dt>Porte</dt><dd data-cfg="porte"></dd></div>
             <div><dt>Réponse avant</dt><dd data-cfg="rsvpAvant"></dd></div>
           </dl>
-          <svg class="barcode" viewBox="0 0 200 48" preserveAspectRatio="none" data-code="MC5060-MARJORIE-CHRISTOPHE" aria-hidden="true"></svg>
+          <div class="barcode-wrap">
+            <svg class="barcode" viewBox="0 0 200 48" preserveAspectRatio="none" data-code="MC5060-MARJORIE-CHRISTOPHE" aria-hidden="true"></svg>
+            <span class="barcode-scan" aria-hidden="true"></span>
+          </div>
         </div>
       </article>
     </div>
@@ -228,6 +233,14 @@
               <div><dt>Bagage</dt><dd>Élégance & bonne humeur</dd></div>
             </dl>
             <p class="passport__mrz" aria-hidden="true">P&lt;FRA&lt;MARJORIE&lt;&lt;&lt;&lt;&lt;&lt;&lt;50&lt;&lt;&lt;&lt;&lt;</p>
+            <svg class="visa visa--gold" viewBox="0 0 140 140" aria-hidden="true">
+              <defs><path id="visa-arc-m" d="M70,70 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0" /></defs>
+              <circle cx="70" cy="70" r="64" class="visa__ring" /><circle cx="70" cy="70" r="59" class="visa__ring visa__ring--thin" /><circle cx="70" cy="70" r="38" class="visa__ring visa__ring--thin" />
+              <text class="visa__arc"><textPath href="#visa-arc-m">DRAVEIL · VOL MC 5060 · ADMIS · ARRIVÉE ·</textPath></text>
+              <text x="70" y="66" class="visa__day">07 NOV</text>
+              <text x="70" y="84" class="visa__year">2026</text>
+              <path d="M44 96 l6 -3 l6 3 l6 -3 l6 3 l6 -3 l6 3 l6 -3 l6 3" class="visa__wave" />
+            </svg>
           </div>
         </article>
 
@@ -246,6 +259,14 @@
               <div><dt>Bagage</dt><dd>Expérience & sagesse</dd></div>
             </dl>
             <p class="passport__mrz" aria-hidden="true">P&lt;FRA&lt;CHRISTOPHE&lt;&lt;&lt;&lt;&lt;&lt;60&lt;&lt;&lt;&lt;&lt;</p>
+            <svg class="visa visa--navy" viewBox="0 0 140 140" aria-hidden="true">
+              <defs><path id="visa-arc-c" d="M70,70 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0" /></defs>
+              <circle cx="70" cy="70" r="64" class="visa__ring" /><circle cx="70" cy="70" r="59" class="visa__ring visa__ring--thin" /><circle cx="70" cy="70" r="38" class="visa__ring visa__ring--thin" />
+              <text class="visa__arc"><textPath href="#visa-arc-c">DRAVEIL · VOL MC 5060 · ADMIS · ARRIVÉE ·</textPath></text>
+              <text x="70" y="66" class="visa__day">07 NOV</text>
+              <text x="70" y="84" class="visa__year">2026</text>
+              <path d="M44 96 l6 -3 l6 3 l6 -3 l6 3 l6 -3 l6 3 l6 -3 l6 3" class="visa__wave" />
+            </svg>
           </div>
         </article>
       </div>
@@ -364,7 +385,7 @@
         </div>
 
         <p class="form-error" id="form-error" role="alert" hidden></p>
-        <button type="submit" class="btn btn--gold btn--block">Valider mon enregistrement</button>
+        <button type="submit" class="btn btn--gold btn--block btn--magnet"><span class="btn__label">Valider mon enregistrement</span><svg class="btn__plane" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" transform="rotate(90 12 12)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></button>
         <p class="consent">Vos réponses (dont allergies et régime, facultatifs) servent uniquement à organiser la fête et le repas, sont visibles des seuls organisateurs et supprimées au plus tard le 31 mars 2027. <a href="/mentions-legales#confidentialite">En savoir plus</a>.</p>
       </form>
 
@@ -388,5 +409,7 @@
   <script src="js/config.js"></script>
   <script src="js/programme.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/fx.js"></script>
+  <script src="js/motion.js"></script>
 </body>
 </html>

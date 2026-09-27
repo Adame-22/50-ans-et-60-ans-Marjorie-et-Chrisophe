@@ -54,6 +54,12 @@
     remember(id);
     songs.forEach(function (s) { if (s.id === id) s.votes++; });
     render();
+    var nb = list.querySelector('.vote[data-id="' + id.replace(/"/g, "") + '"]');
+    if (nb) nb.classList.add("is-bump");
+    if (window.McFx && nb) {
+      var r = nb.getBoundingClientRect();
+      window.McFx.confetti({ x: (r.left + r.width / 2) / innerWidth, y: r.top / innerHeight, count: 24, spread: 80, velocity: 7 });
+    }
     post({ action: "vote", id: id, voter: voter }).catch(function () { /* le prochain rafraîchissement corrigera */ });
   });
 
@@ -66,6 +72,7 @@
     btn.disabled = true;
     post({ action: "add", title: title, artist: document.getElementById("r-artist").value.trim(), voter: voter, website: form.website.value })
       .then(function (d) {
+        if (window.McFx) window.McFx.plane({ y: 0.7 });
         if (d.song) remember(d.song.id);
         form.reset();
         btn.textContent = d.duplicate ? "Déjà proposée : votre vote est compté ✓" : "Proposée ✓";

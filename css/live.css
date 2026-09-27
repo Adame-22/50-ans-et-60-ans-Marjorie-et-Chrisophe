@@ -134,7 +134,7 @@ form.live-card { display: grid; gap: 1rem; }
 .pick-list { display: grid; gap: 8px; }
 .pick-list:empty { display: none; }
 .pick-list button {
-  position: relative; overflow: hidden;
+  position: relative; overflow: hidden; isolation: isolate;
   display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .5rem;
   text-align: left; padding: .9rem 1rem; border-radius: 12px; border: 1px solid rgba(255, 251, 254, .15);
   background: rgba(255, 251, 254, .05); color: var(--paper); font: inherit; cursor: pointer;
@@ -146,7 +146,7 @@ form.live-card { display: grid; gap: 1rem; }
 
 .table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
 .table-tile {
-  position: relative; overflow: hidden;
+  position: relative; overflow: hidden; isolation: isolate;
   display: grid; gap: .35rem; justify-items: center; padding: 1.1rem .8rem 1rem;
   border-radius: 16px; text-decoration: none; color: var(--paper);
   background: rgba(255, 251, 254, .06); border: 1px solid rgba(255, 251, 254, .14);
@@ -206,6 +206,12 @@ form.live-card { display: grid; gap: 1rem; }
   border: 1px solid rgba(255, 177, 0, .5); background: transparent; color: var(--gold-light); font: 600 .95rem var(--mono); cursor: pointer;
 }
 .vote.is-voted { background: var(--gold-light); color: var(--navy); }
+.vote { transition: transform .2s var(--ease), background .3s, color .3s; }
+.vote:not([disabled]):hover { transform: translateY(-2px); background: rgba(255, 177, 0, .1); }
+.vote.is-bump { animation: bump .6s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.25) translateY(-4px); } 100% { transform: none; } }
+.wall-item { transition: transform .35s var(--ease), box-shadow .35s var(--ease); }
+.wall-item:hover { transform: translateY(-3px) rotate(-.4deg); box-shadow: 0 16px 30px -18px rgba(0, 0, 0, .7); }
 .vote small { font-size: .55rem; letter-spacing: .1em; }
 .live .field .photo-btn { font: 500 .95rem var(--sans); letter-spacing: 0; text-transform: none; color: var(--paper); padding: .8rem 1.1rem; }
 .live .field .photo-btn:hover { color: var(--gold-light); }
