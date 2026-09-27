@@ -145,6 +145,7 @@
     if (name === "cabine") startCabin(); else stopCabin();
     if (name === "comptes") loadUsers();
     if (name === "constellation") loadGraph(); else destroyGraph();
+    if (name === "equipes") startTeams(); else stopTeams();
     if (name === "quiz") startQuizAdmin(); else stopQuizAdmin();
     if (name === "boite") loadBoite();
     if (name === "radio") startRadio(); else clearTimeout(radioTimer);
@@ -480,9 +481,10 @@
   }
 
   function loadGraph() {
-    return Promise.all([api("/api/rsvp"), api("/api/seating")]).then(function (res) {
+    return Promise.all([api("/api/rsvp"), api("/api/seating"), api("/api/teams?view=admin").catch(function () { return null; })]).then(function (res) {
       state.rsvps = res[0].rsvps;
       state.plan = res[1];
+      state.teams = res[2];
       renderGraph();
     }).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
   }
@@ -493,6 +495,11 @@
     var confirmed = state.rsvps.filter(function (r) { return r.presence === "oui"; });
     var tableName = {};
     state.plan.tables.forEach(function (t) { tableName[t.id] = t.name; });
+    var teamOf = {}, teamName = {};
+    if (state.teams) state.teams.teams.forEach(function (t) {
+      teamName[t.id] = t.name;
+      t.people.forEach(function (p) { teamOf[p.id] = t.id; });
+    });
 
     var nodes = [{ id: "mc", label: "Marjorie & Christophe", kind: "center" }];
     var links = [];
@@ -510,6 +517,9 @@
       if (graphGroup === "table") {
         var t = state.plan.assign[r.id];
         h = tableName[t] ? hub(t, tableName[t]) : hub("_none", "Pas encore à table");
+      } else if (graphGroup === "equipe") {
+        var e = teamOf[r.id];
+        h = e ? hub("e:" + e, "Équipe " + teamName[e]) : hub("_noteam", "Sans équipe");
       } else {
         var m = r.repas || "Standard";
         h = hub(m, m);
@@ -523,7 +533,7 @@
 
     var pax = confirmed.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
     $("#g-stats").textContent = confirmed.length + " réponse" + (confirmed.length > 1 ? "s" : "") + " à bord · " + pax + " passager" + (pax > 1 ? "s" : "");
-    $("#g-hub-label").textContent = graphGroup === "table" ? "Table" : "Type de repas";
+    $("#g-hub-label").textContent = { table: "Table", equipe: "Équipe", repas: "Type de repas" }[graphGroup];
     $("#g-empty").hidden = confirmed.length > 0;
 
     graph = window.McGraph.mount($("#g-canvas"), { nodes: nodes, links: links }, { onSelect: showGraphInfo });
@@ -555,6 +565,183 @@
     });
   });
   $("#g-fit").addEventListener("click", function () { if (graph) graph.fit(); });
+
+  /* ───────── Équipes ─────────
+     Construites à partir de qui est assis où (voir api/_teams.js). */
+  var tm = { data: null, sig: "", timer: 0, sortables: [], busy: 0, pendingMode: null };
+  var MODE_HINT = {
+    tables: "Chaque table forme une équipe, automatiquement : un invité qui s'installe rejoint l'équipe de sa table. Renommez les équipes à votre guise.",
+    groups: "Les tables sont réparties en équipes de taille équivalente : chacun joue avec sa tablée, sans bouger. Glissez une table d'une équipe à l'autre pour ajuster.",
+    mix: "Les invités sont répartis en équipes équilibrées en mélangeant les tables, sans jamais séparer un même groupe (une réponse = une famille). Glissez un invité pour ajuster.",
+  };
+
+  function startTeams() {
+    stopTeams();
+    loadTeams();
+    tm.timer = setInterval(function () { if (!document.hidden && !teamsBusy()) loadTeams(true); }, 8000);
+  }
+  function stopTeams() {
+    clearInterval(tm.timer);
+    tm.sortables.forEach(function (x) { x.destroy(); });
+    tm.sortables = [];
+  }
+  function teamsBusy() {
+    var a = document.activeElement;
+    return document.body.classList.contains("is-dragging") || tm.busy > 0 || (a && a.classList && a.classList.contains("team-card__name"));
+  }
+  function setTeamsState(text, cls) {
+    var el = $("#e-state");
+    el.textContent = text;
+    el.className = "save-state" + (cls ? " " + cls : "");
+  }
+  function loadTeams(quiet) {
+    return api("/api/teams?view=admin").then(function (d) {
+      var sig = JSON.stringify(d);
+      if (quiet && sig === tm.sig) return;
+      tm.sig = sig;
+      tm.data = d;
+      renderTeams();
+    }).catch(function (e) { if (!onAuthError(e) && !quiet) toast(e.message, true); });
+  }
+  function teamsSend(body, method) {
+    tm.busy++;
+    setTeamsState("Enregistrement…");
+    return api("/api/teams", { method: method || "PATCH", body: body })
+      .then(function (d) {
+        tm.data = d;
+        tm.sig = JSON.stringify(d);
+        renderTeams();
+        setTeamsState("Enregistré ✓", "is-ok");
+      })
+      .catch(function (e) {
+        if (onAuthError(e)) return;
+        setTeamsState("Échec de l'enregistrement", "is-err");
+        toast(e.message, true);
+        loadTeams();
+      })
+      .then(function () { tm.busy--; });
+  }
+
+  function chipPerson(p) {
+    return '<div class="pax" data-id="' + esc(p.id) + '"><b>' + esc(p.nom) + '</b><span class="pax__n">×' + p.passagers + "</span></div>";
+  }
+  function chipTable(id, name, n) {
+    return '<div class="tchip" data-id="' + esc(id) + '"><b>' + esc(name) + "</b><span>" + n + "</span></div>";
+  }
+  function names(list) {
+    return list.length ? list.map(function (p) { return esc(p.nom) + (p.passagers > 1 ? " <small>×" + p.passagers + "</small>" : ""); }).join(" · ") : '<span class="muted">Personne pour l\'instant</span>';
+  }
+
+  function renderTeams() {
+    var d = tm.data, cfg = d.cfg;
+    var mode = tm.pendingMode || cfg.mode;
+    var pending = mode !== cfg.mode;
+    $all("[data-mode]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-mode") === mode)); });
+    $("#e-hint").textContent = MODE_HINT[mode];
+    $("#e-gen").hidden = mode === "tables";
+    $("#e-only-wrap").hidden = mode !== "mix";
+    $("#e-generate").textContent = !pending && mode !== "tables" && d.teams.length ? "Refaire les équipes" : "Générer les équipes";
+    $("#e-show").checked = cfg.show;
+    $("#e-quiz").checked = cfg.quiz;
+
+    var inTeams = d.teams.reduce(function (n, t) { return n + t.count; }, 0);
+    var none = d.unassigned.reduce(function (n, p) { return n + p.passagers; }, 0);
+    $("#e-stats").innerHTML = pending
+      ? "Réglez le nombre d'équipes puis cliquez sur <b>Générer les équipes</b>. Les équipes actuelles restent en place d'ici là."
+      : d.teams.length + " équipe" + (d.teams.length > 1 ? "s" : "") + " · " + inTeams + " passager" + (inTeams > 1 ? "s" : "") + " en équipe" +
+        (none ? " · " + none + " sans équipe" : "") + (cfg.updatedAt ? " · modifié " + fmtDate(cfg.updatedAt) + (cfg.by ? " par " + esc(cfg.by) : "") : "") +
+        (cfg.show ? " · <b>visibles par les invités</b>" : " · encore secrètes pour les invités");
+
+    tm.sortables.forEach(function (x) { x.destroy(); });
+    tm.sortables = [];
+    var shown = pending ? [] : d.teams;
+    var tableName = {};
+    d.tables.forEach(function (t) { tableName[t.id] = t.name; });
+
+    var html = shown.map(function (t, i) {
+      var body;
+      if (cfg.mode === "groups") {
+        body = '<div class="team-card__drop" data-team="' + esc(t.id) + '">' + t.tables.map(function (id) {
+          var n = t.people.filter(function (p) { return p.table === id; }).reduce(function (a, p) { return a + p.passagers; }, 0);
+          return chipTable(id, tableName[id] || id, n);
+        }).join("") + '</div><p class="team-card__people">' + names(t.people) + "</p>";
+      } else if (cfg.mode === "mix") {
+        body = '<div class="team-card__drop" data-team="' + esc(t.id) + '">' + t.people.map(chipPerson).join("") + "</div>";
+      } else {
+        body = '<p class="team-card__people">' + names(t.people) + "</p>";
+      }
+      return '<article class="team-card" style="--team:' + esc(t.color) + ";animation-delay:" + (Math.min(i, 12) * 0.04) + 's">' +
+        '<header><input class="team-card__name" data-id="' + esc(t.id) + '" value="' + esc(t.name) + '" maxlength="40" aria-label="Nom de l\'équipe" />' +
+        '<span class="team-card__count" title="personnes">' + t.count + "</span></header>" +
+        body + "</article>";
+    }).join("");
+
+    // « sans équipe »
+    if (!pending) {
+      if (cfg.mode === "mix") {
+        html += '<article class="team-card team-card--none"><header><h3>Sans équipe</h3><span class="team-card__count">' + none + "</span></header>" +
+          '<div class="team-card__drop" data-team="">' + d.unassigned.map(chipPerson).join("") + "</div></article>";
+      } else if (cfg.mode === "groups") {
+        var used = {};
+        d.teams.forEach(function (t) { t.tables.forEach(function (id) { used[id] = true; }); });
+        var free = d.tables.filter(function (t) { return !used[t.id]; });
+        html += '<article class="team-card team-card--none"><header><h3>Tables sans équipe</h3><span class="team-card__count">' + free.length + "</span></header>" +
+          '<div class="team-card__drop" data-team="">' + free.map(function (t) { return chipTable(t.id, t.name, 0); }).join("") + "</div>" +
+          (none ? '<p class="team-card__people">Pas encore à table&nbsp;: ' + names(d.unassigned) + "</p>" : "") + "</article>";
+      } else if (d.unassigned.length) {
+        html += '<article class="team-card team-card--none"><header><h3>Pas encore à table</h3><span class="team-card__count">' + none + "</span></header>" +
+          '<p class="team-card__people">' + names(d.unassigned) + "</p></article>";
+      }
+    }
+    $("#e-grid").innerHTML = html || '<p class="empty">Aucune équipe pour l\'instant.</p>';
+
+    if (!pending && cfg.mode !== "tables") {
+      $all("#e-grid .team-card__drop").forEach(function (zone) {
+        tm.sortables.push(new Sortable(zone, {
+          group: "teams",
+          animation: 160,
+          onStart: function () { document.body.classList.add("is-dragging"); },
+          onEnd: function () { document.body.classList.remove("is-dragging"); },
+          onAdd: function (evt) {
+            teamsSend({ move: { id: evt.item.getAttribute("data-id"), team: zone.getAttribute("data-team") || null } });
+          },
+        }));
+      });
+    }
+  }
+
+  $all("[data-mode]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var mode = b.getAttribute("data-mode");
+      if (!tm.data) return;
+      if (mode === "tables") {
+        tm.pendingMode = null;
+        if (tm.data.cfg.mode !== "tables") teamsSend({ mode: "tables" }); else renderTeams();
+        return;
+      }
+      tm.pendingMode = mode === tm.data.cfg.mode ? null : mode;
+      renderTeams();
+    });
+  });
+  $("#e-generate").addEventListener("click", function () {
+    var mode = tm.pendingMode || tm.data.cfg.mode;
+    if (mode === "tables") return;
+    if (!tm.pendingMode && tm.data.teams.length && !confirm("Refaire toutes les équipes ? Les ajustements faits à la main seront perdus.")) return;
+    tm.pendingMode = null;
+    teamsSend({ action: "generate", mode: mode, count: $("#e-count").value, onlySeated: $("#e-only").checked }, "POST")
+      .then(function () { toast("Équipes prêtes ✈"); });
+  });
+  $("#e-show").addEventListener("change", function () { teamsSend({ show: this.checked }); });
+  $("#e-quiz").addEventListener("change", function () { teamsSend({ quiz: this.checked }); });
+  $("#e-grid").addEventListener("change", function (e) {
+    if (!e.target.classList.contains("team-card__name")) return;
+    var name = e.target.value.trim();
+    if (!name) { e.target.value = e.target.defaultValue; return; }
+    teamsSend({ rename: { id: e.target.getAttribute("data-id"), name: name } });
+  });
+  $("#e-grid").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && e.target.classList.contains("team-card__name")) e.target.blur();
+  });
 
   /* ───────── Quiz (animateur) ───────── */
   var PHASES = { off: "Fermé", lobby: "Embarquement", question: "Question", reveal: "Réponse", board: "Classement", podium: "Podium" };

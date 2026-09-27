@@ -5,15 +5,16 @@
   var SHAPES = ["▲", "◆", "●", "■"];
   var app = document.getElementById("app");
   var meTag = document.getElementById("q-me");
-  var me = load();              // { pid, pub, name }
+  var me = load("mc-quiz");     // { pid, pub, name, at, rid, table }
   var state = null;             // dernier état public reçu
   var offset = 0;               // horloge serveur - horloge locale
   var picked = {};              // round -> choix
   var viewKey = "";
   var timerRaf = 0;
+  var celebrated = {};
 
-  function load() {
-    try { return JSON.parse(localStorage.getItem("mc-quiz") || "null"); } catch (e) { return null; }
+  function load(k) {
+    try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; }
   }
   function save(v) {
     try { v ? localStorage.setItem("mc-quiz", JSON.stringify(v)) : localStorage.removeItem("mc-quiz"); } catch (e) { /* ignoré */ }
@@ -27,6 +28,14 @@
     return fetch("/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) { var e = new Error(d.error || "Erreur"); e.status = r.status; throw e; } return d; }); });
   }
+  function ord(n) { return n === 1 ? "1<sup>er</sup>" : n + "<sup>e</sup>"; }
+  function fx(fn) { if (window.McFx) window.McFx[fn].apply(null, [].slice.call(arguments, 1)); }
+
+  // l'invité s'est déjà signalé à sa table (page /table) : on s'en sert pour son équipe
+  function seat() {
+    var who = load("mc-me"), table = load("mc-table");
+    return { rid: who && who.id || null, table: table && table.id || null, nom: who && who.nom || "" };
+  }
 
   function myRank() {
     if (!me || !state || !state.leaderboard) return null;
@@ -35,15 +44,41 @@
     }
     return null;
   }
+  function myTeam() {
+    if (!me || !state || !state.teamMode || !state.teamOf) return null;
+    var id = state.teamOf[me.pub];
+    if (!id) return null;
+    for (var i = 0; i < state.teams.length; i++) {
+      if (state.teams[i].id === id) return Object.assign({ rank: i + 1, of: state.teams.length }, state.teams[i]);
+    }
+    return null;
+  }
+  function teamChip(t) {
+    return '<span class="team-chip" style="--team:' + esc(t.color) + '">Équipe ' + esc(t.name) + "</span>";
+  }
+
+  /* Rattache le joueur à sa table si elle est connue et n'a pas encore été transmise */
+  var lastSync = 0;
+  function syncSeat() {
+    if (!me || Date.now() - lastSync < 10000) return;
+    var s = seat();
+    if ((s.rid && s.rid !== me.rid) || (s.table && s.table !== me.table)) {
+      lastSync = Date.now();
+      post({ action: "link", pid: me.pid, rid: s.rid, table: s.table }).then(function () {
+        me.rid = s.rid; me.table = s.table; save(me);
+      }).catch(function () { /* on réessaiera */ });
+    }
+  }
 
   /* ───────── Écrans ───────── */
   function renderJoin(msg) {
+    var s = seat();
     app.innerHTML =
-      '<h1 class="live__title">Quiz de bord</h1>' +
-      '<p class="live__sub">Connaissez-vous vos commandants de bord&nbsp;?</p>' +
-      '<form class="live-card" id="join" novalidate>' +
+      '<h1 class="live__title fx-rise">Quiz de bord</h1>' +
+      '<p class="live__sub fx-rise">Connaissez-vous vos commandants de bord&nbsp;?</p>' +
+      '<form class="live-card fx-rise" id="join" novalidate>' +
       '<div class="field"><label for="j-name">Votre pseudo</label>' +
-      '<input id="j-name" maxlength="24" autocomplete="nickname" placeholder="Ex. Tonton Jacques" required /></div>' +
+      '<input id="j-name" maxlength="24" autocomplete="nickname" placeholder="Ex. Tonton Jacques" value="' + esc(s.nom.split(" ")[0] || "") + '" required /></div>' +
       '<p class="form-error" role="alert"' + (msg ? "" : " hidden") + ">" + esc(msg || "") + "</p>" +
       '<button class="btn btn--gold btn--block" type="submit">Embarquer</button></form>';
     var f = document.getElementById("join");
@@ -52,19 +87,51 @@
       var name = f.querySelector("input").value.trim();
       if (!name) return;
       f.querySelector("button").disabled = true;
-      post({ action: "join", name: name }).then(function (d) {
-        d.at = Date.now(); me = d; save(d); viewKey = ""; render();
+      var st = seat();
+      post({ action: "join", name: name, rid: st.rid, table: st.table }).then(function (d) {
+        d.at = Date.now(); d.rid = st.rid; d.table = st.table;
+        me = d; save(d); viewKey = ""; render();
+        fx("plane", { y: 0.7 });
       }).catch(function (err) {
         f.querySelector("button").disabled = false;
         var el = f.querySelector(".form-error"); el.textContent = err.message; el.hidden = false;
       });
     });
-    setTimeout(function () { var i = document.getElementById("j-name"); if (i) i.focus(); }, 50);
+    setTimeout(function () { var i = document.getElementById("j-name"); if (i && !i.value) i.focus(); }, 50);
   }
 
-  function renderWaiting(title, text) {
-    app.innerHTML = '<div class="live-card center"><div class="pulse"></div>' +
-      '<h2 class="result__title">' + title + "</h2><p class=\"muted\">" + text + "</p></div>";
+  function renderWaiting(title, text, extra) {
+    app.innerHTML = '<div class="live-card center fx-rise"><div class="pulse"></div>' +
+      '<h2 class="result__title">' + title + "</h2><p class=\"muted\">" + text + "</p>" + (extra || "") + "</div>";
+  }
+
+  function renderLobby() {
+    var t = myTeam(), extra = "";
+    if (state.teamMode) {
+      if (t) {
+        extra = '<p class="team-line">Vous jouez pour ' + teamChip(t) + "</p>";
+      } else if (state.teamTables && state.teamTables.length) {
+        extra = '<div class="team-pick"><p class="muted">Ce soir, on joue aussi par équipe&nbsp;! À quelle table êtes-vous&nbsp;?</p>' +
+          '<div class="field"><select id="q-table" aria-label="Votre table"><option value="">Choisir ma table…</option>' +
+          state.teamTables.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + "</option>"; }).join("") +
+          '</select></div><button class="btn btn--gold btn--block" id="q-link" type="button">Rejoindre mon équipe</button></div>';
+      } else {
+        extra = '<p class="muted team-line">Pour jouer avec votre équipe, signalez-vous à votre table&nbsp;: <a href="/table">À table&nbsp;!</a></p>';
+      }
+    }
+    renderWaiting("Vous êtes à bord, " + esc(me.name) + "&nbsp;!", "Le quiz va commencer. Regardez l'écran géant.", extra);
+    var btn = document.getElementById("q-link");
+    if (btn) btn.addEventListener("click", function () {
+      var v = document.getElementById("q-table").value;
+      if (!v) return;
+      btn.disabled = true;
+      post({ action: "link", pid: me.pid, table: v }).then(function () {
+        me.table = v; save(me);
+        var name = (state.teamTables.filter(function (x) { return x.id === v; })[0] || {}).name;
+        try { localStorage.setItem("mc-table", JSON.stringify({ id: v, name: name, at: Date.now() })); } catch (e) { /* ignoré */ }
+        btn.textContent = "C'est noté ✓";
+      }).catch(function (err) { btn.disabled = false; btn.textContent = err.message; });
+    });
   }
 
   function renderQuestion() {
@@ -72,12 +139,12 @@
     var mine = picked[state.round];
     app.innerHTML =
       '<div class="q-meta"><span>Question ' + (state.index + 1) + " / " + state.total + '</span><span id="q-left"></span></div>' +
-      '<div class="q-timer"><i id="q-bar"></i></div>' +
-      '<p class="q-text">' + esc(q.q) + "</p>" +
+      '<div class="q-timer" id="q-timer"><i id="q-bar"></i></div>' +
+      '<p class="q-text fx-rise">' + esc(q.q) + "</p>" +
       '<div class="choices' + (mine !== undefined ? " is-locked" : "") + '" id="choices">' +
       q.choices.map(function (c, i) {
-        return '<button class="choice-btn c' + i + (mine === i ? " is-picked" : "") + '" data-i="' + i + '"' + (mine !== undefined ? " disabled" : "") + '>' +
-          '<span class="shape">' + SHAPES[i] + "</span><span>" + esc(c) + "</span></button>";
+        return '<button class="choice-btn c' + i + (mine === i ? " is-picked" : "") + '" data-i="' + i + '"' + (mine !== undefined ? " disabled" : "") +
+          ' style="animation-delay:' + (0.06 * i) + 's"><span class="shape">' + SHAPES[i] + "</span><span>" + esc(c) + "</span></button>";
       }).join("") + "</div>" +
       '<p class="center muted" id="q-status" style="margin-top:1rem">' + (mine !== undefined ? "Réponse enregistrée ✓" : "") + "</p>";
 
@@ -85,8 +152,7 @@
       var b = e.target.closest(".choice-btn");
       if (!b || picked[state.round] !== undefined) return;
       var i = parseInt(b.getAttribute("data-i"), 10);
-      var round = state.round;
-      picked[round] = i;
+      picked[state.round] = i;
       b.classList.add("is-picked");
       this.classList.add("is-locked");
       this.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
@@ -104,13 +170,22 @@
 
   function runTimer() {
     cancelAnimationFrame(timerRaf);
-    var bar = document.getElementById("q-bar"), left = document.getElementById("q-left");
+    var bar = document.getElementById("q-bar"), left = document.getElementById("q-left"), box = document.getElementById("q-timer");
     if (!bar || !state.endsAt) return;
-    var total = state.question.time * 1000;
+    var total = state.question.time * 1000, lastSec = -1;
     (function frame() {
       var rest = Math.max(0, state.endsAt - (Date.now() + offset));
+      var sec = Math.ceil(rest / 1000);
       bar.style.transform = "scaleX(" + Math.min(1, rest / total) + ")";
-      left.textContent = Math.ceil(rest / 1000) + " s";
+      left.textContent = sec + " s";
+      // cinq dernières secondes : la jauge s'emballe
+      var hurry = rest > 0 && rest <= 5000;
+      box.classList.toggle("is-hurry", hurry);
+      left.classList.toggle("is-hurry", hurry);
+      if (hurry && sec !== lastSec) {
+        lastSec = sec;
+        left.classList.remove("tick"); void left.offsetWidth; left.classList.add("tick");
+      }
       if (rest <= 0 && picked[state.round] === undefined) {
         var s = document.getElementById("q-status"); if (s) s.textContent = "Temps écoulé…";
         var c = document.getElementById("choices"); if (c) { c.classList.add("is-locked"); c.querySelectorAll("button").forEach(function (x) { x.disabled = true; }); }
@@ -124,49 +199,67 @@
     var mine = picked[state.round];
     var ok = mine === state.correct;
     var gain = state.gains && me ? state.gains[me.pub] || 0 : 0;
-    var r = myRank();
+    var r = myRank(), t = myTeam();
     app.innerHTML =
-      '<div class="live-card"><div class="result">' +
+      '<div class="live-card"><div class="result ' + (mine === undefined ? "" : ok ? "is-ok" : "is-ko") + '">' +
       '<div class="result__icon">' + (mine === undefined ? "⏱" : ok ? "✈️" : "🌧") + "</div>" +
-      '<p class="result__title">' + (mine === undefined ? "Pas de réponse" : ok ? "Bonne réponse !" : "Raté…") + "</p>" +
+      '<p class="result__title">' + (mine === undefined ? "Pas de réponse" : ok ? "Bonne réponse&nbsp;!" : "Raté…") + "</p>" +
       '<p class="result__pts">' + (gain ? "+ " + gain + " pts" : "0 pt") + "</p></div>" +
       '<div class="choices is-revealed">' + q.choices.map(function (c, i) {
         return '<div class="choice-btn c' + i + (i === state.correct ? " is-correct" : "") + (i === mine ? " is-picked" : "") + '"><span class="shape">' + SHAPES[i] + "</span><span>" + esc(c) + "</span></div>";
       }).join("") + "</div>" +
       (r ? '<div class="rankline"><span>Rang ' + r.rank + " / " + r.total + "</span><span>" + r.score + " pts</span></div>" : "") +
+      (t ? '<div class="rankline rankline--team" style="--team:' + esc(t.color) + '"><span>Équipe ' + esc(t.name) + " · " + ord(t.rank) + "</span><span>" + t.score + " pts</span></div>" : "") +
       "</div>";
+    var k = "r" + state.round;
+    if (ok && !celebrated[k]) { celebrated[k] = true; fx("confetti", { x: 0.5, y: 0.25, count: 70, spread: 110, velocity: 9 }); }
   }
 
   function renderBoard(final) {
-    var r = myRank();
+    var r = myRank(), t = myTeam();
     var top = (state.leaderboard || []).slice(0, final ? 10 : 5);
+    var teams = state.teamMode ? (state.teams || []) : [];
+    var teamsHtml = teams.length ? '<div class="live-card fx-rise"><p class="live__tag" style="margin:0 0 .6rem">Classement des équipes</p><ol class="lb lb--teams">' +
+      teams.slice(0, final ? 12 : 6).map(function (x) {
+        return '<li class="' + (t && t.id === x.id ? "is-me" : "") + '" style="--team:' + esc(x.color) + '"><b><i class="dot"></i>' + esc(x.name) +
+          ' <small>' + x.players + " joueur" + (x.players > 1 ? "s" : "") + "</small></b><span>" + x.score + "</span></li>";
+      }).join("") + "</ol></div>" : "";
+    var sub = r ? "Vous êtes <b>" + ord(r.rank) + "</b> sur " + r.total + " avec " + r.score + " pts" : "&nbsp;";
+    if (t) sub += "<br>" + teamChip(t) + " " + ord(t.rank) + " sur " + t.of;
     app.innerHTML =
-      '<h1 class="live__title">' + (final ? "Atterrissage !" : "Classement") + "</h1>" +
-      (r ? '<p class="live__sub">Vous êtes <b>' + (r.rank === 1 ? "1<sup>er</sup>" : r.rank + "<sup>e</sup>") + "</b> sur " + r.total + " avec " + r.score + " pts</p>" : '<p class="live__sub">&nbsp;</p>') +
-      '<div class="live-card"><ol class="lb">' + top.map(function (p) {
-        return '<li class="' + (me && p.pub === me.pub ? "is-me" : "") + '"><b>' + esc(p.name) + "</b><span>" + p.score + "</span></li>";
-      }).join("") + "</ol></div>";
+      '<h1 class="live__title fx-rise">' + (final ? "Atterrissage&nbsp;!" : "Classement") + "</h1>" +
+      '<p class="live__sub fx-rise">' + sub + "</p>" +
+      (final && teams.length ? teamsHtml : "") +
+      '<div class="live-card fx-rise"><p class="live__tag" style="margin:0 0 .6rem">' + (teams.length ? "Meilleurs joueurs" : "Top " + top.length) + '</p><ol class="lb">' + top.map(function (p, i) {
+        return '<li class="' + (me && p.pub === me.pub ? "is-me" : "") + '" style="animation-delay:' + (0.08 * i) + 's"><b>' + esc(p.name) + "</b><span>" + p.score + "</span></li>";
+      }).join("") + "</ol></div>" +
+      (!final && teams.length ? teamsHtml : "");
+    if (final && !celebrated.podium && ((r && r.rank <= 3) || (t && t.rank === 1))) {
+      celebrated.podium = true;
+      fx("celebrate");
+    }
   }
 
   function render() {
     if (!state) return;
     // Quiz remis à zéro : le joueur mémorisé n'existe plus, on redemande un pseudo
     if (me && state.phase === "lobby" && state.leaderboard && Date.now() - (me.at || 0) > 6000 && !state.leaderboard.some(function (p) { return p.pub === me.pub; })) {
-      me = null; save(null);
+      me = null; save(null); celebrated = {};
     }
     meTag.textContent = me ? me.name : "";
-    var key = [state.phase, state.round, state.index, me ? me.pid : "-", picked[state.round]].join("|");
-    if (state.phase === "reveal" || state.phase === "board" || state.phase === "podium") key += "|" + JSON.stringify(myRank());
+    var t = myTeam();
+    var key = [state.phase, state.round, state.index, me ? me.pid : "-", picked[state.round], t ? t.id : "", state.teamMode ? 1 : 0].join("|");
+    if (state.phase === "reveal" || state.phase === "board" || state.phase === "podium") key += "|" + JSON.stringify(myRank()) + JSON.stringify(t) + (state.teams ? state.teams.length : 0);
     if (key === viewKey) return;
     viewKey = key;
     cancelAnimationFrame(timerRaf);
 
     if (state.phase === "off") {
-      if (!me) return renderWaiting("Le quiz n'a pas commencé", "Gardez cette page ouverte : elle s'activera toute seule au décollage.");
+      if (!me) return renderWaiting("Le quiz n'a pas commencé", "Gardez cette page ouverte&nbsp;: elle s'activera toute seule au décollage.");
       return renderWaiting("Vous êtes inscrit·e", "Le quiz n'a pas encore commencé.");
     }
     if (!me) return renderJoin();
-    if (state.phase === "lobby") return renderWaiting("Vous êtes à bord, " + esc(me.name) + " !", "Le quiz va commencer. Regardez l'écran géant.");
+    if (state.phase === "lobby") return renderLobby();
     if (state.phase === "question") return renderQuestion();
     if (state.phase === "reveal") return renderReveal();
     if (state.phase === "board") return renderBoard(false);
@@ -177,6 +270,7 @@
     fetch("/api/quiz?view=public").then(function (r) { return r.json(); }).then(function (d) {
       if (d.serverNow) offset = d.serverNow - Date.now();
       state = d;
+      if (state.teamMode) syncSeat();
       render();
     }).catch(function () { /* réseau capricieux : on réessaie au prochain tour */ })
       .then(function () { setTimeout(poll, 1500); });

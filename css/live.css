@@ -77,6 +77,53 @@ form.live-card { display: grid; gap: 1rem; }
 .lb li span { font-family: var(--mono); color: var(--gold-light); }
 .lb li.is-me { background: rgba(255, 177, 0, .12); border-radius: 8px; }
 
+/* Équipe sur la page À table */
+#t-team:empty { display: none; }
+#t-team { margin-top: 14px; }
+.team-card-live { text-align: center; box-shadow: inset 0 4px 0 var(--team, #ffb100); }
+.team-card-live__name { font-family: var(--serif); font-size: 2.2rem; line-height: 1.1; margin: .3rem 0 .2rem; color: var(--team, var(--gold-light)); }
+
+/* Équipes dans le quiz */
+.team-chip {
+  display: inline-flex; align-items: center; gap: .45rem; padding: .3rem .8rem .3rem .6rem; border-radius: 999px;
+  background: rgba(255, 251, 254, .1); border: 1px solid rgba(255, 251, 254, .3);
+  background: color-mix(in srgb, var(--team, #ffb100) 22%, transparent); color: var(--paper);
+  border-color: color-mix(in srgb, var(--team, #ffb100) 65%, transparent); font-weight: 600; font-size: .92rem; white-space: nowrap;
+}
+.team-chip::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--team, #ffb100); }
+.team-line { margin: 1.2rem 0 0; }
+.team-pick { display: grid; gap: .8rem; margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid rgba(255, 251, 254, .1); }
+.team-pick .muted { margin: 0; }
+.team-line a, .team-pick a { color: var(--gold-light); }
+.rankline--team { margin-top: .5rem; box-shadow: inset 4px 0 0 var(--team, #ffb100); }
+.lb--teams li b { display: flex; align-items: center; gap: .55rem; }
+.lb--teams li b small { font-weight: 400; font-size: .72rem; color: rgba(255, 251, 254, .5); }
+.lb--teams .dot { width: .7rem; height: .7rem; border-radius: 50%; background: var(--team, #ffb100); flex: none; }
+.lb li { animation: fx-rise .5s var(--ease) both; }
+.live__sub .team-chip { margin: .5rem .2rem 0 0; }
+
+/* Quiz : vie des boutons et du chrono */
+.choices .choice-btn { animation: fx-pop .45s cubic-bezier(.3, 1.4, .5, 1) both; overflow: hidden; }
+.choices.is-revealed .choice-btn { animation: none; }
+.choice-btn.is-picked { animation: picked .5s var(--ease) both; }
+@keyframes picked { 40% { transform: scale(1.05); } }
+.choices.is-revealed .choice-btn.is-correct { animation: correct 1s var(--ease) both; }
+@keyframes correct { 0% { transform: scale(.94); } 50% { transform: scale(1.04); box-shadow: 0 0 0 6px rgba(255, 251, 254, .25); } 100% { transform: none; } }
+.q-timer.is-hurry i { background: linear-gradient(90deg, #e8704f, var(--gold-light)); }
+.q-timer.is-hurry { animation: hurry .5s ease-in-out infinite alternate; }
+@keyframes hurry { to { box-shadow: 0 0 14px rgba(255, 120, 80, .55); } }
+#q-left.is-hurry { color: #ffb4a3; }
+#q-left.tick { animation: tick .45s var(--ease); display: inline-block; }
+@keyframes tick { 0% { transform: scale(1.6); } 100% { transform: none; } }
+.result.is-ok .result__icon { animation: takeoff 1.2s var(--ease) both; }
+@keyframes takeoff { 0% { transform: translate(-40px, 20px) rotate(-10deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; } }
+.result.is-ko .result__icon { animation: wobble .8s ease both; }
+@keyframes wobble { 20% { transform: rotate(-8deg); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(2deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .choices .choice-btn, .choice-btn.is-picked, .choices.is-revealed .choice-btn.is-correct, .lb li,
+  .q-timer.is-hurry, #q-left.tick, .result__icon { animation: none !important; }
+}
+
 .pulse { width: 14px; height: 14px; border-radius: 50%; background: var(--gold-light); margin: 0 auto 1rem; animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { transform: scale(.8); opacity: .5; } 50% { transform: scale(1.2); opacity: 1; } }
 

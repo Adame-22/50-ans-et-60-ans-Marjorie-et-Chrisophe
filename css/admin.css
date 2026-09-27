@@ -219,6 +219,55 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .cabin-stats__bar em { position: absolute; right: 0; top: -1.5rem; font-style: normal; font-family: var(--mono); font-size: .7rem; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .pax.is-new { animation: none; } .cabin-stats__bar i { transition: none; } }
 
+/* ───────── Équipes ───────── */
+.teams-setup { display: grid; gap: 14px; }
+.teams-setup__row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.4rem; }
+.teams-setup__pub { padding-top: 12px; border-top: 1px solid var(--line); }
+.seg--wrap { flex-wrap: wrap; border-radius: 22px; }
+.inline-field { display: inline-flex; align-items: center; gap: .6rem; font-size: .9rem; }
+.inline-field input { width: 4.4em; font: inherit; padding: .45rem .6rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.check { display: inline-flex; align-items: center; gap: .5rem; font-size: .9rem; cursor: pointer; }
+.check input { accent-color: var(--navy); width: 1.05rem; height: 1.05rem; }
+.switch { position: relative; display: inline-flex; align-items: center; gap: .7rem; font-size: .9rem; cursor: pointer; user-select: none; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch span { position: relative; flex: none; width: 42px; height: 24px; border-radius: 999px; background: var(--line); transition: background .25s; }
+.switch span::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 51, .3); transition: transform .3s var(--ease), background .3s;
+}
+.switch input:checked + span { background: var(--navy); }
+.switch input:checked + span::after { transform: translateX(18px); background: var(--gold-light); }
+.switch input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; align-items: start; }
+.team-card {
+  display: grid; gap: 10px; padding: 12px 14px 14px; border-radius: 14px;
+  background: var(--paper); border: 1px solid var(--line); border-top: 5px solid var(--team, var(--gold));
+  animation: fx-rise .5s var(--ease) both;
+}
+.team-card header { display: flex; align-items: center; gap: .5rem; }
+.team-card header h3 { flex: 1; font-size: 1.25rem; }
+.team-card__name {
+  flex: 1; min-width: 0; width: 0; border: 0; background: transparent; padding: .15rem .3rem; border-radius: 6px;
+  font-family: var(--serif); font-size: 1.4rem; font-weight: 500; color: var(--ink);
+}
+.team-card__name:hover { background: rgba(0, 0, 51, .04); }
+.team-card__name:focus { outline: none; background: #fff; box-shadow: 0 0 0 2px rgba(166, 112, 70, .35); }
+.team-card__count { font-family: var(--mono); font-size: .75rem; color: var(--muted); white-space: nowrap; }
+.team-card__count::after { content: " pers."; }
+.team-card__people { margin: 0; font-size: .88rem; line-height: 1.55; color: #3b3b55; }
+.team-card__people small { color: var(--gold); font-family: var(--mono); font-size: .7rem; }
+.team-card__drop { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; padding: 4px; border-radius: 10px; background: rgba(0, 0, 51, .03); align-content: flex-start; }
+.team-card__drop:empty::after { content: "Glissez ici"; color: #b7b0a2; font-size: .8rem; padding: .6rem .4rem; }
+.team-card--none { background: transparent; border-style: dashed; border-top: 1px dashed var(--line); animation: none; }
+.tchip {
+  display: inline-flex; align-items: center; gap: .5rem; padding: .45rem .75rem; border-radius: 10px; cursor: grab; user-select: none; touch-action: none;
+  background: var(--navy); color: var(--paper); font-size: .85rem;
+}
+.tchip b { font-weight: 600; }
+.tchip span { font-family: var(--mono); font-size: .72rem; color: var(--gold-light); }
+.tchip.sortable-ghost { opacity: .35; }
+
 /* ───────── Constellation ───────── */
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: #fff; padding: 3px; }
 .seg button {

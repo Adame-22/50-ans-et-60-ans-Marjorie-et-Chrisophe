@@ -4,8 +4,12 @@
  * Public :
  *   GET  ?view=public                      → état du quiz (mis en cache 1 s par le CDN de Vercel,
  *                                            donc ~1 calcul/s quel que soit le nombre de joueurs)
- *   POST { action: "join", name }          → { pid, pub }
- *   POST { action: "answer", pid, choice } → enregistre la réponse (une seule par question)
+ *   POST { action: "join", name, rid?, table? } → { pid, pub }   (rid : invité, table : sa table, pour le jeu par équipe)
+ *   POST { action: "link", pid, rid?, table? }  → rattache un joueur à sa table / son équipe
+ *   POST { action: "answer", pid, choice }      → enregistre la réponse (une seule par question)
+ *
+ * Quand l'équipage active « classement par équipe » (onglet Équipes), l'état public
+ * contient aussi teams (moyenne des points par équipe) et teamOf (joueur → équipe).
  *
  * Équipage (connecté) :
  *   GET  ?view=admin                       → questions complètes + réponses reçues
@@ -14,6 +18,7 @@
  */
 const crypto = require("crypto");
 const L = require("./_lib");
+const TM = require("./_teams");
 
 const K = {
   questions: "mc:quiz:questions",
@@ -46,8 +51,10 @@ async function getState() {
   return getJson(K.state, { phase: "off", index: -1, round: 0 });
 }
 
-async function leaderboard() {
-  const players = Object.values(await L.hgetallJson(K.players));
+async function allPlayers() {
+  return Object.values(await L.hgetallJson(K.players));
+}
+function leaderboard(players) {
   return players
     .map((p) => ({ pub: p.pub, name: p.name, score: p.score || 0 }))
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "fr"));
@@ -92,8 +99,14 @@ module.exports = L.handler(async (req, res) => {
       out.answered = (state.counts || []).reduce((a, b) => a + b, 0);
       out.gains = state.gains || {};
     }
-    if (["lobby", "reveal", "board", "podium"].includes(state.phase)) out.leaderboard = await leaderboard();
-    else out.players = await L.redis(["HLEN", K.players]);
+    if (["lobby", "reveal", "board", "podium"].includes(state.phase)) {
+      const players = await allPlayers();
+      out.leaderboard = leaderboard(players);
+      const tq = state.phase !== "off" ? await TM.quizTeams(players) : null;
+      if (tq) Object.assign(out, { teamMode: true, teams: tq.teams, teamOf: tq.teamOf, teamTables: tq.mode === "mix" ? [] : tq.tables });
+    } else {
+      out.players = await L.redis(["HLEN", K.players]);
+    }
     return L.send(res, 200, out, { "Cache-Control": "public, max-age=0, s-maxage=1, stale-while-revalidate=1" });
   }
 
@@ -110,8 +123,24 @@ module.exports = L.handler(async (req, res) => {
     if (count >= 300) throw new L.HttpError(409, "Le quiz est complet.");
     const pid = crypto.randomUUID();
     const pub = hash(pid);
-    await L.redis(["HSET", K.players, pid, JSON.stringify({ pid, pub, name, score: 0, joinedAt: Date.now() })]);
+    const link = { rid: L.str(body.rid, 64) || null, table: L.str(body.table, 20) || null };
+    await L.redis(["HSET", K.players, pid, JSON.stringify(Object.assign({ pid, pub, name, score: 0, joinedAt: Date.now() }, link))]);
     return L.send(res, 201, { pid, pub, name });
+  }
+
+  if (req.method === "POST" && body.action === "link") {
+    const pid = L.str(body.pid, 64);
+    await L.rateLimit(req, "quiz-link", 200, 60);
+    const raw = await L.redis(["HGET", K.players, pid]);
+    if (!raw) throw new L.HttpError(404, "Joueur inconnu, rejoignez à nouveau le quiz.");
+    const p = JSON.parse(raw);
+    if (body.rid !== undefined) p.rid = L.str(body.rid, 64) || null;
+    if (body.table !== undefined) p.table = L.str(body.table, 20) || null;
+    // relecture juste avant d'écrire : ne pas écraser des points marqués entre-temps
+    const fresh = JSON.parse((await L.redis(["HGET", K.players, pid])) || raw);
+    fresh.rid = p.rid; fresh.table = p.table;
+    await L.redis(["HSET", K.players, pid, JSON.stringify(fresh)]);
+    return L.send(res, 200, { ok: true });
   }
 
   if (req.method === "POST" && body.action === "answer") {

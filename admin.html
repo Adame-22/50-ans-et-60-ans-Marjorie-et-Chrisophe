@@ -75,6 +75,7 @@
       <button role="tab" data-tab="manifeste" aria-selected="true">Manifeste</button>
       <button role="tab" data-tab="cabine">Plan de cabine</button>
       <button role="tab" data-tab="constellation">Constellation</button>
+      <button role="tab" data-tab="equipes">Équipes</button>
       <button role="tab" data-tab="quiz">Quiz</button>
       <button role="tab" data-tab="boite">Boîte noire</button>
       <button role="tab" data-tab="radio">Radio</button>
@@ -169,6 +170,7 @@
       <div class="toolbar">
         <div class="seg" role="group" aria-label="Regrouper par">
           <button type="button" data-group="table" aria-pressed="true">Par table</button>
+          <button type="button" data-group="equipe" aria-pressed="false">Par équipe</button>
           <button type="button" data-group="repas" aria-pressed="false">Par repas</button>
         </div>
         <p class="hint">Faites glisser les points, zoomez à la molette ou en pinçant, cliquez sur un invité pour le détail.</p>
@@ -187,6 +189,33 @@
         <p class="graph__empty" id="g-empty" hidden>Aucun invité confirmé pour l'instant.</p>
       </div>
       <p class="hint" id="g-stats"></p>
+    </section>
+
+    <!-- Équipes -->
+    <section class="panel" id="tab-equipes" role="tabpanel" hidden>
+      <div class="card teams-setup">
+        <div class="teams-setup__row">
+          <div class="seg seg--wrap" role="group" aria-label="Façon de former les équipes">
+            <button type="button" data-mode="tables" aria-pressed="true">Une table = une équipe</button>
+            <button type="button" data-mode="groups" aria-pressed="false">Regrouper les tables</button>
+            <button type="button" data-mode="mix" aria-pressed="false">Mélanger les invités</button>
+          </div>
+        </div>
+        <p class="hint" id="e-hint"></p>
+        <div class="teams-setup__row" id="e-gen" hidden>
+          <label class="inline-field" for="e-count">Nombre d'équipes <input type="number" id="e-count" min="2" max="20" value="4" /></label>
+          <label class="check" id="e-only-wrap"><input type="checkbox" id="e-only" checked /> Seulement les passagers à table ou arrivés</label>
+          <button class="btn btn--small btn--gold" id="e-generate" type="button">Générer les équipes</button>
+        </div>
+        <div class="teams-setup__row teams-setup__pub">
+          <label class="switch"><input type="checkbox" id="e-show" /><span></span> Montrer les équipes aux invités et sur l'écran géant</label>
+          <label class="switch"><input type="checkbox" id="e-quiz" /><span></span> Classement par équipe dans le quiz</label>
+          <span class="toolbar__grow"></span>
+          <span class="save-state" id="e-state"></span>
+        </div>
+      </div>
+      <p class="hint" id="e-stats"></p>
+      <div class="teams-grid" id="e-grid"></div>
     </section>
 
     <!-- Quiz -->

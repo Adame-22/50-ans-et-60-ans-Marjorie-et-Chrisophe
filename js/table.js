@@ -164,6 +164,7 @@
       '<h1 class="table-hero__name">' + esc(t.name) + '</h1><p class="muted">C\'est noté&nbsp;: bon vol parmi nous&nbsp;!</p></div>' +
       '<div class="live-card fx-rise" style="animation-delay:.1s"><p class="live__tag" style="margin:0 0 .6rem">Votre tablée · <span id="t-count">' + plural(t.count, "passager") + "</span></p>" +
       '<div id="t-people">' + people(t) + "</div></div>" +
+      '<div id="t-team"></div>' +
       '<div class="quick-links fx-rise" style="animation-delay:.2s">' +
       '<a class="btn btn--gold" href="/quiz">Quiz de bord</a>' +
       '<a class="btn btn--line-light" href="/boite">Boîte noire</a>' +
@@ -171,6 +172,29 @@
       '<p class="center"><a class="linklike muted" href="/table">Changer de table</a></p>';
     clearInterval(refreshTimer);
     refreshTimer = setInterval(refresh, 10000);
+    loadTeam();
+  }
+
+  /* Équipe du joueur, dès que l'équipage a publié les équipes */
+  var teamSig = "";
+  function loadTeam() {
+    getJson("/api/teams").then(function (d) {
+      var box = document.getElementById("t-team");
+      if (!box) return;
+      var mine = d.show && me ? (d.teams || []).filter(function (tm) {
+        return tm.people.some(function (p) { return p.nom === me.nom; });
+      })[0] : null;
+      var sig = mine ? mine.name + mine.count + mine.color : "";
+      if (sig === teamSig) return;
+      teamSig = sig;
+      box.innerHTML = mine
+        ? '<div class="live-card team-card-live fx-land" style="--team:' + esc(mine.color) + '"><p class="live__tag" style="margin:0">Votre équipe pour les jeux</p>' +
+          '<p class="team-card-live__name">Équipe ' + esc(mine.name) + "</p>" +
+          '<p class="muted" style="margin:0">' + plural(mine.count, "passager") + " dans l'équipe" + (mine.tables && mine.tables.length && d.mode !== "mix" ? " · " + mine.tables.map(esc).join(", ") : "") + "</p>" +
+          (d.mode === "mix" ? '<div class="neighbours">' + mine.people.map(function (p) { return "<span>" + esc(p.nom) + "</span>"; }).join("") + "</div>" : "") + "</div>"
+        : "";
+      if (mine && window.McFx) window.McFx.confetti({ x: 0.5, y: 0.5, count: 60, spread: 120, velocity: 10 });
+    }).catch(function () {});
   }
 
   function refresh() {
@@ -185,6 +209,7 @@
         box.setAttribute("data-sig", String(t.count) + t.people.length);
         count.textContent = plural(t.count, "passager");
       }
+      loadTeam();
     }).catch(function () { /* on réessaiera au prochain tour */ });
   }
 
