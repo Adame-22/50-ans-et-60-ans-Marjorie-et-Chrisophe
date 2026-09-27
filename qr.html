@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>QR codes à imprimer · Vol MC 5060</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Monsieur+La+Doulaise&family=Cormorant+Garamond:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* Page d'impression : 1 planche de 4 cartes A6 + 2 affiches A4.
+       Ouvrir puis Fichier → Imprimer (A4, marges « aucune », graphiques d'arrière-plan activés). */
+    :root { --navy: #000033; --gold: #a67046; --amber: #ffb100; --grey: #7a7d7d; --paper: #fffbfe; }
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #e9e4de; }
+    body { font-family: "Manrope", system-ui, sans-serif; color: var(--navy); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sheet { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; position: relative; overflow: hidden; page-break-after: always; }
+    .sheet:last-child { page-break-after: auto; }
+    @media print { html, body { background: #fff; } .sheet { margin: 0; } .screen-only { display: none; } }
+    .screen-only { max-width: 210mm; margin: 16px auto 0; font-size: 14px; color: #444; }
+
+    /* ── Planche de 4 cartes A6 ── */
+    .grid { display: grid; grid-template-columns: 105mm 105mm; grid-template-rows: 148.5mm 148.5mm; }
+    .grid::before, .grid::after { content: ""; position: absolute; border: 0 dashed #c9c3bb; }
+    .grid::before { left: 105mm; top: 0; bottom: 0; border-left-width: .3mm; }
+    .grid::after { top: 148.5mm; left: 0; right: 0; border-top-width: .3mm; }
+    .card { padding: 6mm; }
+    .frame { height: 100%; border: 1.1mm solid var(--navy); padding: 7mm 6mm 6mm; display: grid; grid-template-rows: auto auto 1fr auto; justify-items: center; text-align: center; }
+    .script { font-family: "Monsieur La Doulaise", cursive; color: var(--gold); line-height: 1.1; }
+    .card .script { font-size: 9.5mm; margin: 0; }
+    .card h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 8.4mm; margin: 1.5mm 0 0; }
+    .card .qr { width: 52mm; height: 52mm; align-self: center; }
+    .card p { margin: 0; font-size: 3.2mm; line-height: 1.4; color: #333; }
+    .url { font-family: "JetBrains Mono", monospace; font-size: 2.6mm; letter-spacing: .2mm; color: var(--gold); margin-top: 1.6mm !important; }
+    .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 2.4mm; letter-spacing: .8mm; text-transform: uppercase; color: var(--gold); }
+
+    /* ── Affiches A4 ── */
+    .poster { padding: 12mm; }
+    .poster .frame { border-width: 1.6mm; padding: 18mm 16mm 14mm; grid-template-rows: auto auto auto 1fr auto; }
+    .poster .script { font-size: 17mm; margin: 0; }
+    .poster h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 17mm; margin: 4mm 0 2mm; }
+    .poster .lead { font-size: 5mm; color: #333; max-width: 140mm; margin: 0; line-height: 1.45; }
+    .poster .qr { width: 118mm; height: 118mm; align-self: center; }
+    .poster .url { font-size: 4mm; }
+    .poster .foot { display: grid; gap: 2mm; justify-items: center; }
+    .qr svg { width: 100%; height: 100%; display: block; }
+    .plane { width: 9mm; height: 9mm; fill: var(--gold); }
+  </style>
+</head>
+<body>
+  <p class="screen-only">Aperçu avant impression — imprimez en A4, sans marges, avec les couleurs d'arrière-plan. Page 1 : 4 cartes de table à découper (A6). Pages 2 et 3 : affiches pour l'entrée.</p>
+
+  <section class="sheet grid">
+    <div class="card"><div class="frame">
+      <p class="script">Vol MC 5060</p><h2>Trouver ma place</h2>
+      <div class="qr" data-path="/place"></div>
+      <div><p>Scannez, tapez votre nom :<br />votre rang et vos voisins de table.</p><p class="url" data-url="/place"></p></div>
+    </div></div>
+    <div class="card"><div class="frame">
+      <p class="script">Vol MC 5060</p><h2>La Boîte noire</h2>
+      <div class="qr" data-path="/boite"></div>
+      <div><p>Un mot, un souvenir, une photo<br />pour Marjorie &amp; Christophe.</p><p class="url" data-url="/boite"></p></div>
+    </div></div>
+    <div class="card"><div class="frame">
+      <p class="script">Vol MC 5060</p><h2>Radio de bord</h2>
+      <div class="qr" data-path="/radio"></div>
+      <div><p>Proposez vos chansons, votez,<br />retrouvez la playlist Spotify.</p><p class="url" data-url="/radio"></p></div>
+    </div></div>
+    <div class="card"><div class="frame">
+      <p class="script">Vol MC 5060</p><h2>Quiz de bord</h2>
+      <div class="qr" data-path="/quiz"></div>
+      <div><p>Connaissez-vous vos commandants de bord&nbsp;?<br />Rendez-vous sur l'écran géant.</p><p class="url" data-url="/quiz"></p></div>
+    </div></div>
+  </section>
+
+  <section class="sheet poster"><div class="frame">
+    <p class="script">Anniversaires Christophe &amp; Marjorie</p>
+    <p class="eyebrow" style="margin-top:6mm">Carte d'embarquement · Vol MC 5060</p>
+    <h2>Trouver ma place</h2>
+    <div class="qr" data-path="/place"></div>
+    <div class="foot"><p class="lead">Scannez avec l'appareil photo de votre téléphone, tapez votre nom : votre rang et vos voisins de table s'affichent.</p><p class="url" data-url="/place"></p></div>
+  </div></section>
+
+  <section class="sheet poster"><div class="frame">
+    <p class="script">Anniversaires Christophe &amp; Marjorie</p>
+    <p class="eyebrow" style="margin-top:6mm">Enregistreur de vol · Vol MC 5060</p>
+    <h2>La Boîte noire</h2>
+    <div class="qr" data-path="/boite"></div>
+    <div class="foot"><p class="lead">Laissez un message, un souvenir ou une photo : ils apparaîtront sur l'écran géant et resteront dans la boîte noire du vol.</p><p class="url" data-url="/boite"></p></div>
+  </div></section>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <script>
+    (function () {
+      // ?base=https://… permet de générer les QR vers le site en ligne depuis une copie locale
+      var base = (new URLSearchParams(location.search).get("base") || location.origin).replace(/\/$/, "");
+      document.querySelectorAll("[data-path]").forEach(function (el) {
+        var q = window.qrcode(0, "Q");
+        q.addData(base + el.getAttribute("data-path"));
+        q.make();
+        el.innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }).replace(/fill="black"|fill="#000000"/g, 'fill="#000033"');
+      });
+      document.querySelectorAll("[data-url]").forEach(function (el) {
+        el.textContent = base.replace(/^https?:\/\//, "") + el.getAttribute("data-url");
+      });
+    })();
+  </script>
+</body>
+</html>
