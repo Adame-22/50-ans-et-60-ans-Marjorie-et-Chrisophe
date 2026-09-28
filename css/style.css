@@ -929,7 +929,7 @@ h3 { font-size: 1.6rem; }
   .hero__plane, .hero__scroll span { display: none; }
   .hero, .sky__layer, .sky__stars, .sky__clouds, .sky__orbit { transition: none; }
   .star, .shooting, .cloud { animation: none; }
-  .ch__leaf, .stamp { animation: none; }
+  .stamp { animation: none; }
 }
 
 /* ───────── Effets (voir js/fx.js) ───────── */

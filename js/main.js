@@ -169,7 +169,7 @@
     cell.dataset.c = next;
     clearLeaves(cell);
     cell.firstChild.textContent = next;
-    if (reduceMotion || !dur) return;
+    if (!dur) return; // les volets restent actifs même avec « réduire les animations » : petit mouvement sur place
     cell.style.setProperty("--d", dur + "ms");
     var old = leaf("ch__leaf--old", prev);
     var bottom = leaf("ch__leaf--bottom", next);
@@ -189,9 +189,10 @@
     cells.forEach(function (cell, i) {
       var final = str[i];
       var run = (cell._run = (cell._run || 0) + 1);
-      if (!animate || reduceMotion) { flipTo(cell, final, 0); return; }
+      if (!animate) { flipTo(cell, final, 0); return; }
       // Les volets défilent dans l'ordre du jeu de caractères jusqu'à la cible
-      var steps = 4 + Math.floor(Math.random() * 7) + Math.floor(i / 3);
+      // (moins de battements si l'appareil demande moins d'animations)
+      var steps = reduceMotion ? 1 + Math.floor(Math.random() * 3) : 4 + Math.floor(Math.random() * 7) + Math.floor(i / 3);
       var target = Math.max(0, CHARSET.indexOf(final));
       var k = (target - steps + CHARSET.length * 4) % CHARSET.length;
       (function tick() {
