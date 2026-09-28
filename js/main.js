@@ -180,7 +180,7 @@
     setTimeout(function () { old.remove(); bottom.remove(); top.remove(); }, dur + 20);
   }
 
-  var STEP = 75; // durée d'un battement de volet (ms)
+  var STEP = 115; // durée d'un battement de volet (ms) : assez lent pour voir le volet basculer
 
   function setFlap(el, text, animate) {
     var cells = el.querySelectorAll(".ch");
@@ -191,14 +191,14 @@
       var run = (cell._run = (cell._run || 0) + 1);
       if (!animate || reduceMotion) { flipTo(cell, final, 0); return; }
       // Les volets défilent dans l'ordre du jeu de caractères jusqu'à la cible
-      var steps = 6 + Math.floor(Math.random() * 9) + Math.floor(i / 2);
+      var steps = 4 + Math.floor(Math.random() * 7) + Math.floor(i / 3);
       var target = Math.max(0, CHARSET.indexOf(final));
       var k = (target - steps + CHARSET.length * 4) % CHARSET.length;
       (function tick() {
         if (cell._run !== run) return;
         k = (k + 1) % CHARSET.length;
         var ch = steps-- <= 0 ? final : CHARSET[k];
-        flipTo(cell, ch, STEP - 5);
+        flipTo(cell, ch, STEP - 10);
         if (ch !== final || steps >= 0) setTimeout(tick, STEP);
       })();
     });
@@ -241,6 +241,7 @@
 
   var boardTimers = [];
   function runBoard() {
+    lastRun = Date.now();
     boardTimers.forEach(clearTimeout);
     boardTimers = [];
     boardFlaps.forEach(function (el, idx) {
@@ -268,6 +269,13 @@
   } else {
     runBoard();
   }
+  // Sur ordinateur, le tableau se rejoue aussi au survol de la souris
+  var lastRun = 0;
+  board.addEventListener("mouseenter", function () {
+    if (Date.now() - lastRun < 4000) return;
+    lastRun = Date.now();
+    runBoard();
+  });
 
   /* ───────── Countdown ───────── */
   var cd = {
