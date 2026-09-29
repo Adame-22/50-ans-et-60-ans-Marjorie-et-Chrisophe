@@ -1,0 +1,47 @@
+{
+  "name": "Vol MC 5060 · Marjorie & Christophe",
+  "short_name": "Vol MC 5060",
+  "description": "La fête des 50 ans de Marjorie et des 60 ans de Christophe : à table, quiz, boîte noire, radio.",
+  "lang": "fr",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000033",
+  "theme_color": "#000033",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "À table !",
+      "url": "/table"
+    },
+    {
+      "name": "Quiz de bord",
+      "url": "/quiz"
+    },
+    {
+      "name": "Boîte noire",
+      "url": "/boite"
+    },
+    {
+      "name": "Radio de bord",
+      "url": "/radio"
+    }
+  ]
+}

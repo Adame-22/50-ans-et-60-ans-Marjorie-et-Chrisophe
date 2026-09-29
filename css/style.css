@@ -960,3 +960,28 @@ h3 { font-size: 1.6rem; }
   .fx-rise, .fx-pop, .fx-land { animation: none; }
   .fx-ripple { display: none; }
 }
+
+/* ───────── Agenda ───────── */
+.agenda { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .6rem 1.4rem; margin-top: 28px; }
+.agenda__alt { font-family: var(--mono); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); text-underline-offset: 4px; }
+.agenda__alt:hover { color: var(--ink); }
+.btn__cal { width: 1.2em; height: 1.2em; flex: none; }
+.checkin-done__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem; }
+
+/* ───────── Ajouter à l'écran d'accueil ───────── */
+.install-card {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 900;
+  width: min(440px, calc(100% - 24px)); display: flex; align-items: center; gap: 12px;
+  padding: 12px 12px 12px 14px; border-radius: 18px; background: rgba(0, 0, 51, .94); color: #fffbfe;
+  border: 1px solid rgba(255, 177, 0, .35); box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .6); backdrop-filter: blur(10px);
+  transform: translate(-50%, 140%); transition: transform .5s var(--ease); font-family: var(--sans);
+}
+.install-card.is-in { transform: translate(-50%, 0); }
+.install-card img { border-radius: 10px; flex: none; }
+.install-card div { flex: 1; min-width: 0; display: grid; gap: 2px; font-size: .84rem; line-height: 1.35; }
+.install-card b { font-weight: 600; }
+.install-card span { color: rgba(255, 251, 254, .72); }
+.install-card svg { width: 1.1em; height: 1.1em; vertical-align: -3px; color: #ffb100; }
+.install-card__go { border: 0; border-radius: 999px; padding: .6rem 1rem; background: var(--gold-light); color: var(--navy); font: 600 .82rem var(--sans); cursor: pointer; }
+.install-card__x { border: 0; background: none; color: rgba(255, 251, 254, .6); font-size: 1.4rem; line-height: 1; padding: .2rem .4rem; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .install-card { transition: none; } }

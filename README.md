@@ -71,6 +71,13 @@ Le jour J, la page d'accueil et l'écran géant affichent l'étape en cours du p
 
 Le quiz tient la charge : l'état du jeu est mis en cache une seconde par Vercel, donc les téléphones ne sollicitent presque pas le serveur, qu'il y ait 70 joueurs ou plus. Il en va de même pour la page « À table ! » : chaque placement est écrit à part, si bien que 70 invités peuvent s'installer au même moment sans s'écraser.
 
+### Partage, agenda et appli
+
+- **Aperçu du lien** : en envoyant l'adresse du site par WhatsApp, SMS ou Messenger, une carte « Marjorie & Christophe · 50 ans · 60 ans » s'affiche (`assets/og.jpg`). WhatsApp garde parfois l'ancien aperçu en mémoire quelques heures.
+- **Ajouter à mon agenda** : bouton sous la carte d'embarquement et après l'enregistrement (`agenda.ics`, rappel la veille), ou lien Google Agenda.
+- **Écran d'accueil** : sur les pages de la soirée, une petite carte propose d'ajouter le site comme une appli (icône M&C), une seule fois par téléphone.
+- **Sauvegarde complète** : bouton dans le Manifeste. Un fichier avec réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe). Les photos se téléchargent à part, en ZIP, dans l'onglet Boîte noire.
+
 ### Animations
 
 Le site s'anime avec retenue : prénoms tracés à la plume, ciel en parallaxe, trajet d'avion dans la barre de navigation, carte d'embarquement inclinable, tampons sur les passeports, avion qui parcourt le plan de vol, confettis aux couleurs du vol. Tout est coupé automatiquement si le téléphone ou l'ordinateur demande moins d'animations (réglage d'accessibilité). Code : `js/motion.js` (page d'accueil) et `js/fx.js` (effets partagés).

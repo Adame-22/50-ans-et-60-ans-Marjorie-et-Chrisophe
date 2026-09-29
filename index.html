@@ -8,6 +8,23 @@
   <meta name="description" content="Embarquement pour les 50 ans de Marjorie et les 60 ans de Christophe." />
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/icon-180.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Vol MC 5060" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Vol MC 5060 · Marjorie &amp; Christophe" />
+  <meta property="og:title" content="Vol MC 5060 · Marjorie &amp; Christophe" />
+  <meta property="og:description" content="Embarquement pour les 50 ans de Marjorie et les 60 ans de Christophe · samedi 7 novembre 2026, Draveil. Confirmez votre présence en ligne." />
+  <meta property="og:url" content="https://50-ans-et-60-ans-marjorie-et-chriso.vercel.app/" />
+  <meta property="og:image" content="https://50-ans-et-60-ans-marjorie-et-chriso.vercel.app/assets/og.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Marjorie &amp; Christophe · 50 ans et 60 ans · samedi 7 novembre 2026, Draveil" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="stylesheet" href="css/fonts.css" />
   <link rel="stylesheet" href="css/style.css" />
   <script>
@@ -206,6 +223,10 @@
           </div>
         </div>
       </article>
+      <div class="agenda reveal">
+        <a class="btn btn--ghost" href="/agenda.ics" download="vol-mc5060.ics"><svg class="btn__cal" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4"/></svg><span>Ajouter à mon agenda</span></a>
+        <a class="agenda__alt" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=Vol+MC+5060+%C2%B7+50+ans+de+Marjorie+%26+60+ans+de+Christophe&amp;dates=20261107T113000Z%2F20261107T225900Z&amp;location=Salle+des+f%C3%AAtes+de+Champrosay%2C+1+all%C3%A9e+des+Alouettes%2C+91270+Draveil&amp;details=Embarquement+%C3%A0+12h30.+Toutes+les+infos+%3A+https%3A%2F%2F50-ans-et-60-ans-marjorie-et-chriso.vercel.app%2F&amp;ctz=Europe%2FParis" target="_blank" rel="noopener">ou dans Google Agenda</a>
+      </div>
     </div>
   </section>
 
@@ -393,7 +414,10 @@
         <div class="stamp" aria-hidden="true">Enregistré</div>
         <h3 id="done-title">Bon vol&nbsp;!</h3>
         <p id="done-text"></p>
-        <a href="#carte" class="btn btn--ghost">Voir ma carte d'embarquement</a>
+        <div class="checkin-done__actions">
+          <a href="/agenda.ics" download="vol-mc5060.ics" class="btn btn--gold"><svg class="btn__cal" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4"/></svg><span>Ajouter à mon agenda</span></a>
+          <a href="#carte" class="btn btn--ghost">Voir ma carte d'embarquement</a>
+        </div>
       </div>
     </div>
   </section>
@@ -411,5 +435,6 @@
   <script src="js/main.js"></script>
   <script src="js/fx.js"></script>
   <script src="js/motion.js"></script>
+  <script src="js/install.js"></script>
 </body>
 </html>
