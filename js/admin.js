@@ -842,28 +842,162 @@
     b.addEventListener("click", function () { quizAction(b.getAttribute("data-qz")); });
   });
 
-  /* ───────── Boîte noire (modération) ───────── */
+  /* ───────── Boîte noire (modération, place occupée, téléchargement) ───────── */
+  var bn = { entries: [], downloaded: {} };
+  try { bn.downloaded = JSON.parse(localStorage.getItem("mc-bn-saved") || "{}"); } catch (e) { /* ignoré */ }
+  function rememberSaved() { try { localStorage.setItem("mc-bn-saved", JSON.stringify(bn.downloaded)); } catch (e) { /* ignoré */ } }
+  function mb(chars) { return (chars * 0.75 / 1048576).toFixed(chars > 10485760 ? 0 : 1).replace(".", ",") + " Mo"; }
+
   function loadBoite() {
-    return fetch("/api/boite", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
-      var list = d.entries || [];
-      $("#bn-count").textContent = list.length;
-      $("#bn-empty").hidden = list.length > 0;
-      $("#bn-admin").innerHTML = list.map(function (e) {
-        return '<article class="bn-card">' +
+    return api("/api/boite?view=admin").then(function (d) {
+      bn.entries = d.entries || [];
+      var photos = bn.entries.filter(function (e) { return e.photo; });
+      var pct = Math.min(100, Math.round((d.used / d.budget) * 100));
+      $("#bn-count").textContent = bn.entries.length;
+      $("#bn-photos").textContent = photos.length + " photo" + (photos.length > 1 ? "s" : "");
+      $("#bn-used").textContent = "· " + mb(d.used) + " sur " + mb(d.budget) + " (" + pct + " %)";
+      $("#bn-bar").style.width = pct + "%";
+      $("#bn-bar").className = pct >= 85 ? "is-high" : pct >= 60 ? "is-mid" : "";
+      $("#bn-zip").disabled = !photos.length;
+      var got = photos.filter(function (e) { return bn.downloaded[e.id]; }).length;
+      $("#bn-free").hidden = !got;
+      $("#bn-free").textContent = "Libérer l'espace (" + got + " photo" + (got > 1 ? "s" : "") + " téléchargée" + (got > 1 ? "s" : "") + ")";
+
+      // qui envoie le plus de photos
+      var by = {};
+      photos.forEach(function (e) {
+        var k = e.name || "Un passager";
+        by[k] = by[k] || { n: 0, size: 0, ids: [] };
+        by[k].n++; by[k].size += e.size || 400000; by[k].ids.push(e.id);
+      });
+      var names = Object.keys(by).sort(function (a, b) { return by[b].n - by[a].n; });
+      bn.byName = by;
+      $("#bn-who").innerHTML = names.map(function (k) {
+        return "<tr><td><b>" + esc(k) + "</b></td><td>" + by[k].n + " photo" + (by[k].n > 1 ? "s" : "") + "</td><td>" + mb(by[k].size) + "</td>" +
+          '<td class="actions"><button class="btn btn--small btn--line" data-bn-zipname="' + esc(k) + '">Télécharger</button> ' +
+          '<button class="btn btn--small btn--line btn--danger" data-bn-purgename="' + esc(k) + '">Retirer ses photos</button></td></tr>';
+      }).join("") || '<tr><td class="hint">Aucune photo pour l\'instant.</td></tr>';
+
+      $("#bn-empty").hidden = bn.entries.length > 0;
+      $("#bn-admin").innerHTML = bn.entries.map(function (e) {
+        return '<article class="bn-card' + (bn.downloaded[e.id] ? " is-saved" : "") + '">' +
           (e.photo ? '<img loading="lazy" src="/api/boite?photo=' + encodeURIComponent(e.id) + '" alt="" />' : "") +
           (e.message ? "<p>" + esc(e.message) + "</p>" : "") +
-          "<footer><small>" + esc(e.name) + " · " + fmtDate(e.createdAt) + "</small>" +
-          '<button class="btn btn--small btn--line btn--danger" data-bn-del="' + esc(e.id) + '">Supprimer</button></footer></article>';
+          "<footer><small>" + esc(e.name) + " · " + fmtDate(e.createdAt) + (e.photo ? " · " + mb(e.size || 400000) : "") + (bn.downloaded[e.id] ? " · téléchargée ✓" : "") + "</small>" +
+          '<span class="bn-card__actions">' +
+          (e.photo && e.message ? '<button class="btn btn--small btn--line" data-bn-photo="' + esc(e.id) + '" title="Retirer la photo, garder le message">Retirer la photo</button>' : "") +
+          '<button class="btn btn--small btn--line btn--danger" data-bn-del="' + esc(e.id) + '">Supprimer</button></span></footer></article>';
       }).join("");
-    }).catch(function () { toast("Impossible de charger la boîte noire.", true); });
+    }).catch(function (e) { if (!onAuthError(e)) toast("Impossible de charger la boîte noire.", true); });
   }
-  $("#bn-admin").addEventListener("click", function (e) {
-    var id = e.target.getAttribute("data-bn-del");
-    if (!id || !confirm("Supprimer ce message (et sa photo) ?")) return;
-    api("/api/boite?id=" + encodeURIComponent(id), { method: "DELETE" })
-      .then(function () { toast("Supprimé."); e.target.closest(".bn-card").remove(); })
+
+  function purge(ids, photoOnly, label) {
+    if (!ids.length) return Promise.resolve();
+    return api("/api/boite", { method: "POST", body: { action: "purge", ids: ids, photoOnly: photoOnly } })
+      .then(function (d) { toast(label || (d.count + " élément(s) retiré(s).")); return loadBoite(); })
       .catch(function (err) { toast(err.message, true); });
+  }
+
+  $("#bn-admin").addEventListener("click", function (e) {
+    var id = e.target.getAttribute("data-bn-del"), pid = e.target.getAttribute("data-bn-photo");
+    if (id && confirm("Supprimer ce message (et sa photo) ?")) {
+      api("/api/boite?id=" + encodeURIComponent(id), { method: "DELETE" }).then(function () { toast("Supprimé."); loadBoite(); }).catch(function (err) { toast(err.message, true); });
+    }
+    if (pid && confirm("Retirer la photo ? Le message reste affiché.")) {
+      api("/api/boite?id=" + encodeURIComponent(pid) + "&photo=1", { method: "DELETE" }).then(function () { toast("Photo retirée."); loadBoite(); }).catch(function (err) { toast(err.message, true); });
+    }
   });
+
+  $("#bn-who").addEventListener("click", function (e) {
+    var zn = e.target.getAttribute("data-bn-zipname"), pn = e.target.getAttribute("data-bn-purgename");
+    if (zn) zipPhotos(bn.entries.filter(function (x) { return x.photo && (x.name || "Un passager") === zn; }), "boite-noire-" + zn);
+    if (pn && confirm("Retirer les " + bn.byName[pn].n + " photos de « " + pn + " » du serveur ? Pensez à les télécharger avant. Les messages restent.")) {
+      purge(bn.byName[pn].ids, true, "Photos de " + pn + " retirées.");
+    }
+  });
+
+  $("#bn-zip").addEventListener("click", function () {
+    zipPhotos(bn.entries.filter(function (x) { return x.photo; }), "boite-noire-vol-mc5060");
+  });
+
+  $("#bn-free").addEventListener("click", function () {
+    var ids = bn.entries.filter(function (x) { return x.photo && bn.downloaded[x.id]; }).map(function (x) { return x.id; });
+    if (!ids.length) return;
+    if (!confirm("Retirer du serveur les " + ids.length + " photos déjà téléchargées sur cet appareil ? Vérifiez que le ZIP s'ouvre bien. Les messages restent.")) return;
+    purge(ids, true, ids.length + " photos retirées : de la place est libérée.");
+  });
+
+  /* Fabrique un ZIP (sans compression : les JPEG le sont déjà) directement dans le navigateur */
+  var CRC = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+    return t;
+  })();
+  function crc32(buf) { var c = 0xffffffff; for (var i = 0; i < buf.length; i++) c = CRC[(c ^ buf[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+  function makeZip(files) {
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+    files.forEach(function (f) {
+      var name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+      var d = new Date(f.date || Date.now());
+      var time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+      var date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+      var h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint16(10, time, true); h.setUint16(12, date, true); h.setUint32(14, crc, true); h.setUint32(18, size, true); h.setUint32(22, size, true);
+      h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+      parts.push(new Uint8Array(h.buffer), name, f.data);
+      var c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+      c.setUint16(12, time, true); c.setUint16(14, date, true); c.setUint32(16, crc, true); c.setUint32(20, size, true); c.setUint32(24, size, true);
+      c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+      central.push(new Uint8Array(c.buffer), name);
+      offset += 30 + name.length + size;
+    });
+    var csize = central.reduce(function (n, p) { return n + p.length; }, 0);
+    var e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+    e.setUint32(12, csize, true); e.setUint32(16, offset, true);
+    return new Blob(parts.concat(central, [new Uint8Array(e.buffer)]), { type: "application/zip" });
+  }
+  function slug(s) { return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "invite"; }
+
+  function zipPhotos(list, base) {
+    if (!list.length) return;
+    var btn = $("#bn-zip"), label = btn.textContent, done = 0, files = [];
+    btn.disabled = true;
+    var queue = list.slice();
+    function worker() {
+      var e = queue.shift();
+      if (!e) return Promise.resolve();
+      return fetch("/api/boite?photo=" + encodeURIComponent(e.id)).then(function (r) {
+        if (!r.ok) throw new Error("photo " + e.id);
+        var ext = /png/.test(r.headers.get("Content-Type") || "") ? "png" : /webp/.test(r.headers.get("Content-Type") || "") ? "webp" : "jpg";
+        return r.arrayBuffer().then(function (buf) {
+          var d = new Date(e.createdAt);
+          var stamp = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + "_" +
+            String(d.getHours()).padStart(2, "0") + "h" + String(d.getMinutes()).padStart(2, "0");
+          files.push({ name: stamp + "_" + slug(e.name) + "_" + e.id.slice(0, 6) + "." + ext, data: new Uint8Array(buf), date: e.createdAt, id: e.id });
+        });
+      }).catch(function () { /* photo déjà retirée : on continue */ }).then(function () {
+        done++;
+        btn.textContent = "Préparation… " + done + " / " + list.length;
+        return worker();
+      });
+    }
+    Promise.all([worker(), worker(), worker(), worker()]).then(function () {
+      if (!files.length) throw new Error("Aucune photo récupérée.");
+      files.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(makeZip(files));
+      a.download = slug(base) + ".zip";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+      files.forEach(function (f) { bn.downloaded[f.id] = true; });
+      rememberSaved();
+      toast(files.length + " photos téléchargées. Vous pouvez maintenant libérer l'espace.");
+      loadBoite();
+    }).catch(function (err) { toast(err.message, true); }).then(function () { btn.disabled = false; btn.textContent = label; });
+  }
 
   /* ───────── Radio de bord (vue DJ) ───────── */
   var radioTimer = 0;

@@ -51,7 +51,7 @@ Dans l'admin :
   - *Mélanger les invités* : N équipes équilibrées qui mélangent les tables, sans jamais séparer une famille (une réponse = un groupe).
   - Glisser une table (ou un invité) d'une équipe à l'autre pour ajuster ; cliquer sur un nom d'équipe pour le changer.
 - **Quiz** : préparer les questions, puis piloter en direct (embarquement → question → réponse → classement → podium). Avec le classement par équipe, chaque joueur est rattaché à son équipe grâce à la page « À table ! » (ou en choisissant sa table dans le salon du quiz) ; l'équipe gagne à la moyenne des points, et l'écran affiche le podium des équipes.
-- **Boîte noire** : supprimer un message ou une photo.
+- **Boîte noire** : supprimer un message ou une photo, voir la place occupée par les photos et qui en envoie le plus, tout télécharger en ZIP (ou les photos d'un invité), puis « Libérer l'espace » : les photos quittent le serveur, les messages restent. Au-delà de 350 Mo, les invités peuvent encore écrire mais plus envoyer de photos, jusqu'à ce qu'on fasse de la place.
 - **Radio** : vue DJ, avec les chansons les plus votées en premier.
 - **Manifeste** : bouton ✓ pour pointer les arrivées à l'entrée.
 

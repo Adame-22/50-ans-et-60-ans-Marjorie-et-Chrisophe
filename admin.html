@@ -260,6 +260,23 @@
         <span class="toolbar__grow"></span>
         <span class="pill" id="bn-count">0</span>
       </div>
+
+      <div class="card bn-space">
+        <div class="bn-space__head">
+          <div><strong id="bn-photos">0 photo</strong> <span class="hint" id="bn-used"></span></div>
+          <div class="bn-space__actions">
+            <button class="btn btn--small btn--gold" id="bn-zip" type="button">Télécharger toutes les photos (ZIP)</button>
+            <button class="btn btn--small btn--line btn--danger" id="bn-free" type="button" hidden>Libérer l'espace</button>
+          </div>
+        </div>
+        <div class="bn-space__bar" aria-hidden="true"><i id="bn-bar"></i></div>
+        <p class="hint hint--tiny" id="bn-hint">Les photos sont gardées dans la base de données, qui a une place limitée. Si l'album se remplit, téléchargez les photos puis « Libérer l'espace » : les photos quittent le serveur, les messages restent. Au-delà de la limite, les invités peuvent encore envoyer des messages, mais plus de photos.</p>
+        <details class="bn-who">
+          <summary>Photos par invité</summary>
+          <table class="table"><tbody id="bn-who"></tbody></table>
+        </details>
+      </div>
+
       <div class="bn-grid" id="bn-admin"></div>
       <p class="empty card" id="bn-empty" hidden>La boîte noire est encore vide.</p>
     </section>
