@@ -41,10 +41,10 @@ module.exports = L.handler(async (req, res) => {
       const names = {};
       plan.tables.forEach((t) => { names[t.id] = t.name; });
       const results = Object.values(rsvps)
-        .filter((r) => r.presence === "oui" && norm(r.nom).includes(q))
+        .filter((r) => r.presence === "oui" && norm([r.nom].concat(r.accompagnants || []).join(" ")).includes(q))
         .sort((a, b) => a.nom.localeCompare(b.nom, "fr"))
         .slice(0, 8)
-        .map((r) => ({ id: r.id, nom: r.nom, passagers: r.passagers || 1, table: assign[r.id] && names[assign[r.id]] ? { id: assign[r.id], name: names[assign[r.id]] } : null }));
+        .map((r) => ({ id: r.id, nom: r.nom + (r.accompagnants && r.accompagnants.length ? " (avec " + r.accompagnants.join(", ") + ")" : ""), passagers: r.passagers || 1, table: assign[r.id] && names[assign[r.id]] ? { id: assign[r.id], name: names[assign[r.id]] } : null }));
       return L.send(res, 200, { results });
     }
     const { tables, seated, expected } = await snapshot();

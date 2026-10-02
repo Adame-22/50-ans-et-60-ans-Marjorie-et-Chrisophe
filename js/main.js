@@ -325,9 +325,73 @@
   var errorEl = document.getElementById("form-error");
   var passName = document.getElementById("pass-name");
 
+  // Un champ par accompagnant, selon le nombre de passagers
+  var compBox = document.getElementById("companions"), compList = document.getElementById("companions-list");
+  function syncCompanions() {
+    var n = Math.max(0, parseInt(form.passagers.value, 10) - 1);
+    var old = Array.prototype.map.call(compList.querySelectorAll("input"), function (i) { return i.value; });
+    compList.innerHTML = "";
+    for (var i = 0; i < n; i++) {
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.maxLength = 60; inp.autocomplete = "off";
+      inp.placeholder = "Passager " + (i + 2) + " : prénom et nom";
+      inp.setAttribute("aria-label", "Passager " + (i + 2));
+      inp.value = old[i] || "";
+      compList.appendChild(inp);
+    }
+    compBox.hidden = form.presence.value !== "oui" || n === 0;
+  }
+  form.passagers.addEventListener("change", syncCompanions);
+
   function syncPresence() {
     var yes = form.presence.value === "oui";
     form.querySelectorAll("[data-show-if]").forEach(function (el) { el.hidden = !yes; });
+    syncCompanions();
+  }
+
+  // Photo souvenir (réduite sur le téléphone avant l'envoi, comme dans la Boîte noire)
+  var photoInput = document.getElementById("f-photo"), photoPreview = document.getElementById("f-photo-preview"), photoData = "";
+  function shrink(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("Image illisible (format non pris en charge ?).")); };
+      img.src = url;
+    });
+  }
+  photoInput.addEventListener("change", function () {
+    var f = photoInput.files[0];
+    photoData = ""; photoPreview.hidden = true;
+    if (!f) return;
+    shrink(f).then(function (d) {
+      photoData = d; photoPreview.src = d; photoPreview.hidden = false;
+      document.getElementById("f-photo-label").textContent = "📷 Changer de photo";
+    }).catch(function (e) { showError(e.message); });
+  });
+
+  // Extras envoyés après l'enregistrement : photo → Boîte noire, chanson → Radio de bord
+  function sendExtras(data) {
+    var jobs = [];
+    if (photoData) {
+      jobs.push(fetch("/api/boite", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: data.nom.split(" ")[0], message: "", photo: photoData }) }));
+    }
+    var song = (form.song.value || "").trim();
+    if (song && data.presence === "oui") {
+      var parts = song.split(/\s+[–—-]\s+/);
+      var voter = "";
+      try { voter = localStorage.getItem("mc-voter") || ""; if (!voter) { voter = String(Math.random()).slice(2) + Date.now().toString(36); localStorage.setItem("mc-voter", voter); } } catch (e) { voter = String(Math.random()).slice(2); }
+      jobs.push(fetch("/api/radio", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "add", title: parts[0], artist: parts.slice(1).join(" - "), by: data.nom.split(" ")[0], voter: voter }) }));
+    }
+    return Promise.all(jobs.map(function (j) { return j.catch(function () {}); }));
   }
   form.querySelectorAll('input[name="presence"]').forEach(function (r) { r.addEventListener("change", syncPresence); });
   syncPresence();
@@ -363,6 +427,7 @@
       passagers: form.presence.value === "oui" ? parseInt(form.passagers.value, 10) : 0,
       repas: form.presence.value === "oui" ? form.repas.value : "",
       allergies: form.presence.value === "oui" ? form.allergies.value.trim() : "",
+      accompagnants: form.presence.value === "oui" ? Array.prototype.map.call(compList.querySelectorAll("input"), function (i) { return i.value.trim(); }).filter(Boolean) : [],
       email: form.email.value.trim(),
       message: form.message.value.trim(),
       website: form.website.value
@@ -383,7 +448,7 @@
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (res) {
         if (!r.ok) throw new Error(res.error || "");
-        finish(data, res.id);
+        return sendExtras(data).then(function () { finish(data, res.id); });
       });
     }).catch(function (err) {
       showError(err.message || "Oups, l'envoi a échoué. Réessayez dans un instant.");

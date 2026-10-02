@@ -354,7 +354,7 @@
 
       <form class="checkin reveal" id="checkin" novalidate>
         <div class="field">
-          <label for="f-name">Nom du passager</label>
+          <label for="f-name">Votre prénom et nom</label>
           <input id="f-name" name="nom" type="text" autocomplete="name" required placeholder="Prénom Nom" />
         </div>
 
@@ -366,13 +366,13 @@
 
         <div class="field-row" data-show-if="oui">
           <div class="field">
-            <label for="f-count">Nombre de passagers</label>
+            <label for="f-count">Nombre de passagers (vous compris)</label>
             <select id="f-count" name="passagers">
-              <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+              <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
             </select>
           </div>
           <div class="field">
-            <label for="f-meal">Repas spécial</label>
+            <label for="f-meal">Régime alimentaire</label>
             <select id="f-meal" name="repas">
               <option>Standard</option>
               <option>Végétarien</option>
@@ -385,19 +385,40 @@
           </div>
         </div>
 
+        <div class="field companions" data-show-if="oui" id="companions">
+          <span class="field__label">Prénom et nom des personnes qui vous accompagnent</span>
+          <div class="companions__list" id="companions-list"></div>
+        </div>
+
         <div class="field" data-show-if="oui">
-          <label for="f-allergies">Allergies ou précisions pour le traiteur</label>
+          <label for="f-allergies">Allergies ou précisions pour le service de restauration <small>(facultatif)</small></label>
           <input id="f-allergies" name="allergies" type="text" maxlength="300" placeholder="Ex. : arachides, lactose…" />
         </div>
 
         <div class="field">
-          <label for="f-email">E-mail</label>
+          <label for="f-email">E-mail <small>(facultatif)</small></label>
           <input id="f-email" name="email" type="email" autocomplete="email" placeholder="vous@exemple.fr" />
         </div>
 
         <div class="field">
-          <label for="f-msg">Un mot pour Marjorie & Christophe</label>
+          <label for="f-msg">Un mot pour Marjorie & Christophe <small>(facultatif)</small></label>
           <textarea id="f-msg" name="message" rows="4" placeholder="Souvenirs, vœux…"></textarea>
+        </div>
+
+        <div class="field">
+          <span class="field__label">Une photo souvenir avec eux <small>(facultatif)</small></span>
+          <div class="photo-pick">
+            <input id="f-photo" type="file" accept="image/*" />
+            <label for="f-photo" class="photo-btn" id="f-photo-label">📷 Ajouter une photo</label>
+            <img id="f-photo-preview" alt="" hidden />
+          </div>
+          <small class="field__help">Elle rejoindra la Boîte noire et passera sur l'écran géant le jour de la fête.</small>
+        </div>
+
+        <div class="field" data-show-if="oui">
+          <label for="f-song">La chanson qui vous fera danser <small>(facultatif)</small></label>
+          <input id="f-song" name="song" type="text" maxlength="120" placeholder="Titre – artiste" />
+          <small class="field__help">Elle sera ajoutée aux demandes de la Radio de bord pour le DJ.</small>
         </div>
 
         <div class="hp" aria-hidden="true">

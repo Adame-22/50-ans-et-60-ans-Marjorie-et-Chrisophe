@@ -985,3 +985,18 @@ h3 { font-size: 1.6rem; }
 .install-card__go { border: 0; border-radius: 999px; padding: .6rem 1rem; background: var(--gold-light); color: var(--navy); font: 600 .82rem var(--sans); cursor: pointer; }
 .install-card__x { border: 0; background: none; color: rgba(255, 251, 254, .6); font-size: 1.4rem; line-height: 1; padding: .2rem .4rem; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .install-card { transition: none; } }
+
+/* ───────── Enregistrement : accompagnants, photo, aides ───────── */
+.field label small, .field__label small { text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: .78rem; opacity: .8; }
+.field__help { color: var(--muted); font-size: .8rem; line-height: 1.4; }
+.companions__list { display: grid; gap: .6rem; }
+.checkin .photo-pick { display: flex; align-items: center; gap: .8rem; }
+.checkin .photo-pick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.checkin .photo-btn {
+  display: inline-flex; align-items: center; gap: .5rem; padding: .8rem 1.1rem; border-radius: 10px; cursor: pointer;
+  border: 1px dashed var(--gold); color: var(--ink); background: var(--paper);
+  font: 500 .95rem var(--sans); letter-spacing: 0; text-transform: none;
+}
+.checkin .photo-btn:hover, .checkin .photo-pick input:focus-visible + .photo-btn { background: #fff8ef; }
+.checkin .photo-pick img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
+.checkin .field__label { font-family: var(--mono); font-size: .66rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }

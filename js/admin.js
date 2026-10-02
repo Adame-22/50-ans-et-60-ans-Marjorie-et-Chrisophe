@@ -188,6 +188,7 @@
       return "<tr>" +
         "<td>" + (yesR ? '<button class="checkin-btn' + (r.arrivedAt ? " is-in" : "") + '" data-checkin="' + esc(r.id) + '" title="' + (r.arrivedAt ? "Arrivé à " + fmtDate(r.arrivedAt) : "Pointer l'arrivée") + '" aria-label="Pointer l\'arrivée de ' + esc(r.nom) + '">✓</button>' : "") + "</td>" +
         "<td><b>" + esc(r.nom) + "</b>" + (r.source === "sur place" ? ' <span class="tag tag--gold" title="Ajouté·e depuis la page À table !, le jour J">sur place</span>' : "") +
+        (r.accompagnants && r.accompagnants.length ? "<small>avec " + esc(r.accompagnants.join(", ")) + "</small>" : "") +
         (r.email ? "<small>" + esc(r.email) + "</small>" : "") + "</td>" +
         "<td>" + (yesR ? '<span class="tag tag--ok">À bord</span>' : '<span class="tag tag--no">Au sol</span>') + "</td>" +
         "<td>" + (yesR ? r.passagers : "—") + "</td>" +
@@ -258,10 +259,10 @@
   function exportCsv(plan) {
     var tableOf = {};
     plan.tables.forEach(function (t) { tableOf[t.id] = t.name; });
-    var head = ["Nom", "Présence", "Passagers", "Repas spécial", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
+    var head = ["Nom", "Accompagnants", "Présence", "Passagers", "Régime alimentaire", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
     var lines = [head.join(";")].concat(state.rsvps.map(function (r) {
       var table = plan.assign[r.id] ? tableOf[plan.assign[r.id]] || "" : "";
-      return [r.nom, r.presence === "oui" ? "À bord" : "Au sol", r.passagers, r.repas, r.allergies, r.email, r.message, table,
+      return [r.nom, (r.accompagnants || []).join(", "), r.presence === "oui" ? "À bord" : "Au sol", r.passagers, r.repas, r.allergies, r.email, r.message, table,
         r.arrivedAt ? fmtDate(r.arrivedAt) : "", fmtDate(r.createdAt)]
         .map(csvCell).join(";");
     }));
