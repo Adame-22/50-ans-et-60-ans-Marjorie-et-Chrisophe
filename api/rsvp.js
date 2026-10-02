@@ -31,6 +31,8 @@ module.exports = L.handler(async (req, res) => {
       repas: oui && REPAS.includes(b.repas) ? b.repas : oui ? "Standard" : "",
       allergies: oui ? L.str(b.allergies, 300) : "",
       accompagnants: oui && Array.isArray(b.accompagnants) ? b.accompagnants.slice(0, 11).map((x) => L.str(x, 60)).filter(Boolean) : [],
+      // billet de chaque accompagnant, dans le même ordre (midi | soir | journee)
+      creneauxAcc: oui && Array.isArray(b.creneauxAcc) ? b.creneauxAcc.slice(0, 11).map((x) => (["midi", "soir", "journee"].includes(x) ? x : "")) : [],
       email,
       message: L.str(b.message, 1500),
       createdAt: new Date().toISOString(),

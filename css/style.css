@@ -1039,3 +1039,81 @@ h3 { font-size: 1.6rem; }
 @keyframes fare-sheen { to { transform: translateX(100%); } }
 .fare--journee .fare__class::after { content: " ★"; }
 @media (prefers-reduced-motion: reduce) { .fare__card { transition: none; } .fare input:checked + .fare__card::before { animation: none; display: none; } }
+
+/* ─────────────────────────────────────────────
+   Accessibilité : textes et boutons plus grands, lisibles par tous
+   ───────────────────────────────────────────── */
+.btn { font-size: .88rem; letter-spacing: .1em; min-height: 52px; padding: .95rem 1.8rem; }
+.checkin .field label, .checkin .field legend, .checkin .field__label {
+  font-family: var(--sans); font-size: 1rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink);
+}
+.checkin .field input, .checkin .field select, .checkin .field textarea { font-size: 1.05rem; min-height: 56px; padding: 1rem 1.1rem; border-width: 1.5px; }
+.checkin .field textarea { min-height: 120px; }
+.checkin .field input::placeholder, .checkin .field textarea::placeholder { color: #8b8e8f; }
+.choice span { padding: 1.15rem 1rem; font-size: 1.1rem; font-weight: 600; border-width: 1.5px; }
+.choice input:checked + span { box-shadow: 0 8px 20px -12px rgba(0, 0, 51, .6); }
+.field__help, .consent { font-size: .9rem; }
+.checkin button[type=submit] { font-size: 1rem; min-height: 62px; }
+.form-error { font-size: 1rem; font-weight: 600; }
+.fare__class { font-size: .72rem; letter-spacing: .16em; }
+.fare__name { font-size: .72rem; letter-spacing: .12em; }
+.fare__title { font-size: 1.75rem; }
+.fare__txt { font-size: .95rem; color: #5d6061; }
+.fare__card { border-width: 1.5px; }
+@media (max-width: 620px) { .fare__card { padding: 1.1rem 1.2rem 1.2rem; } }
+
+/* Gros boutons d'action (agenda, itinéraire) */
+.big-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
+.big-actions--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .big-actions, .big-actions--3 { grid-template-columns: 1fr; } }
+.big-btn {
+  display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 14px 18px; border-radius: 16px;
+  background: #fff; color: var(--ink); text-decoration: none; text-align: left;
+  border: 1.5px solid var(--gold); box-shadow: 0 10px 24px -18px rgba(0, 0, 51, .5);
+  transition: transform .25s var(--ease), background .25s, box-shadow .25s;
+}
+.big-btn svg { width: 30px; height: 30px; flex: none; color: var(--gold); }
+.big-btn span { display: grid; gap: 2px; }
+.big-btn b { font-size: 1.08rem; font-weight: 700; }
+.big-btn small { font-size: .88rem; color: var(--muted); }
+.big-btn:hover { transform: translateY(-2px); background: #fff8ef; box-shadow: 0 16px 30px -18px rgba(0, 0, 51, .55); }
+.big-btn:active { transform: scale(.98); }
+.big-btn:focus-visible { outline: 3px solid var(--gold-light); outline-offset: 3px; }
+.agenda { flex-direction: column; gap: 14px; max-width: 640px; margin: 32px auto 0; }
+.agenda__title { margin: 0; font-family: var(--serif); font-size: 1.6rem; text-align: center; }
+.checkin-done .big-actions { margin: 0 0 1.2rem; }
+.checkin-done .big-btn b { font-size: 1rem; }
+
+.route-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 24px; align-items: center;
+  margin-top: 24px; padding: clamp(22px, 3vw, 32px); border-radius: var(--radius); background: var(--navy); color: var(--paper);
+}
+@media (max-width: 860px) { .route-card { grid-template-columns: 1fr; } }
+.route-card .eyebrow { color: var(--gold-light); margin-bottom: .6rem; }
+.route-card__place { margin: 0; font-family: var(--serif); font-size: 1.7rem; line-height: 1.15; }
+.route-card__addr { margin: .3rem 0 .9rem; font-size: 1.1rem; color: rgba(255, 251, 254, .85); }
+.route-card__copy { border: 1px solid rgba(255, 251, 254, .4); background: transparent; color: var(--paper); border-radius: 999px; padding: .6rem 1.1rem; font: 600 .95rem var(--sans); cursor: pointer; min-height: 44px; }
+.route-card__copy:hover { border-color: var(--gold-light); color: var(--gold-light); }
+.route-card .big-btn { background: rgba(255, 251, 254, .06); color: var(--paper); border-color: rgba(255, 177, 0, .55); box-shadow: none; }
+.route-card .big-btn svg { color: var(--gold-light); }
+.route-card .big-btn small { color: rgba(255, 251, 254, .65); }
+.route-card .big-btn:hover { background: rgba(255, 177, 0, .12); }
+.info .info__links a { font-size: .9rem; }
+
+/* Accompagnants : nom + billet de chacun */
+.companions__list { gap: 14px; }
+.companion { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: var(--ivory); border: 1px solid var(--line); }
+.companion__fares { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pill { position: relative; cursor: pointer; }
+.pill input { position: absolute; opacity: 0; pointer-events: none; }
+.pill span {
+  display: flex; align-items: center; justify-content: center; min-height: 48px; padding: .5rem; border-radius: 12px;
+  background: #fff; border: 1.5px solid var(--line); font: 600 1rem var(--sans); color: var(--ink); text-align: center;
+  transition: background .25s, color .25s, border-color .25s;
+}
+.pill:hover span { border-color: var(--gold); }
+.pill input:checked + span { background: var(--navy); border-color: var(--navy); color: var(--paper); }
+.pill input:checked + span::before { content: "✓ "; color: var(--gold-light); margin-right: .25rem; }
+.pill input:focus-visible + span { box-shadow: 0 0 0 4px rgba(166, 112, 70, .3); }
+.pill span { white-space: nowrap; padding: .5rem .3rem; font-size: .98rem; }
+@media (max-width: 360px) { .pill span { font-size: .9rem; } .pill input:checked + span::before { content: "✓"; } }

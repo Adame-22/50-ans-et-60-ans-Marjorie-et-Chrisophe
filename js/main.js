@@ -89,6 +89,16 @@
   var gmap = document.getElementById("map-google"), waze = document.getElementById("map-waze");
   if (gmap) gmap.href = "https://www.google.com/maps/search/?api=1&query=" + dest;
   if (waze) waze.href = "https://waze.com/ul?navigate=yes&q=" + dest;
+  var apple = document.getElementById("map-apple");
+  if (apple) apple.href = "https://maps.apple.com/?daddr=" + dest;
+  var copyAddr = document.getElementById("copy-addr");
+  if (copyAddr) copyAddr.addEventListener("click", function () {
+    var txt = [CFG.lieu, CFG.adresse].filter(Boolean).join(", ");
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () {
+      copyAddr.textContent = "Adresse copiée ✓";
+      setTimeout(function () { copyAddr.textContent = "Copier l'adresse"; }, 2500);
+    }).catch(function () { window.prompt("Adresse :", txt); });
+  });
 
   /* ───────── Police Adobe (Sweet Fancy Script) ───────── */
   if (CFG.adobeFontsKit) {
@@ -325,22 +335,44 @@
   var errorEl = document.getElementById("form-error");
   var passName = document.getElementById("pass-name");
 
-  // Un champ par accompagnant, selon le nombre de passagers
+  // Une ligne par accompagnant : son nom et son billet (midi, soir ou les deux)
   var compBox = document.getElementById("companions"), compList = document.getElementById("companions-list");
+  var FARES = [["midi", "Midi"], ["soir", "Soir"], ["journee", "Les deux"]];
+  function mainFare() { var c = form.querySelector('input[name="creneau"]:checked'); return c ? c.value : ""; }
   function syncCompanions() {
     var n = Math.max(0, parseInt(form.passagers.value, 10) - 1);
-    var old = Array.prototype.map.call(compList.querySelectorAll("input"), function (i) { return i.value; });
+    var old = Array.prototype.map.call(compList.querySelectorAll(".companion"), function (row) {
+      var c = row.querySelector("input[type=radio]:checked");
+      return { nom: row.querySelector("input[type=text]").value, f: c ? c.value : "", touched: row.dataset.touched === "1" };
+    });
     compList.innerHTML = "";
     for (var i = 0; i < n; i++) {
-      var inp = document.createElement("input");
-      inp.type = "text"; inp.maxLength = 60; inp.autocomplete = "off";
-      inp.placeholder = "Passager " + (i + 2) + " : prénom et nom";
-      inp.setAttribute("aria-label", "Passager " + (i + 2));
-      inp.value = old[i] || "";
-      compList.appendChild(inp);
+      var o = old[i] || { nom: "", f: mainFare(), touched: false };
+      var row = document.createElement("div");
+      row.className = "companion";
+      if (o.touched) row.dataset.touched = "1";
+      var html = '<input type="text" maxlength="60" autocomplete="off" placeholder="Passager ' + (i + 2) + ' : prénom et nom" aria-label="Nom du passager ' + (i + 2) + '" />' +
+        '<div class="companion__fares" role="radiogroup" aria-label="Billet du passager ' + (i + 2) + '">';
+      FARES.forEach(function (f) {
+        html += '<label class="pill"><input type="radio" name="cf' + i + '" value="' + f[0] + '"' + (o.f === f[0] ? " checked" : "") + " /><span>" + f[1] + "</span></label>";
+      });
+      row.innerHTML = html + "</div>";
+      row.querySelector("input[type=text]").value = o.nom;
+      row.addEventListener("change", function (e) { if (e.target.type === "radio") this.dataset.touched = "1"; });
+      compList.appendChild(row);
     }
     compBox.hidden = form.presence.value !== "oui" || n === 0;
   }
+  // Le billet choisi pour soi est proposé par défaut aux accompagnants (tant qu'on n'a pas changé le leur)
+  form.querySelectorAll('input[name="creneau"]').forEach(function (r) {
+    r.addEventListener("change", function () {
+      compList.querySelectorAll(".companion").forEach(function (row) {
+        if (row.dataset.touched === "1") return;
+        var t = row.querySelector('input[value="' + r.value + '"]');
+        if (t) t.checked = true;
+      });
+    });
+  });
   form.passagers.addEventListener("change", syncCompanions);
 
   function syncPresence() {
@@ -398,6 +430,17 @@
 
   function showError(msg) { errorEl.textContent = msg; errorEl.hidden = !msg; }
 
+  function fareSummary(data) {
+    var all = [data.creneau].concat(data.creneauxAcc || []);
+    while (all.length < data.passagers) all.push(data.creneau);
+    var lbl = { midi: ["le déjeuner", "le déjeuner"], soir: ["la soirée", "la soirée"], journee: ["midi et soir", "midi et soir"] };
+    var by = {};
+    all.forEach(function (x) { by[x] = (by[x] || 0) + 1; });
+    var keys = Object.keys(by);
+    if (keys.length === 1) return (data.passagers > 1 ? "tous " : "") + lbl[keys[0]][0];
+    return keys.map(function (k) { return by[k] + " pour " + lbl[k][0]; }).join(", ");
+  }
+
   function finish(data, id) {
     var yes = data.presence === "oui";
     // le jour J, la page « À table ! » reconnaîtra l'invité sur ce téléphone
@@ -408,8 +451,7 @@
     done.hidden = false;
     document.getElementById("done-title").textContent = yes ? "Bon vol, " + data.nom.split(" ")[0] + " !" : "Merci, " + data.nom.split(" ")[0] + ".";
     document.getElementById("done-text").textContent = yes
-      ? "Votre enregistrement est confirmé pour " + data.passagers + " passager" + (data.passagers > 1 ? "s" : "") + ", billet " +
-        ({ midi: "Business · vol de jour (le déjeuner)", soir: "Premium · vol de nuit (la soirée)", journee: "Première · long-courrier (midi et soir)" }[data.creneau] || "") +
+      ? "Votre enregistrement est confirmé pour " + data.passagers + " passager" + (data.passagers > 1 ? "s" : "") + " : " + fareSummary(data) +
         ". Rendez-vous porte " + (CFG.porte || "A50") + "."
       : "Vous nous manquerez à bord. Votre message a bien été transmis à l'équipage.";
     if (yes) {
@@ -430,12 +472,27 @@
       creneau: form.presence.value === "oui" ? ((form.querySelector('input[name="creneau"]:checked') || {}).value || "") : "",
       repas: form.presence.value === "oui" ? form.repas.value : "",
       allergies: form.presence.value === "oui" ? form.allergies.value.trim() : "",
-      accompagnants: form.presence.value === "oui" ? Array.prototype.map.call(compList.querySelectorAll("input"), function (i) { return i.value.trim(); }).filter(Boolean) : [],
+      accompagnants: [],
+      creneauxAcc: [],
       email: form.email.value.trim(),
       message: form.message.value.trim(),
       website: form.website.value
     };
     if (!data.nom) { showError("Merci d'indiquer le nom du passager."); form.nom.focus(); form.classList.remove("is-shake"); void form.offsetWidth; form.classList.add("is-shake"); return; }
+    if (data.presence === "oui") {
+      var rows = compList.querySelectorAll(".companion"), missing = null;
+      rows.forEach(function (row, i) {
+        var c = row.querySelector("input[type=radio]:checked");
+        if (!c && !missing) missing = row;
+        data.accompagnants.push(row.querySelector("input[type=text]").value.trim() || "Passager " + (i + 2));
+        data.creneauxAcc.push(c ? c.value : "");
+      });
+      if (data.creneau && missing) {
+        showError("Indiquez pour chaque accompagnant s'il vient le midi, le soir ou les deux.");
+        missing.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+        return;
+      }
+    }
     if (data.presence === "oui" && !data.creneau) {
       showError("Choisissez votre billet : le déjeuner, la soirée ou les deux.");
       form.querySelector(".fares").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });

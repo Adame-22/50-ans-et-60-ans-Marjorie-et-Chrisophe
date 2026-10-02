@@ -61,6 +61,27 @@
 
   var FARE = { midi: ["Business", "Midi"], soir: ["Premium", "Soir"], journee: ["Première", "Midi + soir"] };
   function fareOf(r) { return r.presence === "oui" ? r.creneau || "journee" : ""; }
+  // Billet de chaque personne de la réponse : le répondant, ses accompagnants, puis le reste au billet du répondant
+  function fares(r) {
+    if (r.presence !== "oui") return [];
+    var main = fareOf(r), out = [main], acc = r.creneauxAcc || [];
+    for (var i = 1; i < (r.passagers || 1); i++) out.push(acc[i - 1] || main);
+    return out;
+  }
+  function hasFare(r, f) { return fares(r).some(function (x) { return f === "midi-tous" ? x !== "soir" : f === "soir-tous" ? x !== "midi" : x === f; }); }
+  function fareTags(r) {
+    var by = {};
+    fares(r).forEach(function (x) { by[x] = (by[x] || 0) + 1; });
+    return Object.keys(by).map(function (k) {
+      return '<span class="fare-tag fare-tag--' + k + '" title="' + FARE[k][0] + '">' + FARE[k][1] + (Object.keys(by).length > 1 || by[k] > 1 ? " ×" + by[k] : "") + "</span>";
+    }).join(" ");
+  }
+  function companionsHtml(r) {
+    var acc = r.accompagnants || [];
+    if (!acc.length) return "";
+    var fs = fares(r);
+    return "<small>avec " + acc.map(function (n, i) { return esc(n) + " (" + FARE[fs[i + 1] || fs[0]][1].toLowerCase() + ")"; }).join(", ") + "</small>";
+  }
   function isSpecial(r) { return r.presence === "oui" && ((r.repas && r.repas !== "Standard") || r.allergies); }
 
   function onAuthError(e) {
@@ -174,10 +195,11 @@
     $("#s-meal").textContent = list.filter(isSpecial).length;
     var paxIn = yes.filter(function (r) { return r.arrivedAt; }).reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
     $("#s-arrived").textContent = paxIn + " / " + yes.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
-    var pax = function (f) { return yes.filter(f).reduce(function (n, r) { return n + (r.passagers || 0); }, 0); };
-    var midiN = pax(function (r) { return fareOf(r) !== "soir"; }), soirN = pax(function (r) { return fareOf(r) !== "midi"; });
-    $("#s-fares").textContent = midiN + " · " + soirN;
-    $("#s-fares-d").textContent = pax(function (r) { return fareOf(r) === "midi"; }) + " midi seul · " + pax(function (r) { return fareOf(r) === "soir"; }) + " soir seul · " + pax(function (r) { return fareOf(r) === "journee"; }) + " les deux";
+    var all = [];
+    yes.forEach(function (r) { all = all.concat(fares(r)); });
+    var cnt = function (t) { return all.filter(t).length; };
+    $("#s-fares").textContent = cnt(function (x) { return x !== "soir"; }) + " · " + cnt(function (x) { return x !== "midi"; });
+    $("#s-fares-d").textContent = cnt(function (x) { return x === "midi"; }) + " midi seul · " + cnt(function (x) { return x === "soir"; }) + " soir seul · " + cnt(function (x) { return x === "journee"; }) + " les deux";
 
     var q = $("#m-search").value.trim().toLowerCase();
     var f = $("#m-filter").value;
@@ -185,9 +207,7 @@
       if (q && (r.nom + " " + r.email + " " + r.message + " " + r.allergies).toLowerCase().indexOf(q) === -1) return false;
       if (f === "oui" || f === "non") return r.presence === f;
       if (f === "special") return isSpecial(r);
-      if (f === "midi-tous") return r.presence === "oui" && fareOf(r) !== "soir";
-      if (f === "soir-tous") return r.presence === "oui" && fareOf(r) !== "midi";
-      if (f === "midi" || f === "soir" || f === "journee") return fareOf(r) === f;
+      if (["midi-tous", "soir-tous", "midi", "soir", "journee"].indexOf(f) >= 0) return hasFare(r, f);
       if (f === "attendus") return r.presence === "oui" && !r.arrivedAt;
       if (f === "arrives") return !!r.arrivedAt;
       return true;
@@ -198,10 +218,10 @@
       return "<tr>" +
         "<td>" + (yesR ? '<button class="checkin-btn' + (r.arrivedAt ? " is-in" : "") + '" data-checkin="' + esc(r.id) + '" title="' + (r.arrivedAt ? "Arrivé à " + fmtDate(r.arrivedAt) : "Pointer l'arrivée") + '" aria-label="Pointer l\'arrivée de ' + esc(r.nom) + '">✓</button>' : "") + "</td>" +
         "<td><b>" + esc(r.nom) + "</b>" + (r.source === "sur place" ? ' <span class="tag tag--gold" title="Ajouté·e depuis la page À table !, le jour J">sur place</span>' : "") +
-        (r.accompagnants && r.accompagnants.length ? "<small>avec " + esc(r.accompagnants.join(", ")) + "</small>" : "") +
+        companionsHtml(r) +
         (r.email ? "<small>" + esc(r.email) + "</small>" : "") + "</td>" +
         "<td>" + (yesR ? '<span class="tag tag--ok">À bord</span>' : '<span class="tag tag--no">Au sol</span>') + "</td>" +
-        "<td>" + (yesR ? '<span class="fare-tag fare-tag--' + fareOf(r) + '" title="' + FARE[fareOf(r)][0] + '">' + FARE[fareOf(r)][1] + "</span>" : "—") + "</td>" +
+        "<td>" + (yesR ? fareTags(r) : "—") + "</td>" +
         "<td>" + (yesR ? r.passagers : "—") + "</td>" +
         "<td>" + (yesR ? (r.repas && r.repas !== "Standard" ? '<span class="tag tag--gold">' + esc(r.repas) + "</span>" : "Standard") : "—") + "</td>" +
         "<td>" + esc(r.allergies || "") + "</td>" +
@@ -273,7 +293,8 @@
     var head = ["Nom", "Accompagnants", "Présence", "Billet", "Passagers", "Régime alimentaire", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
     var lines = [head.join(";")].concat(state.rsvps.map(function (r) {
       var table = plan.assign[r.id] ? tableOf[plan.assign[r.id]] || "" : "";
-      return [r.nom, (r.accompagnants || []).join(", "), r.presence === "oui" ? "À bord" : "Au sol", r.presence === "oui" ? FARE[fareOf(r)][1] : "", r.passagers, r.repas, r.allergies, r.email, r.message, table,
+      var fs = fares(r);
+      return [r.nom, (r.accompagnants || []).map(function (n, i) { return n + " (" + FARE[fs[i + 1] || fs[0]][1] + ")"; }).join(", "), r.presence === "oui" ? "À bord" : "Au sol", r.presence === "oui" ? FARE[fareOf(r)][1] : "", r.passagers, r.repas, r.allergies, r.email, r.message, table,
         r.arrivedAt ? fmtDate(r.arrivedAt) : "", fmtDate(r.createdAt)]
         .map(csvCell).join(";");
     }));
