@@ -59,6 +59,8 @@
       d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   }
 
+  var FARE = { midi: ["Business", "Midi"], soir: ["Premium", "Soir"], journee: ["Première", "Midi + soir"] };
+  function fareOf(r) { return r.presence === "oui" ? r.creneau || "journee" : ""; }
   function isSpecial(r) { return r.presence === "oui" && ((r.repas && r.repas !== "Standard") || r.allergies); }
 
   function onAuthError(e) {
@@ -172,6 +174,10 @@
     $("#s-meal").textContent = list.filter(isSpecial).length;
     var paxIn = yes.filter(function (r) { return r.arrivedAt; }).reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
     $("#s-arrived").textContent = paxIn + " / " + yes.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
+    var pax = function (f) { return yes.filter(f).reduce(function (n, r) { return n + (r.passagers || 0); }, 0); };
+    var midiN = pax(function (r) { return fareOf(r) !== "soir"; }), soirN = pax(function (r) { return fareOf(r) !== "midi"; });
+    $("#s-fares").textContent = midiN + " · " + soirN;
+    $("#s-fares-d").textContent = pax(function (r) { return fareOf(r) === "midi"; }) + " midi seul · " + pax(function (r) { return fareOf(r) === "soir"; }) + " soir seul · " + pax(function (r) { return fareOf(r) === "journee"; }) + " les deux";
 
     var q = $("#m-search").value.trim().toLowerCase();
     var f = $("#m-filter").value;
@@ -179,6 +185,9 @@
       if (q && (r.nom + " " + r.email + " " + r.message + " " + r.allergies).toLowerCase().indexOf(q) === -1) return false;
       if (f === "oui" || f === "non") return r.presence === f;
       if (f === "special") return isSpecial(r);
+      if (f === "midi-tous") return r.presence === "oui" && fareOf(r) !== "soir";
+      if (f === "soir-tous") return r.presence === "oui" && fareOf(r) !== "midi";
+      if (f === "midi" || f === "soir" || f === "journee") return fareOf(r) === f;
       if (f === "attendus") return r.presence === "oui" && !r.arrivedAt;
       if (f === "arrives") return !!r.arrivedAt;
       return true;
@@ -192,6 +201,7 @@
         (r.accompagnants && r.accompagnants.length ? "<small>avec " + esc(r.accompagnants.join(", ")) + "</small>" : "") +
         (r.email ? "<small>" + esc(r.email) + "</small>" : "") + "</td>" +
         "<td>" + (yesR ? '<span class="tag tag--ok">À bord</span>' : '<span class="tag tag--no">Au sol</span>') + "</td>" +
+        "<td>" + (yesR ? '<span class="fare-tag fare-tag--' + fareOf(r) + '" title="' + FARE[fareOf(r)][0] + '">' + FARE[fareOf(r)][1] + "</span>" : "—") + "</td>" +
         "<td>" + (yesR ? r.passagers : "—") + "</td>" +
         "<td>" + (yesR ? (r.repas && r.repas !== "Standard" ? '<span class="tag tag--gold">' + esc(r.repas) + "</span>" : "Standard") : "—") + "</td>" +
         "<td>" + esc(r.allergies || "") + "</td>" +
@@ -260,10 +270,10 @@
   function exportCsv(plan) {
     var tableOf = {};
     plan.tables.forEach(function (t) { tableOf[t.id] = t.name; });
-    var head = ["Nom", "Accompagnants", "Présence", "Passagers", "Régime alimentaire", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
+    var head = ["Nom", "Accompagnants", "Présence", "Billet", "Passagers", "Régime alimentaire", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
     var lines = [head.join(";")].concat(state.rsvps.map(function (r) {
       var table = plan.assign[r.id] ? tableOf[plan.assign[r.id]] || "" : "";
-      return [r.nom, (r.accompagnants || []).join(", "), r.presence === "oui" ? "À bord" : "Au sol", r.passagers, r.repas, r.allergies, r.email, r.message, table,
+      return [r.nom, (r.accompagnants || []).join(", "), r.presence === "oui" ? "À bord" : "Au sol", r.presence === "oui" ? FARE[fareOf(r)][1] : "", r.passagers, r.repas, r.allergies, r.email, r.message, table,
         r.arrivedAt ? fmtDate(r.arrivedAt) : "", fmtDate(r.createdAt)]
         .map(csvCell).join(";");
     }));

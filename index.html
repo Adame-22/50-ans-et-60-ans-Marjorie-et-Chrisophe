@@ -364,6 +364,37 @@
           <label class="choice"><input type="radio" name="presence" value="non" /><span>Je reste au sol</span></label>
         </fieldset>
 
+        <fieldset class="field fares" data-show-if="oui">
+          <legend>Votre billet&nbsp;: à quel moment embarquez-vous&nbsp;?</legend>
+          <label class="fare fare--midi">
+            <input type="radio" name="creneau" value="midi" />
+            <span class="fare__card">
+              <span class="fare__top"><span class="fare__class">Business</span><span class="fare__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7 7 17M17 7l1.7-1.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span></span>
+              <span class="fare__name">Vol de jour</span>
+              <span class="fare__title">Le déjeuner</span>
+              <span class="fare__txt">Embarquement 12h30, repas assis et après-midi.</span>
+            </span>
+          </label>
+          <label class="fare fare--soir">
+            <input type="radio" name="creneau" value="soir" />
+            <span class="fare__card">
+              <span class="fare__top"><span class="fare__class">Premium</span><span class="fare__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span></span>
+              <span class="fare__name">Vol de nuit</span>
+              <span class="fare__title">La soirée</span>
+              <span class="fare__txt">Dîner, gâteau et piste de danse jusqu'au bout de la nuit.</span>
+            </span>
+          </label>
+          <label class="fare fare--journee">
+            <input type="radio" name="creneau" value="journee" />
+            <span class="fare__card">
+              <span class="fare__top"><span class="fare__class">Première</span><span class="fare__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></span></span>
+              <span class="fare__name">Long-courrier</span>
+              <span class="fare__title">Midi &amp; soir</span>
+              <span class="fare__txt">Tout le voyage, du premier toast au dernier slow.</span>
+            </span>
+          </label>
+        </fieldset>
+
         <div class="field-row" data-show-if="oui">
           <div class="field">
             <label for="f-count">Nombre de passagers (vous compris)</label>

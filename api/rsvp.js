@@ -1,6 +1,6 @@
 /*
  * /api/rsvp — réponses des invités
- *   POST   (public)  { nom, presence, passagers, accompagnants, repas, allergies, email, message }
+ *   POST   (public)  { nom, presence, creneau (midi | soir | journee), passagers, accompagnants, repas, allergies, email, message }
  *   GET    (équipage) → toutes les réponses
  *   PATCH  (équipage) { id, arrived }  → pointage à l'arrivée
  *   DELETE (équipage) ?id=…
@@ -27,6 +27,7 @@ module.exports = L.handler(async (req, res) => {
       nom,
       presence: oui ? "oui" : "non",
       passagers,
+      creneau: oui && ["midi", "soir", "journee"].includes(b.creneau) ? b.creneau : oui ? "journee" : "",
       repas: oui && REPAS.includes(b.repas) ? b.repas : oui ? "Standard" : "",
       allergies: oui ? L.str(b.allergies, 300) : "",
       accompagnants: oui && Array.isArray(b.accompagnants) ? b.accompagnants.slice(0, 11).map((x) => L.str(x, 60)).filter(Boolean) : [],

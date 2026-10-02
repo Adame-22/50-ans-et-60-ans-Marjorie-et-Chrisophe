@@ -92,6 +92,7 @@
         <div class="stat"><span>Restent au sol</span><strong id="s-no">–</strong></div>
         <div class="stat"><span>Repas spéciaux</span><strong id="s-meal">–</strong></div>
         <div class="stat"><span>Arrivés</span><strong id="s-arrived">–</strong></div>
+        <div class="stat stat--fares"><span>Midi · Soir</span><strong id="s-fares">–</strong><small id="s-fares-d"></small></div>
       </div>
 
       <div class="toolbar">
@@ -101,6 +102,11 @@
           <option value="oui">À bord</option>
           <option value="non">Au sol</option>
           <option value="special">Repas spéciaux</option>
+          <option value="midi-tous">Présents le midi</option>
+          <option value="soir-tous">Présents le soir</option>
+          <option value="midi">Midi seulement</option>
+          <option value="soir">Soir seulement</option>
+          <option value="journee">Midi et soir</option>
           <option value="attendus">Pas encore arrivés</option>
           <option value="arrives">Arrivés</option>
         </select>
@@ -132,7 +138,7 @@
       <div class="card table-wrap">
         <table class="table" id="m-table">
           <thead>
-            <tr><th>Arrivé</th><th>Passager</th><th>Statut</th><th>Nb</th><th>Repas spécial</th><th>Allergies</th><th>Message</th><th>Reçu le</th><th></th></tr>
+            <tr><th>Arrivé</th><th>Passager</th><th>Statut</th><th>Billet</th><th>Nb</th><th>Repas spécial</th><th>Allergies</th><th>Message</th><th>Reçu le</th><th></th></tr>
           </thead>
           <tbody></tbody>
         </table>

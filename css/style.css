@@ -1000,3 +1000,42 @@ h3 { font-size: 1.6rem; }
 .checkin .photo-btn:hover, .checkin .photo-pick input:focus-visible + .photo-btn { background: #fff8ef; }
 .checkin .photo-pick img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
 .checkin .field__label { font-family: var(--mono); font-size: .66rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+
+/* ───────── Billets : déjeuner, soirée ou les deux (classes de cabine) ───────── */
+.fares { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+.fares legend { grid-column: 1 / -1; }
+@media (max-width: 620px) { .fares { grid-template-columns: 1fr; } }
+.fare { position: relative; cursor: pointer; }
+.fare input { position: absolute; opacity: 0; pointer-events: none; }
+.fare__card {
+  position: relative; display: grid; gap: .25rem; height: 100%; padding: 1rem 1.1rem 1.1rem; border-radius: 14px; overflow: hidden;
+  background: linear-gradient(160deg, #fff, var(--paper)); border: 1px solid var(--line);
+  transition: border-color .3s, background .4s var(--ease), color .3s, transform .35s var(--ease), box-shadow .35s var(--ease);
+  font-family: var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink);
+}
+.fare__card::after { /* perforation du billet */
+  content: ""; position: absolute; left: 1.1rem; right: 1.1rem; top: 3.05rem; border-top: 1px dashed rgba(166, 112, 70, .35);
+}
+.fare__top { display: flex; justify-content: space-between; align-items: center; padding-bottom: .9rem; }
+.fare__class { font-family: var(--mono); font-size: .62rem; letter-spacing: .26em; text-transform: uppercase; color: var(--gold); padding: .3rem .6rem; border: 1px solid rgba(166, 112, 70, .45); border-radius: 999px; }
+.fare__icon svg { width: 22px; height: 22px; display: block; color: var(--gold); }
+.fare__name { font-family: var(--mono); font-size: .64rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.fare__title { font-family: var(--serif); font-size: 1.6rem; font-weight: 500; line-height: 1.1; }
+.fare__txt { font-size: .84rem; line-height: 1.45; color: var(--muted); }
+.fare:hover .fare__card { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 14px 28px -20px rgba(0, 0, 51, .45); }
+.fare input:focus-visible + .fare__card { box-shadow: 0 0 0 4px rgba(166, 112, 70, .3); }
+.fare input:checked + .fare__card {
+  background: radial-gradient(ellipse 90% 70% at 100% 0%, rgba(255, 177, 0, .18), transparent 60%), linear-gradient(160deg, #0f1352, var(--navy));
+  border-color: var(--gold-light); color: var(--paper); box-shadow: 0 18px 36px -18px rgba(0, 0, 51, .6);
+}
+.fare input:checked + .fare__card .fare__class { background: var(--gold-light); color: var(--navy); border-color: var(--gold-light); }
+.fare input:checked + .fare__card .fare__icon svg { color: var(--gold-light); }
+.fare input:checked + .fare__card .fare__name, .fare input:checked + .fare__card .fare__txt { color: rgba(255, 251, 254, .72); }
+.fare input:checked + .fare__card::after { border-color: rgba(255, 177, 0, .35); }
+.fare input:checked + .fare__card::before { /* reflet */
+  content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .14) 45%, transparent 60%);
+  transform: translateX(-100%); animation: fare-sheen 1.1s var(--ease) forwards;
+}
+@keyframes fare-sheen { to { transform: translateX(100%); } }
+.fare--journee .fare__class::after { content: " ★"; }
+@media (prefers-reduced-motion: reduce) { .fare__card { transition: none; } .fare input:checked + .fare__card::before { animation: none; display: none; } }

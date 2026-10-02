@@ -408,7 +408,9 @@
     done.hidden = false;
     document.getElementById("done-title").textContent = yes ? "Bon vol, " + data.nom.split(" ")[0] + " !" : "Merci, " + data.nom.split(" ")[0] + ".";
     document.getElementById("done-text").textContent = yes
-      ? "Votre enregistrement est confirmé pour " + data.passagers + " passager" + (data.passagers > 1 ? "s" : "") + ". Rendez-vous porte " + (CFG.porte || "A50") + "."
+      ? "Votre enregistrement est confirmé pour " + data.passagers + " passager" + (data.passagers > 1 ? "s" : "") + ", billet " +
+        ({ midi: "Business · vol de jour (le déjeuner)", soir: "Premium · vol de nuit (la soirée)", journee: "Première · long-courrier (midi et soir)" }[data.creneau] || "") +
+        ". Rendez-vous porte " + (CFG.porte || "A50") + "."
       : "Vous nous manquerez à bord. Votre message a bien été transmis à l'équipage.";
     if (yes) {
       passName.textContent = data.nom;
@@ -425,6 +427,7 @@
       nom: form.nom.value.trim(),
       presence: form.presence.value,
       passagers: form.presence.value === "oui" ? parseInt(form.passagers.value, 10) : 0,
+      creneau: form.presence.value === "oui" ? ((form.querySelector('input[name="creneau"]:checked') || {}).value || "") : "",
       repas: form.presence.value === "oui" ? form.repas.value : "",
       allergies: form.presence.value === "oui" ? form.allergies.value.trim() : "",
       accompagnants: form.presence.value === "oui" ? Array.prototype.map.call(compList.querySelectorAll("input"), function (i) { return i.value.trim(); }).filter(Boolean) : [],
@@ -433,6 +436,12 @@
       website: form.website.value
     };
     if (!data.nom) { showError("Merci d'indiquer le nom du passager."); form.nom.focus(); form.classList.remove("is-shake"); void form.offsetWidth; form.classList.add("is-shake"); return; }
+    if (data.presence === "oui" && !data.creneau) {
+      showError("Choisissez votre billet : le déjeuner, la soirée ou les deux.");
+      form.querySelector(".fares").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      form.classList.remove("is-shake"); void form.offsetWidth; form.classList.add("is-shake");
+      return;
+    }
     if (data.email && !form.email.checkValidity()) { showError("L'adresse e-mail semble incorrecte."); form.email.focus(); return; }
 
     var btn = form.querySelector("button[type=submit]");
