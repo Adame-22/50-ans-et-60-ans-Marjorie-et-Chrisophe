@@ -9,6 +9,23 @@ const L = require("./_lib");
 
 const MAX_FAILS = 8; // tentatives par identifiant et par quart d'heure
 
+// Réinitialisations ponctuelles demandées par un commandant : appliquées une seule fois
+// (repérées par leur id), avec obligation de choisir un nouveau mot de passe ensuite.
+const RESETS = [
+  { username: "adame", id: "2026-10-02", hash: "82d5db8360c77a94f447efe2cb332c7c:e4451d375eee4a2a9c742c4882ab412268f41e8dd7f9e90337d168097c5c114fde328f6363aa00fac355d6427e1fecdde1a95e9e3b5d21a2fb986ba86f859f75" },
+];
+async function applyResets(username) {
+  const r = RESETS.find((x) => x.username === username);
+  if (!r) return;
+  const user = await L.getUser(username);
+  if (!user || user.resetId === r.id) return;
+  user.hash = r.hash;
+  user.mustChange = true;
+  user.resetId = r.id;
+  await L.saveUser(user);
+  await L.redis(["DEL", L.K.fail(username)]);
+}
+
 module.exports = L.handler(async (req, res) => {
   if (req.method === "GET") {
     const user = await L.requireUser(req, { allowMustChange: true });
@@ -27,6 +44,7 @@ module.exports = L.handler(async (req, res) => {
     const username = L.str(body.username, 40).toLowerCase();
     const password = String(body.password || "");
     await L.rateLimit(req, "login", 40, 900);
+    await applyResets(username);
     const fails = parseInt(await L.redis(["GET", L.K.fail(username)]), 10) || 0;
     if (fails >= MAX_FAILS) throw new L.HttpError(429, "Trop de tentatives. Réessayez dans 15 minutes.");
 
