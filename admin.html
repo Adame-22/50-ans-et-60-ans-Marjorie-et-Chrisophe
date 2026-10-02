@@ -73,6 +73,7 @@
 
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" data-tab="manifeste" aria-selected="true">Manifeste</button>
+      <button role="tab" data-tab="partager">Partager le site</button>
       <button role="tab" data-tab="cabine">Plan de cabine</button>
       <button role="tab" data-tab="constellation">Constellation</button>
       <button role="tab" data-tab="equipes">Équipes</button>
@@ -321,6 +322,39 @@
       </div>
     </section>
 
+    <!-- Partager le site -->
+    <section class="panel" id="tab-partager" role="tabpanel" hidden>
+      <div class="card share">
+        <div class="share__qr" id="sh-qr" aria-label="QR code du site"></div>
+        <div class="share__info">
+          <p class="eyebrow">Vol MC 5060</p>
+          <h3>Le site de la fête</h3>
+          <p class="hint">Faites scanner ce QR code avec l'appareil photo d'un téléphone : il ouvre directement le site (invitation, enregistrement, infos).</p>
+          <p class="share__url" id="sh-url"></p>
+          <div class="share__actions">
+            <button class="btn btn--small btn--gold" id="sh-full" type="button">Afficher en grand</button>
+            <button class="btn btn--small btn--line" id="sh-copy" type="button">Copier le lien</button>
+            <button class="btn btn--small btn--line" id="sh-send" type="button" hidden>Envoyer…</button>
+            <button class="btn btn--small btn--line" id="sh-png" type="button">Télécharger l'image</button>
+          </div>
+          <div class="seg seg--wrap share__pick" role="group" aria-label="Page à partager">
+            <button type="button" data-share="/" aria-pressed="true">Accueil</button>
+            <button type="button" data-share="/#enregistrement" aria-pressed="false">Enregistrement</button>
+            <button type="button" data-share="/table" aria-pressed="false">À table</button>
+            <button type="button" data-share="/boite" aria-pressed="false">Boîte noire</button>
+            <button type="button" data-share="/quiz" aria-pressed="false">Quiz</button>
+            <button type="button" data-share="/radio" aria-pressed="false">Radio</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="share-full" id="sh-overlay" hidden>
+      <p class="script">Marjorie &amp; Christophe</p>
+      <div class="share-full__qr" id="sh-qr-big"></div>
+      <p class="share-full__url" id="sh-url-big"></p>
+      <p class="share-full__hint">Touchez l'écran pour fermer</p>
+    </div>
+
     <!-- Mon compte -->
     <section class="panel" id="tab-moi" role="tabpanel" hidden>
       <form class="card narrow" id="pass-form" novalidate>
@@ -355,6 +389,7 @@
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
   <script src="js/graph.js"></script>
+  <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

@@ -148,6 +148,7 @@
     if (name === "equipes") startTeams(); else stopTeams();
     if (name === "quiz") startQuizAdmin(); else stopQuizAdmin();
     if (name === "boite") loadBoite();
+    if (name === "partager") renderShare();
     if (name === "radio") startRadio(); else clearTimeout(radioTimer);
   }
   $all("[data-tab]").forEach(function (b) {
@@ -999,6 +1000,63 @@
       loadBoite();
     }).catch(function (err) { toast(err.message, true); }).then(function () { btn.disabled = false; btn.textContent = label; });
   }
+
+  /* ───────── Partager le site : QR code ───────── */
+  var share = { path: "/" };
+  function shareUrl() { return location.origin + share.path; }
+  function qrSvg(url) {
+    var q = window.qrcode(0, "Q"); q.addData(url); q.make();
+    return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }).replace(/fill="black"|fill="#000000"/g, 'fill="#000033"');
+  }
+  function renderShare() {
+    var url = shareUrl();
+    $("#sh-qr").innerHTML = qrSvg(url);
+    $("#sh-url").textContent = url.replace(/^https?:\/\//, "");
+    $("#sh-send").hidden = !navigator.share;
+    $all("[data-share]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-share") === share.path)); });
+  }
+  $all("[data-share]").forEach(function (b) {
+    b.addEventListener("click", function () { share.path = b.getAttribute("data-share"); renderShare(); });
+  });
+  $("#sh-copy").addEventListener("click", function () {
+    var url = shareUrl();
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { toast("Lien copié ✓"); })
+      .catch(function () { prompt("Copiez le lien :", url); });
+  });
+  $("#sh-send").addEventListener("click", function () {
+    navigator.share({ title: "Vol MC 5060 · Marjorie & Christophe", text: "Le site de la fête des 50 ans de Marjorie et des 60 ans de Christophe ✈", url: shareUrl() }).catch(function () {});
+  });
+  $("#sh-full").addEventListener("click", function () {
+    var o = $("#sh-overlay");
+    $("#sh-qr-big").innerHTML = qrSvg(shareUrl());
+    $("#sh-url-big").textContent = shareUrl().replace(/^https?:\/\//, "");
+    o.hidden = false;
+    if (o.requestFullscreen) o.requestFullscreen().catch(function () {});
+    if (navigator.wakeLock) navigator.wakeLock.request("screen").then(function (l) { share.lock = l; }).catch(function () {});
+  });
+  $("#sh-overlay").addEventListener("click", function () {
+    this.hidden = true;
+    if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
+    if (share.lock) { share.lock.release().catch(function () {}); share.lock = null; }
+  });
+  $("#sh-png").addEventListener("click", function () {
+    var q = window.qrcode(0, "Q"); q.addData(shareUrl()); q.make();
+    var n = q.getModuleCount(), cell = 24, pad = 4 * cell, W = n * cell + pad * 2, H = W + 150;
+    var c = document.createElement("canvas"); c.width = W; c.height = H;
+    var g = c.getContext("2d");
+    g.fillStyle = "#fffbfe"; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#000033";
+    for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) g.fillRect(pad + k * cell, pad + r * cell, cell, cell);
+    g.fillStyle = "#a67046"; g.textAlign = "center";
+    g.font = "500 44px 'Cormorant Garamond', Georgia, serif";
+    g.fillText("Marjorie & Christophe · Vol MC 5060", W / 2, W + 40);
+    g.font = "28px 'JetBrains Mono', monospace";
+    g.fillText(shareUrl().replace(/^https?:\/\//, ""), W / 2, W + 95);
+    var a = document.createElement("a");
+    a.href = c.toDataURL("image/png");
+    a.download = "qr-vol-mc5060" + (share.path === "/" ? "" : "-" + share.path.replace(/[^a-z]/g, "")) + ".png";
+    document.body.appendChild(a); a.click(); a.remove();
+  });
 
   /* ───────── Radio de bord (vue DJ) ───────── */
   var radioTimer = 0;
