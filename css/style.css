@@ -1127,3 +1127,22 @@ h3 { font-size: 1.6rem; }
 .companion__q { margin: 2px 0 0; font-size: .95rem; color: var(--muted); }
 .done-pass { margin: 0 auto .6rem; }
 .done-sent { color: var(--muted); font-size: .95rem; margin: 0 0 1.4rem !important; }
+
+/* Annonces (notifications) */
+.push-slot:empty { display: none; }
+.push-slot { width: 100%; }
+.push-btn {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 72px; padding: 14px 18px; border-radius: 16px; cursor: pointer; text-align: left;
+  background: var(--navy); color: var(--paper); border: 1.5px solid var(--gold-light); font: inherit;
+  transition: transform .25s var(--ease), background .25s;
+}
+.push-btn svg { width: 30px; height: 30px; flex: none; color: var(--gold-light); }
+.push-btn span { display: grid; gap: 2px; }
+.push-btn b { font-size: 1.05rem; }
+.push-btn small { font-size: .88rem; color: rgba(255, 251, 254, .72); line-height: 1.35; }
+.push-btn:hover:not([disabled]) { transform: translateY(-2px); }
+.push-btn[disabled] { cursor: default; opacity: .92; }
+.push-btn.is-on { border-color: #4caf7a; }
+.push-btn.is-on svg { color: #6fd39b; }
+.agenda .push-slot, .checkin-done .push-slot { margin-top: 0; }
+.checkin-done .big-actions + .big-actions, .agenda .big-actions + .big-actions { margin-top: -2px; }

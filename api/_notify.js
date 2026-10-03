@@ -1,12 +1,11 @@
 /*
- * Envoi des cartes d'embarquement par e-mail et par SMS, via Brevo (brevo.com).
+ * Envoi des cartes d'embarquement par e-mail, via Brevo (brevo.com, gratuit jusqu'à 300 e-mails par jour).
  * Réglages (variables d'environnement Vercel) :
- *   BREVO_API_KEY      clé API Brevo (une seule clé pour l'e-mail et le SMS)
+ *   BREVO_API_KEY      clé API Brevo
  *   MAIL_FROM          adresse d'expéditeur validée dans Brevo (ex. vol.mc5060@gmail.com)
  *   MAIL_FROM_NAME     nom affiché (défaut : « Vol MC 5060 »)
- *   SMS_SENDER         nom d'expéditeur SMS, 11 caractères max (défaut : « VolMC5060 »)
  *   SITE_URL           adresse du site (défaut : celle de la requête)
- * Sans clé, rien n'est envoyé : l'admin propose alors l'envoi manuel (mail / SMS depuis le téléphone).
+ * Sans clé, rien n'est envoyé : l'admin propose alors l'envoi manuel (e-mail depuis le téléphone).
  */
 const crypto = require("crypto");
 
@@ -14,7 +13,7 @@ const KEY = () => process.env.BREVO_API_KEY || "";
 const FARE = { midi: "Business · le déjeuner", soir: "Premium · la soirée", journee: "Première · midi et soir" };
 
 function status() {
-  return { email: !!(KEY() && process.env.MAIL_FROM), sms: !!KEY(), provider: "Brevo" };
+  return { email: !!(KEY() && process.env.MAIL_FROM), provider: "Brevo" };
 }
 
 function siteUrl(req) {
@@ -88,17 +87,4 @@ async function sendEmail(req, entry) {
   });
 }
 
-async function sendSms(req, entry) {
-  if (!status().sms) throw new Error("Envoi de SMS non configuré.");
-  const to = phoneE164(entry.telephone);
-  if (!to) throw new Error("Numéro invalide.");
-  const first = entry.prenom || String(entry.nom || "").split(" ")[0];
-  await brevo("/transactionalSMS/sms", {
-    sender: (process.env.SMS_SENDER || "VolMC5060").slice(0, 11),
-    recipient: to,
-    content: "Bonjour " + first + " ! Votre carte d'embarquement pour les 50 & 60 ans de Marjorie et Christophe (sam. 7 nov., 12h30, Draveil) : " + passUrl(req, entry),
-    type: "transactional",
-  });
-}
-
-module.exports = { status, siteUrl, passUrl, ensureToken, phoneE164, sendEmail, sendSms, FARE };
+module.exports = { status, siteUrl, passUrl, ensureToken, phoneE164, sendEmail, FARE };

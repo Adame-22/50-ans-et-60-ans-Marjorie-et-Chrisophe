@@ -167,7 +167,7 @@
     $all("[data-tab]").forEach(function (b) { b.setAttribute("aria-selected", String(b === tab)); });
     $all(".panel").forEach(function (p) { p.hidden = p.id !== "tab-" + name; });
     history.replaceState(null, "", "#" + name);
-    if (name === "manifeste") { loadRsvps(); loadNotify(); }
+    if (name === "manifeste") { loadRsvps(); loadNotify(); loadAnnounce(); }
     if (name === "cabine") startCabin(); else stopCabin();
     if (name === "comptes") loadUsers();
     if (name === "constellation") loadGraph(); else destroyGraph();
@@ -201,17 +201,15 @@
     var out = "";
     if (r.email) out += '<a class="btn btn--small btn--line" title="Ouvrir un e-mail prêt à envoyer" href="mailto:' + encodeURIComponent(r.email) +
       "?subject=" + encodeURIComponent("✈ Votre carte d'embarquement · Vol MC 5060") + "&body=" + encodeURIComponent(passText(r)) + '">✉</a> ';
-    if (r.telephone) out += '<a class="btn btn--small btn--line" title="Ouvrir un SMS prêt à envoyer" href="sms:' + encodeURIComponent(r.telephone.replace(/[^\d+]/g, "")) +
-      "?&body=" + encodeURIComponent(passText(r)) + '">SMS</a> ';
     out += '<a class="btn btn--small btn--line" title="Voir sa carte" target="_blank" rel="noopener" href="' + passLink(r) + '">Carte</a> ';
     return out;
   }
   function loadNotify() {
     api("/api/rsvp?view=notify").then(function (d) {
       notify = d;
-      $("#send-status").innerHTML = d.email || d.sms
-        ? "Envoi automatique actif (" + esc(d.provider) + ") : la carte part par e-mail dès l'enregistrement. Les boutons ci-contre l'envoient à ceux qui ne l'ont pas encore reçue."
-        : "Envoi automatique pas encore configuré : utilisez les boutons ✉ et SMS de chaque ligne (ils ouvrent un message prêt à envoyer depuis votre téléphone), ou demandez la configuration Brevo (voir README).";
+      $("#send-status").innerHTML = d.email
+        ? "Envoi automatique actif : la carte part par e-mail dès l'enregistrement. Le bouton ci-contre l'envoie à ceux qui ne l'ont pas encore reçue."
+        : "Envoi automatique par e-mail pas encore activé (Brevo, gratuit : voir README). En attendant, les boutons ✉ de chaque ligne ouvrent un e-mail prêt à envoyer depuis votre téléphone.";
       updateSendButtons();
       renderRsvps();
     }).catch(function () {});
@@ -222,13 +220,11 @@
     });
   }
   function updateSendButtons() {
-    var e = pending("email"), m = pending("sms");
+    var e = pending("email");
     $("#send-email").disabled = !notify.email || !e.length;
-    $("#send-sms").disabled = !notify.sms || !m.length;
     $("#send-email").textContent = "Envoyer par e-mail (" + e.length + ")";
-    $("#send-sms").textContent = "Envoyer par SMS (" + m.length + ")";
   }
-  ["email", "sms"].forEach(function (ch) {
+  ["email"].forEach(function (ch) {
     $("#send-" + ch).addEventListener("click", function () {
       var list = pending(ch);
       if (!list.length || !confirm("Envoyer la carte d'embarquement par " + (ch === "sms" ? "SMS" : "e-mail") + " à " + list.length + " réponse(s) qui ne l'ont pas encore reçue ?")) return;
@@ -240,6 +236,28 @@
           loadRsvps();
         }).catch(function (e) { toast(e.message, true); updateSendButtons(); });
     });
+  });
+
+  /* Annonces push aux invités */
+  function loadAnnounce() {
+    api("/api/push?view=admin").then(function (d) {
+      $("#an-count").textContent = d.subscribers + " téléphone" + (d.subscribers > 1 ? "s" : "") + " abonné" + (d.subscribers > 1 ? "s" : "");
+      $("#an-log").innerHTML = d.announcements.map(function (a) {
+        return "<li><b>" + esc(a.title) + "</b> " + esc(a.body) + " <small>· " + fmtDate(a.at) + " · " + esc(a.by || "") + " · " + a.sent + " reçu(s)</small></li>";
+      }).join("");
+    }).catch(function () {});
+  }
+  $("#announce").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var f = e.target, body = $("#an-body").value.trim();
+    formError(f, "");
+    if (!body) return formError(f, "Écrivez le message de l'annonce.");
+    if (!confirm("Envoyer cette annonce à tous les invités abonnés ?\n\n" + body)) return;
+    var btn = f.querySelector("button[type=submit]"); btn.disabled = true;
+    api("/api/push", { method: "POST", body: { action: "send", title: $("#an-title").value.trim(), body: body, url: $("#an-url").value } })
+      .then(function (d) { toast("Annonce envoyée à " + d.sent + " téléphone(s)."); $("#an-body").value = ""; loadAnnounce(); })
+      .catch(function (err) { formError(f, err.message); })
+      .then(function () { btn.disabled = false; });
   });
 
   function renderRsvps() {

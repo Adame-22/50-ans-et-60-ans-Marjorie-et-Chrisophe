@@ -226,3 +226,4 @@ form.live-card { display: grid; gap: 1rem; }
 .live__legal a:hover { color: var(--gold-light); }
 .live .consent { color: rgba(255, 251, 254, .55); }
 .live .consent a { color: var(--gold-light); }
+.push-slot--dark { margin: 0 0 16px; }

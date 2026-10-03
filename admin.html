@@ -123,9 +123,25 @@
         </div>
         <div class="send-box__actions">
           <button class="btn btn--small btn--gold" id="send-email" type="button" disabled>Envoyer par e-mail</button>
-          <button class="btn btn--small btn--line" id="send-sms" type="button" disabled>Envoyer par SMS</button>
         </div>
       </div>
+
+      <form class="card announce" id="announce" novalidate>
+        <div class="announce__head">
+          <h3>Annonce aux invités</h3>
+          <span class="hint" id="an-count"></span>
+        </div>
+        <p class="hint">Une notification gratuite sur les téléphones qui ont activé « Recevoir les annonces » (et le texte s'ajoute à l'événement des agendas abonnés). Ex. : « Le bus part à 23h30 », « Le quiz commence dans 5 minutes ! ».</p>
+        <div class="grid-announce">
+          <div class="field"><label for="an-title">Titre</label><input id="an-title" maxlength="60" placeholder="Vol MC 5060" /></div>
+          <div class="field"><label for="an-url">Ouvre la page</label>
+            <select id="an-url"><option value="/">Accueil</option><option value="/quiz">Quiz</option><option value="/table">À table</option><option value="/boite">Boîte noire</option><option value="/radio">Radio</option><option value="/#infos">Infos pratiques</option></select></div>
+        </div>
+        <div class="field"><label for="an-body">Message</label><textarea id="an-body" rows="2" maxlength="240" placeholder="Le quiz commence dans 5 minutes, sortez vos téléphones !"></textarea></div>
+        <p class="form-error" role="alert" hidden></p>
+        <div class="row-end"><button class="btn btn--small btn--gold" type="submit">Envoyer l'annonce</button></div>
+        <ul class="announce__log" id="an-log"></ul>
+      </form>
 
       <form class="card add-pax" id="add-pax" hidden novalidate>
         <h3>Ajouter une réponse reçue hors site</h3>

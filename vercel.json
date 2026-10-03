@@ -44,19 +44,6 @@
       ]
     },
     {
-      "source": "/agenda.ics",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/calendar; charset=utf-8"
-        },
-        {
-          "key": "Content-Disposition",
-          "value": "attachment; filename=\"vol-mc5060.ics\""
-        }
-      ]
-    },
-    {
       "source": "/manifest.webmanifest",
       "headers": [
         {
@@ -64,6 +51,21 @@
           "value": "application/manifest+json; charset=utf-8"
         }
       ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/agenda.ics",
+      "destination": "/api/push?view=ics"
     }
   ]
 }

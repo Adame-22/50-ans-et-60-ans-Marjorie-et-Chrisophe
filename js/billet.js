@@ -50,8 +50,11 @@
       '<a class="big-btn" href="https://waze.com/ul?navigate=yes&q=' + dest + '" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="11" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9.5" cy="10" r="1" fill="currentColor"/><circle cx="14.5" cy="10" r="1" fill="currentColor"/></svg><span><b>Waze</b><small>Guidage en voiture</small></span></a>' +
       '<a class="big-btn" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg><span><b>Le site de la fête</b><small>Programme et infos</small></span></a>' +
       "</div>" +
+      '<a class="big-btn" href="webcal://' + location.host + '/agenda.ics"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M9 15l2 2 4-4"/></svg><span><b>S\'abonner au calendrier</b><small>Rappels et nouvelles mis à jour automatiquement</small></span></a>' +
+      '<div class="push-slot" id="push-slot" data-push></div>' +
       '<p class="billet__tip">Astuce : faites une capture d\'écran de votre carte, ou ajoutez cette page à l\'écran d\'accueil.</p>';
     app.innerHTML = html;
+    if (window.McPush) window.McPush.mount(document.getElementById("push-slot"));
   }).catch(function (e) {
     app.innerHTML = '<p class="billet__loading">' + esc(e.message) + '</p><p class="billet__loading"><a href="/">Retour au site</a></p>';
   });

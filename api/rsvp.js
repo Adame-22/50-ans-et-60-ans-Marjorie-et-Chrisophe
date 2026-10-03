@@ -5,8 +5,8 @@
  *   PATCH  (équipage) { id, arrived }  → pointage à l'arrivée
  *   DELETE (équipage) ?id=…
  *   GET    ?pass=<jeton>   (public)   → carte d'embarquement d'une réponse (lien personnel)
- *   GET    ?view=notify    (équipage) → envoi automatique e-mail / SMS configuré ?
- *   POST   { action: "send", ids, channel: "email" | "sms" } (équipage) → envoie les cartes
+ *   GET    ?view=notify    (équipage) → envoi automatique par e-mail configuré ?
+ *   POST   { action: "send", ids } (équipage) → envoie les cartes par e-mail
  *   À l'enregistrement, la carte est envoyée par e-mail si l'envoi est configuré (Brevo).
  */
 const crypto = require("crypto");
@@ -41,7 +41,7 @@ module.exports = L.handler(async (req, res) => {
     const b = await L.readBody(req);
     if (b.action === "send") {
       await L.requireUser(req);
-      const channel = b.channel === "sms" ? "sms" : "email";
+      const channel = "email";
       const ids = (Array.isArray(b.ids) ? b.ids : []).slice(0, 300).map((x) => L.str(x, 64));
       const out = { sent: 0, skipped: 0, errors: [] };
       for (const id of ids) {
@@ -51,7 +51,7 @@ module.exports = L.handler(async (req, res) => {
         if (channel === "email" ? !e.email : !N.phoneE164(e.telephone)) { out.skipped++; continue; }
         try {
           N.ensureToken(e);
-          await (channel === "email" ? N.sendEmail(req, e) : N.sendSms(req, e));
+          await N.sendEmail(req, e);
           e[channel === "email" ? "emailedAt" : "smsAt"] = new Date().toISOString();
           await L.redis(["HSET", L.K.rsvps, e.id, JSON.stringify(e)]);
           out.sent++;

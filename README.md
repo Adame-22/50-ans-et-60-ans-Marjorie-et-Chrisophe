@@ -79,8 +79,13 @@ Le quiz tient la charge : l'état du jeu est mis en cache une seconde par Vercel
 ### Carte d'embarquement numérique
 
 Chaque réponse reçoit un lien personnel `/billet?p=…` : une carte par passager (nom, billet midi / soir, QR code), agenda et itinéraire. Elle s'affiche après l'enregistrement et s'envoie :
-- **à la main**, gratuitement : boutons ✉ et SMS sur chaque ligne du Manifeste (ils ouvrent un message prêt à partir depuis le téléphone) ;
-- **automatiquement** avec [Brevo](https://www.brevo.com) : e-mail dès l'enregistrement et boutons « Envoyer par e-mail / par SMS » dans le Manifeste. Variables Vercel : `BREVO_API_KEY`, `MAIL_FROM` (expéditeur validé dans Brevo), éventuellement `MAIL_FROM_NAME`, `SMS_SENDER` (11 caractères max), `SITE_URL`. L'e-mail est gratuit jusqu'à 300 par jour ; les SMS sont payants (crédits Brevo, quelques centimes par SMS en France).
+- **à la main**, gratuitement : bouton ✉ sur chaque ligne du Manifeste (ouvre un e-mail prêt à partir) ;
+- **automatiquement**, gratuitement, avec [Brevo](https://www.brevo.com) (300 e-mails par jour offerts) : e-mail dès l'enregistrement et bouton « Envoyer par e-mail » dans le Manifeste. Variables Vercel : `BREVO_API_KEY`, `MAIL_FROM` (expéditeur validé dans Brevo), éventuellement `MAIL_FROM_NAME` et `SITE_URL`.
+
+### Annonces aux invités (gratuites)
+
+- **Notifications** : les invités touchent « Recevoir les annonces de la fête » (page d'accueil, carte d'embarquement, page À table). Ensuite, dans le Manifeste, « Annonce aux invités » envoie une notification sur leurs téléphones. Android et ordinateurs : directement. iPhone : seulement si le site a été ajouté à l'écran d'accueil (iOS 16.4 et plus). Aucune clé à configurer : elle se crée toute seule dans la base.
+- **Calendrier abonné** : « S'abonner au calendrier » (iPhone) ou « S'abonner dans Google » (Android). L'agenda relit l'événement régulièrement : rappels la veille et 2 h avant, et la dernière annonce apparaît dans sa description (mise à jour en quelques heures, selon l'agenda).
 
 ### Partage, agenda et appli
 

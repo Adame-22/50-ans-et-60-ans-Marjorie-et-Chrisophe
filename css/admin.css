@@ -405,3 +405,12 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .send-box__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 #m-table td small { display: block; }
 #m-table .actions { white-space: nowrap; }
+
+.announce { display: grid; gap: 12px; }
+.announce__head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.announce__head h3 { font-size: 1.3rem; }
+.grid-announce { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .grid-announce { grid-template-columns: 1fr; } }
+.announce__log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .9rem; }
+.announce__log li { padding: .5rem .7rem; border-radius: 8px; background: var(--ivory); }
+.announce__log small { color: var(--muted); }

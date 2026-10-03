@@ -169,7 +169,9 @@
       '<a class="btn btn--gold" href="/quiz">Quiz de bord</a>' +
       '<a class="btn btn--line-light" href="/boite">Boîte noire</a>' +
       '<a class="btn btn--line-light" href="/radio">Radio de bord</a></div>' +
+      '<div class="push-slot push-slot--dark" id="t-push"></div>' +
       '<p class="center"><a class="linklike muted" href="/table">Changer de table</a></p>';
+    if (window.McPush) window.McPush.mount(document.getElementById("t-push"));
     clearInterval(refreshTimer);
     refreshTimer = setInterval(refresh, 10000);
     loadTeam();
