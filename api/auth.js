@@ -4,6 +4,8 @@
  *   POST { action: "login", username, password }
  *   POST { action: "logout" }
  *   POST { action: "password", current, next }
+ *   POST { action: "backup-codes" }   (super admin) → 8 codes de secours à usage unique
+ *   Connexion possible avec un code de secours à la place du mot de passe (super admin).
  */
 const L = require("./_lib");
 
@@ -47,6 +49,16 @@ module.exports = L.handler(async (req, res) => {
     if (fails >= MAX_FAILS) throw new L.HttpError(429, "Trop de tentatives. Réessayez dans 15 minutes.");
 
     const user = username && (await L.getUser(username));
+    // code de secours (super admin) : connecte une fois, puis demande un nouveau mot de passe
+    if (user && !L.verifyPassword(password, user.hash) && L.useBackupCode(user, password)) {
+      user.mustChange = true;
+      user.hash = L.hashPassword(password.trim().toUpperCase());
+      await L.redis(["DEL", L.K.fail(username)]);
+      user.lastLogin = new Date().toISOString();
+      await L.saveUser(user);
+      const t = await L.signSession(user.username, user.hash.slice(0, 12));
+      return L.send(res, 200, { user: L.publicUser(user), usedBackup: true }, { "Set-Cookie": L.sessionCookie(req, t, 30 * 86400) });
+    }
     if (!user || !L.verifyPassword(password, user.hash)) {
       await L.redis(["INCR", L.K.fail(username)]);
       await L.redis(["EXPIRE", L.K.fail(username), 900]);
@@ -70,6 +82,15 @@ module.exports = L.handler(async (req, res) => {
     await L.saveUser(user);
     const token = await L.signSession(user.username, user.hash.slice(0, 12));
     return L.send(res, 200, { user: L.publicUser(user) }, { "Set-Cookie": L.sessionCookie(req, token, 30 * 86400) });
+  }
+
+  if (body.action === "backup-codes") {
+    const user = await L.requireUser(req);
+    if (user.role !== "superadmin") throw new L.HttpError(403, "Réservé au super admin.");
+    const codes = L.backupCodes();
+    user.backup = codes.map((c) => L.hashPassword(c));
+    await L.saveUser(user);
+    return L.send(res, 200, { codes });
   }
 
   L.send(res, 400, { error: "Action inconnue." });

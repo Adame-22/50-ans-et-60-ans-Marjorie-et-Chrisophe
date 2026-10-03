@@ -395,3 +395,6 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .fare-tag--midi { background: #fff3d6; color: #7d5233; }
 .fare-tag--soir { background: #e3e5f7; color: #1b1f7a; }
 .fare-tag--journee { background: var(--navy); color: var(--gold-light); }
+
+.bk-codes { columns: 2; font-size: 1.05rem; margin: .4rem 0 1rem; padding-left: 1.4rem; }
+.bk-codes code { font-family: var(--mono); letter-spacing: .08em; }

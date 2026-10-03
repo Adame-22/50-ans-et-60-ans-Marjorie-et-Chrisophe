@@ -7,14 +7,19 @@
  */
 const L = require("./_lib");
 
-const ROLES = ["admin", "equipage"];
+const ROLES = ["superadmin", "admin", "equipage"];
+
+// Un super admin ne peut être modifié, réinitialisé ou supprimé que par un super admin
+function guard(me, user) {
+  if (user.role === "superadmin" && me.role !== "superadmin") throw new L.HttpError(403, "Ce compte est protégé (super admin).");
+}
 
 async function allUsers() {
   return Object.values(await L.hgetallJson(L.K.users));
 }
 
 async function assertAnotherAdmin(exceptUsername) {
-  const admins = (await allUsers()).filter((u) => u.role === "admin" && u.username !== exceptUsername);
+  const admins = (await allUsers()).filter((u) => L.isAdmin(u) && u.username !== exceptUsername);
   if (!admins.length) throw new L.HttpError(400, "Il doit rester au moins un administrateur.");
 }
 
@@ -31,7 +36,8 @@ module.exports = L.handler(async (req, res) => {
     if (username === me.username) throw new L.HttpError(400, "Vous ne pouvez pas supprimer votre propre compte.");
     const user = await L.getUser(username);
     if (!user) throw new L.HttpError(404, "Compte introuvable.");
-    if (user.role === "admin") await assertAnotherAdmin(username);
+    guard(me, user);
+    if (L.isAdmin(user)) await assertAnotherAdmin(username);
     await L.redis(["HDEL", L.K.users, username]);
     return L.send(res, 200, { ok: true });
   }
@@ -43,6 +49,7 @@ module.exports = L.handler(async (req, res) => {
     const username = L.str(body.username || name, 40)
       .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9._-]/g, "");
     const role = ROLES.includes(body.role) ? body.role : "equipage";
+    if (role === "superadmin" && me.role !== "superadmin") throw new L.HttpError(403, "Seul un super admin peut créer un super admin.");
     if (!name) throw new L.HttpError(400, "Indiquez un prénom ou un nom.");
     if (username.length < 2) throw new L.HttpError(400, "Identifiant invalide (lettres et chiffres, 2 caractères minimum).");
     const code = L.tempCode();
@@ -56,12 +63,14 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "PATCH") {
     const user = await L.getUser(L.str(body.username, 40).toLowerCase());
     if (!user) throw new L.HttpError(404, "Compte introuvable.");
+    guard(me, user);
     if (body.name !== undefined) {
       const name = L.str(body.name, 60);
       if (name) user.name = name;
     }
     if (body.role !== undefined && ROLES.includes(body.role) && body.role !== user.role) {
-      if (user.role === "admin") await assertAnotherAdmin(user.username);
+      if (body.role === "superadmin" && me.role !== "superadmin") throw new L.HttpError(403, "Seul un super admin peut nommer un super admin.");
+      if (L.isAdmin(user) && !L.isAdmin({ role: body.role })) await assertAnotherAdmin(user.username);
       user.role = body.role;
     }
     let code;

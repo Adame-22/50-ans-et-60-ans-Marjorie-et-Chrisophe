@@ -2,7 +2,8 @@
   "use strict";
 
   var REPAS = ["Standard", "Végétarien", "Végétalien", "Sans gluten", "Sans porc", "Enfant", "Autre"];
-  var ROLE_LABEL = { admin: "Commandant", equipage: "Équipage" };
+  var ROLE_LABEL = { superadmin: "Super admin", admin: "Commandant", equipage: "Équipage" };
+  function isAdminRole(r) { return r === "admin" || r === "superadmin"; }
 
   var state = { me: null, rsvps: [], plan: null, users: [] };
 
@@ -101,7 +102,9 @@
     state.me = user;
     $all("[data-me=name]").forEach(function (el) { el.textContent = user.name; });
     $all("[data-me=roleLabel]").forEach(function (el) { el.textContent = ROLE_LABEL[user.role] || user.role; });
-    $all("[data-admin-only]").forEach(function (el) { el.hidden = user.role !== "admin"; });
+    $all("[data-admin-only]").forEach(function (el) { el.hidden = !isAdminRole(user.role); });
+    $all("[data-super-only]").forEach(function (el) { el.hidden = user.role !== "superadmin"; });
+    if (user.role === "superadmin" && $("#bk-left")) $("#bk-left").textContent = user.backupLeft ? user.backupLeft + " code(s) de secours encore valable(s)." : "Aucun code de secours pour l'instant.";
   }
 
   function enterApp(user) {
@@ -1118,6 +1121,19 @@
     }
   });
 
+  /* ───────── Codes de secours (super admin) ───────── */
+  if ($("#bk-generate")) $("#bk-generate").addEventListener("click", function () {
+    if (!confirm("Générer 8 nouveaux codes de secours ? Les anciens ne marcheront plus.")) return;
+    api("/api/auth", { method: "POST", body: { action: "backup-codes" } }).then(function (d) {
+      $("#bk-codes").innerHTML = d.codes.map(function (c) { return "<li><code>" + esc(c) + "</code></li>"; }).join("");
+      $("#bk-box").hidden = false;
+      $("#bk-left").textContent = d.codes.length + " code(s) de secours encore valable(s).";
+      $("#bk-copy").onclick = function () {
+        navigator.clipboard.writeText("Codes de secours Vol MC 5060 (identifiant adame) :\n" + d.codes.join("\n")).then(function () { toast("Codes copiés."); });
+      };
+    }).catch(function (e) { toast(e.message, true); });
+  });
+
   /* ───────── Comptes ───────── */
   function loadUsers() {
     return api("/api/accounts").then(function (d) {
@@ -1129,8 +1145,10 @@
   function renderUsers() {
     $("#acc-table tbody").innerHTML = state.users.map(function (u) {
       var self = u.username === state.me.username;
-      var roleSel = '<select data-role="' + esc(u.username) + '"' + (self ? " disabled" : "") + ">" +
-        Object.keys(ROLE_LABEL).map(function (r) {
+      var iAmSuper = state.me.role === "superadmin";
+      var locked = self || (u.role === "superadmin" && !iAmSuper);
+      var roleSel = '<select data-role="' + esc(u.username) + '"' + (locked ? " disabled" : "") + ">" +
+        Object.keys(ROLE_LABEL).filter(function (r) { return r !== "superadmin" || iAmSuper || u.role === "superadmin"; }).map(function (r) {
           return '<option value="' + r + '"' + (u.role === r ? " selected" : "") + ">" + ROLE_LABEL[r] + "</option>";
         }).join("") + "</select>";
       return "<tr>" +
@@ -1139,7 +1157,7 @@
         "<td>" + roleSel + "</td>" +
         "<td>" + (u.mustChange ? '<span class="tag tag--gold">Code provisoire</span>' : '<span class="tag tag--ok">Actif</span>') + "</td>" +
         "<td>" + fmtDate(u.lastLogin) + "</td>" +
-        '<td class="actions">' + (self ? "" :
+        '<td class="actions">' + (locked ? (self ? "" : '<small class="hint">Compte protégé</small>') :
           '<button class="btn btn--small btn--line" data-reset="' + esc(u.username) + '">Nouveau code</button> ' +
           '<button class="btn btn--small btn--line btn--danger" data-remove="' + esc(u.username) + '">Supprimer</button>') +
         "</td></tr>";

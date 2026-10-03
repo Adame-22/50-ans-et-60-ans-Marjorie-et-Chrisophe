@@ -372,6 +372,16 @@
         <p class="form-ok" hidden>Mot de passe mis à jour.</p>
         <button class="btn btn--small btn--gold" type="submit">Mettre à jour</button>
       </form>
+      <div class="card narrow" data-super-only hidden>
+        <h3>Codes de secours</h3>
+        <p class="hint">En cas d'oubli du mot de passe : à l'écran de connexion, tapez votre identifiant puis un de ces codes à la place du mot de passe. Chaque code ne sert qu'une fois, et vous choisirez ensuite un nouveau mot de passe. Gardez-les en lieu sûr (notes du téléphone, papier).</p>
+        <p class="hint" id="bk-left"></p>
+        <div id="bk-box" hidden>
+          <ol class="bk-codes" id="bk-codes"></ol>
+          <button class="btn btn--small btn--line" id="bk-copy" type="button">Copier les codes</button>
+        </div>
+        <button class="btn btn--small btn--gold" id="bk-generate" type="button">Générer mes codes de secours</button>
+      </div>
     </section>
   </div>
 

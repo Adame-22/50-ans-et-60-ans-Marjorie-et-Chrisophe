@@ -108,15 +108,56 @@ function tempCode() {
   return pick() + "-" + pick();
 }
 
+// Comptes ajoutés après la création de la base (créés seulement s'ils n'existent pas encore)
+const EXTRA_ACCOUNTS = [
+  { username: "michael", name: "Michael", role: "admin", hash: "aeb8e70162b77ea8c06b8c915ac14a9e:9cc7c8bd7992abf9669c17430c345dd78fa7da23f97fa309068ff481242c9593369eb28f6e6382aaae85a172f947ac0d258d4105acdac3980a8e5f5021379b37" },
+  { username: "alexis", name: "Alexis", role: "admin", hash: "8cfeaf5c76e7b7432a8ca62ff88aa463:47ed2d618bf9d681d2c57286aa659fe35f236b16ffc190ddfa6137c09cdffd6a3f3ca885ad150bbfa62cb347e91f72a5c40f074b07b4ff54bbe250a204c166fc" },
+  { username: "anthony", name: "Anthony", role: "admin", hash: "fcefbe8db4380726ec28a0b702cceba0:ca47af3e8803dc4e88881aca09ca5d1d71fd749a5dc29b875984c5750baf3f7957e366458e87783bcff19556364d644c59418c65c919f6b03345f658f611ae3d" },
+];
+const SUPERADMINS = ["adame"]; // au-dessus de tous les comptes ; seul un super admin peut le modifier
+
+function isAdmin(user) { return user && (user.role === "admin" || user.role === "superadmin"); }
+
+let migrated = false;
+async function migrateAccounts() {
+  if (migrated) return;
+  const now = new Date().toISOString();
+  for (const u of EXTRA_ACCOUNTS) {
+    await redis(["HSETNX", K.users, u.username, JSON.stringify({
+      username: u.username, name: u.name, role: u.role, hash: u.hash, mustChange: true, createdAt: now, createdBy: "adame",
+    })]);
+  }
+  for (const name of SUPERADMINS) {
+    const raw = await redis(["HGET", K.users, name]);
+    const user = raw && JSON.parse(raw);
+    if (user && user.role !== "superadmin") { user.role = "superadmin"; await redis(["HSET", K.users, name, JSON.stringify(user)]); }
+  }
+  migrated = true;
+}
+
+/* Codes de secours (super admin) : à usage unique, en cas d'oubli du mot de passe */
+function backupCodes() {
+  return Array.from({ length: 8 }, () => tempCode());
+}
+function useBackupCode(user, code) {
+  const c = String(code || "").trim().toUpperCase();
+  if (!c || !Array.isArray(user.backup)) return false;
+  const i = user.backup.findIndex((h) => verifyPassword(c, h));
+  if (i < 0) return false;
+  user.backup.splice(i, 1);
+  return true;
+}
+
 async function ensureSeed() {
   const n = await redis(["HLEN", K.users]);
-  if (n > 0) return;
+  if (n > 0) return migrateAccounts();
   const now = new Date().toISOString();
   for (const u of SEED) {
     await redis(["HSETNX", K.users, u.username, JSON.stringify({
       username: u.username, name: u.name, role: u.role, hash: u.hash, mustChange: true, createdAt: now,
     })]);
   }
+  await migrateAccounts();
 }
 
 async function getUser(username) {
@@ -129,7 +170,8 @@ async function saveUser(user) {
 }
 
 function publicUser(u) {
-  return { username: u.username, name: u.name, role: u.role, mustChange: !!u.mustChange, createdAt: u.createdAt, lastLogin: u.lastLogin || null };
+  return { username: u.username, name: u.name, role: u.role, mustChange: !!u.mustChange, createdAt: u.createdAt, lastLogin: u.lastLogin || null,
+    backupLeft: Array.isArray(u.backup) ? u.backup.length : 0 };
 }
 
 /* ───────── Sessions (cookie signé HMAC) ───────── */
@@ -178,7 +220,7 @@ async function requireUser(req, { admin = false, allowMustChange = false } = {})
   const user = await readSession(req);
   if (!user) throw new HttpError(401, "Veuillez vous connecter.");
   if (user.mustChange && !allowMustChange) throw new HttpError(403, "Choisissez d'abord un nouveau mot de passe.");
-  if (admin && user.role !== "admin") throw new HttpError(403, "Réservé aux administrateurs.");
+  if (admin && !isAdmin(user)) throw new HttpError(403, "Réservé aux administrateurs.");
   return user;
 }
 
@@ -240,6 +282,6 @@ function str(v, max) {
 
 module.exports = {
   K, HttpError, redis, hgetallJson, hashPassword, verifyPassword, tempCode,
-  ensureSeed, getUser, saveUser, publicUser, signSession, sessionCookie, requireUser,
+  ensureSeed, getUser, isAdmin, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
   readBody, send, handler, query, str, clientIp, rateLimit,
 };
