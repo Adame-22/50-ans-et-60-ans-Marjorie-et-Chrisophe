@@ -27,7 +27,24 @@ const K = {
   answers: (round) => "mc:quiz:ans:" + round,
 };
 
+// Questions de départ : « Qui de… » (réponse à régler dans l'admin selon la vérité !) et culture des années 66 / 76
+const QUI = ["Marjorie", "Christophe", "Les deux", "Aucun des deux"];
 const DEFAULT_QUESTIONS = [
+  { q: "Qui de Marjorie ou Christophe est toujours en retard ?", choices: QUI, answer: 0, time: 15 },
+  { q: "Qui de Marjorie ou Christophe s'endort devant la télé ?", choices: QUI, answer: 1, time: 15 },
+  { q: "En 1966, année de naissance de Christophe, quel film comique triomphe au cinéma ?", choices: ["Le Corniaud", "La Grande Vadrouille", "Les Tontons flingueurs", "Le Gendarme de Saint-Tropez"], answer: 1, time: 20 },
+  { q: "Qui de Marjorie ou Christophe a le plus de paires de chaussures ?", choices: QUI, answer: 0, time: 15 },
+  { q: "En 1976, année de naissance de Marjorie, quel avion fait son premier vol commercial ?", choices: ["Le Boeing 747", "L'Airbus A320", "Le Concorde", "La Caravelle"], answer: 2, time: 20 },
+  { q: "Qui de Marjorie ou Christophe cuisine le mieux ?", choices: QUI, answer: 0, time: 15 },
+  { q: "Quel groupe chante « Dancing Queen », sorti en 1976 ?", choices: ["Boney M.", "ABBA", "Bee Gees", "Queen"], answer: 1, time: 15 },
+  { q: "Qui de Marjorie ou Christophe dit « je ne suis pas fatigué·e »… avant de s'endormir ?", choices: QUI, answer: 1, time: 15 },
+  { q: "Combien d'années de voyage cumulent les deux commandants de bord ?", choices: ["100 ans", "106 ans", "110 ans", "116 ans"], answer: 2, time: 15 },
+  { q: "Qui de Marjorie ou Christophe a le dernier mot dans une dispute ?", choices: QUI, answer: 0, time: 15 },
+  { q: "Quelle entreprise est fondée en 1976 dans un garage californien ?", choices: ["Microsoft", "Apple", "Google", "IBM"], answer: 1, time: 15 },
+  { q: "Qui de Marjorie ou Christophe sera le premier sur la piste de danse ce soir ?", choices: QUI, answer: 2, time: 15 },
+];
+// anciennes questions, pour les remplacer si personne ne les a modifiées
+const OLD_DEFAULT_QUESTIONS = [
   { q: "En quelle année est née Marjorie ?", choices: ["1974", "1976", "1978", "1980"], answer: 1, time: 20 },
   { q: "Quel âge fête Christophe ?", choices: ["55 ans", "58 ans", "60 ans", "62 ans"], answer: 2, time: 15 },
   { q: "Quel est le numéro de vol de la fête ?", choices: ["AF 1976", "MC 5060", "CM 6050", "MC 2026"], answer: 1, time: 15 },
@@ -70,7 +87,21 @@ function sanitizeQuestions(list) {
   });
 }
 
+// Remise à zéro ponctuelle demandée par l'équipage (une seule fois, même avec plusieurs appels simultanés)
+const MAINTENANCE_ID = "2026-10-03";
+async function maintenance() {
+  const done = await L.redis(["SETNX", "mc:quiz:maintenance:" + MAINTENANCE_ID, "1"]);
+  if (!done) return;
+  const state = await getState();
+  for (let r = 1; r <= (state.round || 0); r++) await L.redis(["DEL", K.answers(r)]);
+  await L.redis(["DEL", K.players]);
+  await setJson(K.state, { phase: "off", index: -1, round: 0, counts: null, gains: null, by: "remise à zéro" });
+  const stored = await getJson(K.questions, null);
+  if (stored && JSON.stringify(stored) === JSON.stringify(OLD_DEFAULT_QUESTIONS)) await L.redis(["DEL", K.questions]);
+}
+
 module.exports = L.handler(async (req, res) => {
+  await maintenance();
   const params = L.query(req);
 
   /* ───────── Lecture ───────── */

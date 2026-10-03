@@ -11,9 +11,7 @@ const MAX_FAILS = 8; // tentatives par identifiant et par quart d'heure
 
 // Réinitialisations ponctuelles demandées par un commandant : appliquées une seule fois
 // (repérées par leur id), avec obligation de choisir un nouveau mot de passe ensuite.
-const RESETS = [
-  { username: "adame", id: "2026-10-02", hash: "82d5db8360c77a94f447efe2cb332c7c:e4451d375eee4a2a9c742c4882ab412268f41e8dd7f9e90337d168097c5c114fde328f6363aa00fac355d6427e1fecdde1a95e9e3b5d21a2fb986ba86f859f75" },
-];
+const RESETS = [];
 async function applyResets(username) {
   const r = RESETS.find((x) => x.username === username);
   if (!r) return;
