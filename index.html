@@ -25,8 +25,8 @@
   <meta property="og:image:alt" content="Marjorie &amp; Christophe · 50 ans et 60 ans · samedi 7 novembre 2026, Draveil" />
   <meta property="og:locale" content="fr_FR" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261003" />
-  <link rel="stylesheet" href="css/style.css?v=20261003" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261004" />
+  <link rel="stylesheet" href="css/style.css?v=20261004" />
   <script>
     /* Ciel de jour entre le lever et le coucher du soleil à Draveil (calcul
        astronomique selon la date, algorithme de SunCalc), ou choix mémorisé.
@@ -116,7 +116,7 @@
         <i></i>
         <div><strong>60</strong><span>ans</span></div>
       </div>
-      <p class="hero__date"><span data-cfg="dateLabel"></span> · <span data-cfg="ville"></span></p>
+      <p class="hero__date"><span><small>Date</small><b data-cfg="dateLabel"></b></span><span><small>Embarquement</small><b data-cfg="heure"></b></span><span><small>Destination</small><b data-cfg="ville"></b></span></p>
       <a href="#enregistrement" class="btn btn--gold btn--magnet"><span class="btn__label">Confirmer ma présence</span><svg class="btn__plane" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" transform="rotate(90 12 12)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></a>
     </div>
 
@@ -204,8 +204,8 @@
             <div><dt>Passager</dt><dd id="pass-name">Invité·e d'honneur</dd></div>
             <div><dt>Vol</dt><dd>MC 5060</dd></div>
             <div><dt>Date</dt><dd data-cfg="dateLabel"></dd></div>
-            <div><dt>Embarquement</dt><dd data-cfg="heure"></dd></div>
-            <div><dt>Porte</dt><dd data-cfg="porte"></dd></div>
+            <div class="pass__big"><dt>Embarquement</dt><dd data-cfg="heure"></dd></div>
+            <div class="pass__big"><dt>Porte</dt><dd data-cfg="porte"></dd></div>
             <div><dt>Siège</dt><dd>Au cœur de la fête</dd></div>
             <div class="pass__wide"><dt>Terminal</dt><dd><span data-cfg="lieu"></span> — <span data-cfg="ville"></span></dd></div>
           </dl>
@@ -218,6 +218,7 @@
             <div><dt>Porte</dt><dd data-cfg="porte"></dd></div>
             <div><dt>Réponse avant</dt><dd data-cfg="rsvpAvant"></dd></div>
           </dl>
+          <span class="tampon tampon--france pass__tampon" aria-hidden="true"></span>
           <div class="barcode-wrap">
             <svg class="barcode" viewBox="0 0 200 48" preserveAspectRatio="none" data-code="MC5060-MARJORIE-CHRISTOPHE" aria-hidden="true"></svg>
             <span class="barcode-scan" aria-hidden="true"></span>
@@ -331,18 +332,18 @@
 
       <div class="infos">
         <article class="info reveal">
-          <span class="info__code">01</span>
+          <span class="info__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span><span class="info__code">01</span>
           <h3>Terminal</h3>
           <p><strong data-cfg="lieu"></strong><br /><span data-cfg="adresse"></span></p>
           <p class="info__links"><a href="#itineraire">Voir l'itinéraire ↓</a></p>
         </article>
         <article class="info reveal">
-          <span class="info__code">02</span>
+          <span class="info__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M3 7.5v9l7-3.2v-2.6zM21 7.5v9l-7-3.2v-2.6z"/><rect x="10" y="10.2" width="4" height="3.6" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span><span class="info__code">02</span>
           <h3>Dress code</h3>
           <p data-cfg="dressCode"></p>
         </article>
         <article class="info reveal">
-          <span class="info__code">03</span>
+          <span class="info__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M10 16.5v-9h2.8a2.7 2.7 0 0 1 0 5.4H10"/></svg></span><span class="info__code">03</span>
           <h3>Stationnement</h3>
           <p data-cfg="parking"></p>
         </article>
@@ -524,12 +525,12 @@
     <p class="footer__small">© 2026 · <a href="/mentions-legales" class="footer__crew">Mentions légales &amp; confidentialité</a> · <a href="/admin" class="footer__crew">Accès équipage</a></p>
   </footer>
 
-  <script src="js/config.js?v=20261003"></script>
-  <script src="js/programme.js?v=20261003"></script>
-  <script src="js/main.js?v=20261003"></script>
-  <script src="js/fx.js?v=20261003"></script>
-  <script src="js/motion.js?v=20261003"></script>
-  <script src="js/install.js?v=20261003"></script>
-  <script src="js/push.js?v=20261003"></script>
+  <script src="js/config.js?v=20261004"></script>
+  <script src="js/programme.js?v=20261004"></script>
+  <script src="js/main.js?v=20261004"></script>
+  <script src="js/fx.js?v=20261004"></script>
+  <script src="js/motion.js?v=20261004"></script>
+  <script src="js/install.js?v=20261004"></script>
+  <script src="js/push.js?v=20261004"></script>
 </body>
 </html>

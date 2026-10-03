@@ -1339,3 +1339,73 @@ h3 { font-size: 1.6rem; }
 }
 @media (max-width: 700px) { .passport { background-size: 220px, 240px 60px, auto; background-position: right -60px bottom -60px, 0 0, 0 0; } }
 .infos { grid-template-columns: repeat(3, 1fr); } @media (max-width: 960px) { .infos { grid-template-columns: 1fr; } }
+
+/* ═════ Accueil : finition ═════ */
+.hero, .pass, .timeline, .infos, .footer { font-variant-numeric: lining-nums; }
+.hero__iata { font-family: var(--sans); font-weight: 700; font-size: 13px; letter-spacing: .3em; }
+.hero__ages { font-family: var(--serif); }
+.hero__ages strong { font-size: 2.6rem; }
+.hero__ages span { font-family: var(--sans); font-size: .72rem; font-weight: 600; letter-spacing: .2em; }
+/* bandeau date · heure · lieu façon écran d'aéroport */
+.hero__date {
+  display: flex; width: fit-content; margin: 0 auto 2.4rem; padding: 0; opacity: 1;
+  font-family: var(--sans); letter-spacing: 0; text-transform: none;
+  border: 1px solid rgba(255, 251, 254, .16); border-radius: 16px;
+  background: rgba(255, 251, 254, .05); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.hero__date > span { display: grid; gap: .15rem; padding: .7rem 1.3rem; text-align: left; }
+.hero__date > span + span { border-left: 1px dashed rgba(255, 251, 254, .2); }
+.hero__date small { font-size: .7rem; font-weight: 600; color: var(--gold-light); opacity: .9; }
+.hero__date b { font-weight: 600; font-size: .98rem; white-space: nowrap; }
+.is-day .hero__date { border-color: rgba(0, 0, 51, .18); background: rgba(255, 255, 255, .45); }
+.is-day .hero__date small { color: #7d5233; }
+.is-day .hero__date > span + span { border-color: rgba(0, 0, 51, .2); }
+@media (max-width: 560px) {
+  .hero__date { display: grid; grid-template-columns: 1fr 1fr; width: min(100%, 340px); }
+  .hero__date > span { padding: .6rem .9rem; }
+  .hero__date > span:first-child { grid-column: 1 / -1; border-bottom: 1px dashed rgba(255, 251, 254, .2); }
+  .hero__date > span:nth-child(2) { border-left: 0; }
+  .hero__date b { font-size: .92rem; }
+}
+
+/* carte d'embarquement de l'accueil : papier ivoire, libellés lisibles */
+.pass {
+  background: url("../assets/guilloche.svg") 0 0 / 240px 60px repeat, linear-gradient(170deg, #fffcf7 0%, #f6eee2 100%);
+  box-shadow: 0 40px 80px -36px rgba(0, 0, 51, .4), 0 0 0 1px #eadfce;
+}
+.pass__main { position: relative; }
+.pass__top { border-bottom-color: #eadfce; }
+.pass__airline span { color: var(--gold); font-style: italic; }
+.pass__class { font-family: var(--sans); font-weight: 700; font-size: .74rem; letter-spacing: .1em; padding: .5rem 1rem; }
+.pass__route small, .pass dt { font-family: var(--sans); font-size: .74rem; font-weight: 600; letter-spacing: .02em; text-transform: none; color: #8a8c8c; }
+.pass__route strong { letter-spacing: .02em; }
+.pass__arc line { stroke-width: 1.4; stroke-dasharray: 3 6; }
+.pass__grid { border-top-color: #eadfce; }
+.pass dd { font-family: var(--sans); font-size: 1rem; font-weight: 600; color: var(--navy); }
+.pass__big dd { font-family: var(--serif); font-size: 1.9rem; font-weight: 500; line-height: 1.1; }
+.pass__wide dd { font-family: var(--serif); font-size: 1.35rem; font-weight: 500; }
+.pass__stub { background: linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(239, 227, 207, .6)); border-left-color: #dccbb2; overflow: hidden; }
+.pass__stub::before, .pass__stub::after { box-shadow: inset 0 0 0 1px #eadfce; }
+.pass__airline--small { font-family: var(--sans); font-weight: 700; font-size: .85rem; letter-spacing: .14em; }
+.pass__stub dd { font-size: 1.02rem; }
+.pass__tampon { --s: 136px; --r: -14deg; --ink: var(--ink-red); --o: .45; right: -26px; bottom: 96px; top: auto; }
+.pass__stub dl, .barcode-wrap { position: relative; z-index: 1; }
+
+/* programme : heures en chiffres élégants */
+.timeline time { font-family: var(--serif); font-size: 1.3rem; font-weight: 600; padding-top: .1rem; }
+.menu-card .timeline time { color: #8f5c38; }
+
+/* infos : pictogramme + numéro discret */
+.info { position: relative; transition: background .3s var(--ease); }
+.info:hover { background: #fffcf7; }
+.info__ico { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #f6eee2; color: var(--gold); box-shadow: inset 0 0 0 1px #eadfce; }
+.info__ico svg { width: 26px; height: 26px; }
+.info__code { position: absolute; top: clamp(24px, 3vw, 36px); right: clamp(24px, 3vw, 36px); font-family: var(--serif); font-size: 1.5rem; font-weight: 600; letter-spacing: 0; color: #e2d3bd; }
+.info h3 { margin: 1.1rem 0 .5rem; }
+.info .info__links { font-family: var(--sans); font-size: .9rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
+
+/* formulaire : étiquettes des billets */
+.fare__class, .fare__name { font-family: var(--sans); font-weight: 700; letter-spacing: .1em; }
+
+/* pied de page */
+.footer .footer__small { font-family: var(--sans); font-size: .82rem; font-weight: 500; letter-spacing: .02em; text-transform: none; }
