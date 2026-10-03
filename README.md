@@ -81,6 +81,7 @@ Le quiz tient la charge : l'état du jeu est mis en cache une seconde par Vercel
 Chaque réponse reçoit un lien personnel `/billet?p=…` : une carte par passager (nom, billet midi / soir, QR code), agenda et itinéraire. Elle s'affiche après l'enregistrement et s'envoie :
 - **à la main**, gratuitement : bouton ✉ sur chaque ligne du Manifeste (ouvre un e-mail prêt à partir) ;
 - **automatiquement**, gratuitement, avec [Brevo](https://www.brevo.com) (300 e-mails par jour offerts) : e-mail dès l'enregistrement et bouton « Envoyer par e-mail » dans le Manifeste. Variables Vercel : `BREVO_API_KEY`, `MAIL_FROM` (expéditeur validé dans Brevo), éventuellement `MAIL_FROM_NAME` et `SITE_URL`.
+  Dans Brevo, désactiver le blocage des adresses IP inconnues (Sécurité → Adresses IP autorisées) : les adresses de Vercel changent. Après tout changement de variable, redéployer.
 
 ### Annonces aux invités (gratuites)
 
