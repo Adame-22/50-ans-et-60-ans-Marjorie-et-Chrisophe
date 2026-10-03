@@ -29,9 +29,29 @@
       ? '<div class="neighbours">' + t.people.map(function (p, i) {
           var mine = me && p.nom === me.nom;
           return '<span class="fx-pop' + (mine ? " is-me" : "") + '" style="animation-delay:' + Math.min(i * 0.04, 0.6) + 's">' +
-            esc(p.nom) + (p.passagers > 1 ? " ×" + p.passagers : "") + "</span>";
+            esc(p.nom) + (p.passagers > 1 ? " <small>+" + (p.passagers - 1) + "</small>" : "") + "</span>";
         }).join("") + "</div>"
       : '<p class="muted">Personne encore&nbsp;: soyez le premier passager installé&nbsp;!</p>';
+  }
+  function mySeats(t) {
+    if (!me) return null;
+    var at = 0;
+    for (var i = 0; i < t.people.length; i++) {
+      var n = Math.max(1, t.people[i].passagers || 1);
+      if (t.people[i].nom === me.nom) return [at, at + n];
+      at += n;
+    }
+    return null;
+  }
+  function roundTable(t, big) {
+    var n = Math.max(4, Math.min(16, t.seats || 10)), taken = Math.min(t.count, n), mine = mySeats(t), html = "";
+    for (var i = 0; i < n; i++) {
+      var cls = i < taken ? " is-taken" : "";
+      if (mine && i >= mine[0] && i < mine[1]) cls += " is-me";
+      html += '<i class="rtable__seat' + cls + '" style="--i:' + i + '"></i>';
+    }
+    return '<div class="rtable' + (big ? " rtable--big" : "") + (t.count >= t.seats ? " is-full" : "") + '" style="--n:' + n + '" aria-hidden="true">' + html +
+      '<span class="rtable__top"><b>' + esc(t.name.replace(/^Table\s+/i, "")) + "</b>" + (big ? "" : "<small>" + (t.count ? t.count + "/" + t.seats : "libre") + "</small>") + "</span></div>";
   }
   function fill(t) {
     var pct = Math.min(100, Math.round((t.count / Math.max(1, t.seats)) * 100));
@@ -52,7 +72,8 @@
       '<p class="live__sub fx-rise">' + (msg || "Scannez le QR code posé sur votre table, ou choisissez-la ci-dessous.") + "</p>" +
       '<div class="table-grid">' + tables.map(function (t, i) {
         return '<a class="table-tile fx-press fx-rise' + (t.count >= t.seats ? " is-full" : "") + '" style="animation-delay:' + (0.04 * i) + 's" href="?t=' + encodeURIComponent(t.id) + '">' +
-          "<b>" + esc(t.name) + "</b><small>" + (t.count ? t.count + " / " + t.seats + (t.count >= t.seats ? " · complet" : "") : "libre") + "</small>" + fill(t) + "</a>";
+          roundTable(t) + '<span class="table-tile__name">' + esc(t.name) + "</span>" +
+          "<small>" + (t.count ? plural(t.count, "passager") + (t.count >= t.seats ? " · complet" : "") : "Libre") + "</small></a>";
       }).join("") + "</div>";
   }
 
@@ -61,12 +82,13 @@
     var t = current();
     tag.textContent = t.name;
     app.innerHTML =
-      '<div class="table-hero fx-rise"><p class="live__tag">Vous êtes à la</p><h1 class="table-hero__name">' + esc(t.name) + "</h1>" +
-      '<p class="muted">' + (t.count ? plural(t.count, "passager") + " déjà installé" + (t.count > 1 ? "s" : "") : "Aucun passager pour l'instant") + "</p>" + fill(t) + "</div>" +
-      (me ? '<div class="live-card center fx-rise" style="animation-delay:.08s" id="t-mebox"><p class="muted" style="margin:0">Vous êtes bien</p>' +
-        '<p class="who-name">' + esc(me.nom) + "&nbsp;?</p>" +
+      '<div class="table-hero fx-rise"><p class="live__tag">Vous êtes à la</p><h1 class="table-hero__name">' + esc(t.name) + "</h1>" + roundTable(t, true) +
+      '<p class="muted">' + (t.count ? plural(t.count, "passager") + " déjà installé" + (t.count > 1 ? "s" : "") + " sur " + t.seats + " places" : "Aucun passager pour l'instant") + "</p></div>" +
+      (me ? '<div class="ticket fx-rise" style="animation-delay:.08s" id="t-mebox"><div class="ticket__head"><span>Vol MC 5060</span><span>' + esc(t.name) + "</span></div>" +
+        '<div class="ticket__body center"><p class="ticket__label">Vous êtes bien</p>' +
+        '<p class="ticket__name">' + esc(me.nom) + "&nbsp;?</p>" +
         '<button class="btn btn--gold btn--block" id="t-me" type="button">Oui, je m\'installe ici</button>' +
-        '<button class="linklike muted" id="t-notme" type="button" style="margin-top:.9rem">Ce n\'est pas moi</button></div>' : "") +
+        '<button class="linklike" id="t-notme" type="button" style="margin-top:.9rem;color:#7a7d7d">Ce n\'est pas moi</button></div></div>' : "") +
       '<form class="live-card fx-rise" id="t-search" style="animation-delay:.12s"' + (me ? " hidden" : "") + " novalidate>" +
       '<div class="field"><label for="t-q">Votre nom</label><input id="t-q" type="search" autocomplete="name" placeholder="Tapez au moins 3 lettres" /></div>' +
       '<div class="pick-list" id="t-results"></div>' +
@@ -161,14 +183,15 @@
     tag.textContent = t.name;
     app.innerHTML =
       '<div class="table-hero' + (first ? " fx-land" : " fx-rise") + '"><p class="live__tag">Bienvenue à bord, ' + esc(me.nom.split(" ")[0]) + "</p>" +
-      '<h1 class="table-hero__name">' + esc(t.name) + '</h1><p class="muted">C\'est noté&nbsp;: bon vol parmi nous&nbsp;!</p></div>' +
-      '<div class="live-card fx-rise" style="animation-delay:.1s"><p class="live__tag" style="margin:0 0 .6rem">Votre tablée · <span id="t-count">' + plural(t.count, "passager") + "</span></p>" +
-      '<div id="t-people">' + people(t) + "</div></div>" +
+      '<h1 class="table-hero__name">' + esc(t.name) + "</h1>" + '<div id="t-rtable">' + roundTable(t, true) + "</div>" +
+      '<p class="muted">C\'est noté&nbsp;: votre place est en or. Bon vol parmi nous&nbsp;!</p></div>' +
+      '<div class="ticket fx-rise" style="animation-delay:.1s"><div class="ticket__head"><span>Manifeste</span><span id="t-count">' + plural(t.count, "passager") + "</span></div>" +
+      '<div class="ticket__body"><div id="t-people">' + people(t) + "</div></div></div>" +
       '<div id="t-team"></div>' +
       '<div class="quick-links fx-rise" style="animation-delay:.2s">' +
-      '<a class="btn btn--gold" href="/quiz">Quiz de bord</a>' +
-      '<a class="btn btn--line-light" href="/boite">Boîte noire</a>' +
-      '<a class="btn btn--line-light" href="/radio">Radio de bord</a></div>' +
+      '<a class="qlink" href="/quiz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 9a3 3 0 1 1 4.3 2.7c-.9.4-1.5 1.1-1.5 2.1v.4M12 17.6v.1"/><circle cx="12" cy="12" r="9.5"/></svg><b>Quiz de bord</b><small>Jouez avec votre table</small></a>' +
+      '<a class="qlink" href="/boite"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="13" rx="2"/><path d="M8 6V4.5h8V6M9 12.5h6"/></svg><b>Boîte noire</b><small>Un mot, une photo</small></a>' +
+      '<a class="qlink" href="/radio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg><b>Radio de bord</b><small>Votre chanson</small></a></div>' +
       '<div class="push-slot push-slot--dark" id="t-push"></div>' +
       '<p class="center"><a class="linklike muted" href="/table">Changer de table</a></p>';
     if (window.McPush) window.McPush.mount(document.getElementById("t-push"));
@@ -210,6 +233,7 @@
         box.innerHTML = html;
         box.setAttribute("data-sig", String(t.count) + t.people.length);
         count.textContent = plural(t.count, "passager");
+        var rt = document.getElementById("t-rtable"); if (rt) rt.innerHTML = roundTable(t, true);
       }
       loadTeam();
     }).catch(function () { /* on réessaiera au prochain tour */ });

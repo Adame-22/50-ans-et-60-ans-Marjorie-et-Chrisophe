@@ -437,3 +437,65 @@ form.live-card { display: grid; gap: 1rem; }
 .song__txt small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wall-item .sig { font-family: var(--script); font-size: 1.75rem; letter-spacing: 0; text-transform: none; padding: 0; }
 .wall-item--photo .sig { margin-top: .1rem; }
+
+/* ═════ À table : plan de cabine, tables rondes vues du dessus ═════ */
+.rtable { --d: 104px; position: relative; width: var(--d); height: var(--d); margin: 0 auto; }
+.rtable--big { --d: min(230px, 62vw); margin: 1.2rem auto 1rem; }
+.rtable__top {
+  position: absolute; inset: 19%; display: grid; place-content: center; text-align: center; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fffaf2, #efe3d1 70%);
+  box-shadow: 0 0 0 2px rgba(166, 112, 70, .55), 0 0 0 6px rgba(166, 112, 70, .12), 0 12px 26px -10px rgba(0, 0, 0, .7);
+  color: var(--navy);
+}
+.rtable__top b { font-family: var(--serif); font-size: calc(var(--d) * .26); font-weight: 600; line-height: 1; font-variant-numeric: lining-nums; }
+.rtable__top small { margin-top: .15rem; font-size: calc(var(--d) * .085); font-weight: 700; letter-spacing: .06em; color: var(--gold); }
+.rtable--big .rtable__top b { font-size: calc(var(--d) * .3); }
+.rtable__seat {
+  position: absolute; top: 50%; left: 50%; width: calc(var(--d) * .13); height: calc(var(--d) * .13); border-radius: 35%;
+  transform: translate(-50%, -50%) rotate(calc(var(--i) / var(--n) * 1turn)) translateY(calc(var(--d) * -.43));
+  background: rgba(255, 251, 254, .08); border: 1.5px solid rgba(255, 251, 254, .28);
+  transition: background .4s, border-color .4s, box-shadow .4s;
+}
+.rtable__seat.is-taken { background: var(--gold); border-color: var(--gold); }
+.rtable__seat.is-me { background: var(--gold-light); border-color: #fff3c4; box-shadow: 0 0 12px rgba(255, 177, 0, .8); }
+.rtable.is-full .rtable__top { box-shadow: 0 0 0 2px var(--gold-light), 0 0 0 6px rgba(255, 177, 0, .18), 0 12px 26px -10px rgba(0, 0, 0, .7); }
+@media (prefers-reduced-motion: no-preference) {
+  .rtable__seat.is-me { animation: seat-glow 2s ease-in-out infinite; }
+  @keyframes seat-glow { 50% { box-shadow: 0 0 22px rgba(255, 177, 0, 1); } }
+}
+
+/* Choix de la table : grille de tables rondes */
+.table-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.table-tile { gap: .5rem; padding: 16px 10px 14px; border-radius: 18px; background: rgba(255, 251, 254, .04); }
+.table-tile .rtable__top small { display: none; }
+.table-tile__name { font-family: var(--serif); font-size: 1.3rem; line-height: 1.1; text-align: center; color: var(--paper); }
+.table-tile small { font-size: .74rem; font-weight: 600; letter-spacing: .04em; text-transform: none; color: rgba(255, 251, 254, .55); }
+.table-tile.is-full small { color: var(--gold-light); }
+.table-tile:hover .rtable__top { box-shadow: 0 0 0 2px var(--gold-light), 0 0 0 6px rgba(255, 177, 0, .2), 0 12px 26px -10px rgba(0, 0, 0, .7); }
+
+/* En-tête de table */
+.table-hero { padding-bottom: .6rem; }
+.table-hero__name { font-size: clamp(2.6rem, 12vw, 3.6rem); }
+
+/* Manifeste de la tablée sur billet ivoire */
+.ticket .neighbours { justify-content: flex-start; margin-top: 0; }
+.ticket .neighbours span { background: #fff; color: var(--navy); border: 1px solid #e6d8c4; font-weight: 500; }
+.ticket .neighbours span small { color: var(--gold); font-weight: 700; }
+.ticket .neighbours span.is-me { background: var(--navy); border-color: var(--navy); color: var(--gold-light); }
+.ticket .muted { color: #6a6d6e; }
+.ticket__body.center .ticket__name { margin-bottom: 1rem; }
+.neighbours span small { font-size: .78em; opacity: .85; }
+
+/* Raccourcis vers les jeux */
+.quick-links { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.qlink {
+  display: grid; justify-items: center; gap: .25rem; padding: 16px 8px 14px; border-radius: 16px; text-align: center; text-decoration: none;
+  color: var(--paper); background: rgba(255, 251, 254, .05); border: 1px solid rgba(255, 251, 254, .12);
+  transition: border-color .25s, background .25s, transform .25s var(--ease);
+}
+.qlink:hover { border-color: var(--gold-light); background: rgba(255, 177, 0, .08); transform: translateY(-2px); }
+.qlink svg { width: 28px; height: 28px; fill: none; stroke: var(--gold-light); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; margin-bottom: .2rem; }
+.qlink b { font-size: .92rem; font-weight: 650; line-height: 1.2; }
+.qlink small { font-size: .72rem; color: rgba(255, 251, 254, .55); line-height: 1.25; }
+@media (max-width: 360px) { .qlink small { display: none; } }
+.table-hero__name, .table-tile__name, .ticket__head, .who-name { font-variant-numeric: lining-nums; }
