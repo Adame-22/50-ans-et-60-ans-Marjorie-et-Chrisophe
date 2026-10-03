@@ -70,11 +70,22 @@
     app.innerHTML =
       '<h1 class="live__title fx-rise">À table&nbsp;!</h1>' +
       '<p class="live__sub fx-rise">' + (msg || "Scannez le QR code posé sur votre table, ou choisissez-la ci-dessous.") + "</p>" +
+      salle() +
       '<div class="table-grid">' + tables.map(function (t, i) {
         return '<a class="table-tile fx-press fx-rise' + (t.count >= t.seats ? " is-full" : "") + '" style="animation-delay:' + (0.04 * i) + 's" href="?t=' + encodeURIComponent(t.id) + '">' +
           roundTable(t) + '<span class="table-tile__name">' + esc(t.name) + "</span>" +
           "<small>" + (t.count ? plural(t.count, "passager") + (t.count >= t.seats ? " · complet" : "") : "Libre") + "</small></a>";
       }).join("") + "</div>";
+  }
+
+  // Résumé de la salle au-dessus du plan
+  function salle() {
+    var pax = 0, seats = 0, free = 0;
+    tables.forEach(function (t) { pax += t.count; seats += t.seats; if (!t.count) free++; });
+    return '<div class="salle fx-rise"><div><b>' + pax + "</b><small>passager" + (pax > 1 ? "s" : "") + " installé" + (pax > 1 ? "s" : "") + "</small></div>" +
+      "<div><b>" + Math.max(0, seats - pax) + "</b><small>places libres</small></div>" +
+      "<div><b>" + free + "</b><small>table" + (free > 1 ? "s" : "") + " vide" + (free > 1 ? "s" : "") + "</small></div></div>" +
+      '<p class="salle__legend fx-rise"><span><i class="is-taken"></i>Place prise</span><span><i></i>Place libre</span></p>';
   }
 
   /* ───────── Table choisie : qui êtes-vous ? ───────── */
@@ -89,7 +100,8 @@
         '<p class="ticket__name">' + esc(me.nom) + "&nbsp;?</p>" +
         '<button class="btn btn--gold btn--block" id="t-me" type="button">Oui, je m\'installe ici</button>' +
         '<button class="linklike" id="t-notme" type="button" style="margin-top:.9rem;color:#7a7d7d">Ce n\'est pas moi</button></div></div>' : "") +
-      '<form class="live-card fx-rise" id="t-search" style="animation-delay:.12s"' + (me ? " hidden" : "") + " novalidate>" +
+      '<form class="ticket fx-rise" id="t-search" style="animation-delay:.12s"' + (me ? " hidden" : "") + " novalidate>" +
+      '<div class="ticket__head"><span>Embarquement</span><span>' + esc(t.name) + '</span></div><div class="ticket__body t-search">' +
       '<div class="field"><label for="t-q">Votre nom</label><input id="t-q" type="search" autocomplete="name" placeholder="Tapez au moins 3 lettres" /></div>' +
       '<div class="pick-list" id="t-results"></div>' +
       '<button type="button" class="linklike muted" id="t-new-toggle">Je ne suis pas dans la liste</button>' +
@@ -97,8 +109,9 @@
       '<div class="field"><label for="t-nom">Prénom et nom</label><input id="t-nom" maxlength="80" autocomplete="name" /></div>' +
       '<div class="field"><label for="t-nb">Combien êtes-vous (vous compris)&nbsp;?</label><select id="t-nb"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>' +
       '<button type="button" class="btn btn--gold btn--block" id="t-new-go">Je m\'installe ici</button></div>' +
-      '<p class="form-error" role="alert" hidden></p></form>' +
-      '<div class="live-card fx-rise" style="animation-delay:.16s"><p class="live__tag" style="margin:0 0 .6rem">Déjà à cette table</p>' + people(t) + "</div>";
+      '<p class="form-error" role="alert" hidden></p></div></form>' +
+      '<div class="ticket fx-rise" style="animation-delay:.16s"><div class="ticket__head"><span>Déjà à cette table</span><span>' + plural(t.count, "passager") + '</span></div>' +
+      '<div class="ticket__body">' + people(t) + "</div></div>";
 
     function busy(btn, on) { if (btn) btn.disabled = on; }
 

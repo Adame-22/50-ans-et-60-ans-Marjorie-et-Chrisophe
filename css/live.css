@@ -499,3 +499,35 @@ form.live-card { display: grid; gap: 1rem; }
 .qlink small { font-size: .72rem; color: rgba(255, 251, 254, .55); line-height: 1.25; }
 @media (max-width: 360px) { .qlink small { display: none; } }
 .table-hero__name, .table-tile__name, .ticket__head, .who-name { font-variant-numeric: lining-nums; }
+
+/* ═════ À table : finition ═════ */
+/* fond posé une fois pour toutes : plus de cassure en bas des longues pages */
+body.live { background: transparent; }
+body.live::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 90% 50% at 50% 115%, rgba(166, 112, 70, .28), transparent 65%), linear-gradient(180deg, #00001f 0%, var(--navy) 60%, #0a0d45 100%);
+}
+.ticket__head { font-size: .85rem; letter-spacing: .02em; text-transform: none; font-weight: 700; }
+.live__tag { font-family: var(--sans); font-size: .85rem; font-weight: 700; letter-spacing: .02em; text-transform: none; }
+
+/* résumé de la salle */
+.salle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 .8rem; border: 1px solid rgba(255, 251, 254, .14); border-radius: 16px; background: rgba(255, 251, 254, .05); font-variant-numeric: lining-nums; }
+.salle div { padding: .8rem .5rem; text-align: center; }
+.salle div + div { border-left: 1px dashed rgba(255, 251, 254, .18); }
+.salle b { display: block; font-family: var(--serif); font-size: 1.9rem; font-weight: 500; line-height: 1; color: var(--gold-light); }
+.salle small { display: block; margin-top: .25rem; font-size: .78rem; color: rgba(255, 251, 254, .65); }
+.salle__legend { display: flex; justify-content: center; gap: 1.2rem; margin: 0 0 1.2rem; font-size: .8rem; color: rgba(255, 251, 254, .6); }
+.salle__legend span { display: inline-flex; align-items: center; gap: .4rem; }
+.salle__legend i { width: 12px; height: 12px; border-radius: 4px; border: 1px solid rgba(255, 251, 254, .3); background: rgba(255, 251, 254, .08); }
+.salle__legend i.is-taken { background: #a67046; border-color: #a67046; }
+
+/* recherche du nom sur billet ivoire */
+.t-search { display: grid; gap: 1rem; }
+.t-search .field label { font-size: .95rem; font-weight: 700; color: var(--navy); }
+.t-search .pick-list button { background: #fff; color: var(--navy); border: 1.5px solid #e2d6c6; }
+.t-search .pick-list button:hover { border-color: var(--gold); background: #fffaf2; }
+.t-search .pick-list button small { font-family: var(--sans); font-size: .78rem; letter-spacing: 0; text-transform: none; color: #8f5c38; }
+.t-search .pick-list .muted, .t-search .muted { color: #5d6061; }
+.t-search .linklike { color: #8f5c38; justify-self: center; }
+.t-search .form-error { color: #a3412f; }
+.t-new { border-top: 2px dashed #e2d2bb; padding-top: 1.1rem; }
