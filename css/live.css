@@ -531,3 +531,54 @@ body.live::before {
 .t-search .linklike { color: #8f5c38; justify-self: center; }
 .t-search .form-error { color: #a3412f; }
 .t-new { border-top: 2px dashed #e2d2bb; padding-top: 1.1rem; }
+
+/* ═════ Boîte noire : finition ═════ */
+.bn .live__title, .bn .live__sub { grid-column: 1 / -1; }
+.wall__title { font-variant-numeric: lining-nums; }
+/* l'enregistreur : boîtier sombre, bandeau orange, champs ivoire */
+.recorder { background: linear-gradient(180deg, rgba(26, 13, 5, .55), rgba(10, 12, 50, .6)); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8), inset 0 0 0 1px rgba(242, 107, 29, .12); }
+.recorder::before, .recorder::after { /* vis du boîtier */
+  content: ""; position: absolute; bottom: 12px; width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #8b8f9c, #3a3d48); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4);
+}
+.recorder::before { left: 12px; } .recorder::after { right: 12px; }
+.recorder__band { letter-spacing: .08em; }
+.recorder .field label, .recorder .field__label { font-size: .95rem; font-weight: 600; color: rgba(255, 251, 254, .82); }
+.recorder .field input, .recorder .field textarea { background: #fffcf7; color: var(--navy); border: 1.5px solid transparent; }
+.recorder .field input:focus, .recorder .field textarea:focus { border-color: #f26b1d; box-shadow: 0 0 0 4px rgba(242, 107, 29, .22); outline: 0; }
+.recorder .btn--gold { background: #f26b1d; color: #1a0d05; }
+.recorder .btn--gold:hover { background: #ff7c2e; }
+.recorder .photo-btn { border-color: rgba(242, 107, 29, .55); }
+.recorder .consent a { color: #ff9a5c; }
+
+/* mur vide */
+.wall:empty::before {
+  content: "Pas encore de message : soyez le premier à remplir la boîte noire ✈";
+  display: block; column-span: all; margin: 1.6rem 0 0; padding: 1.4rem; text-align: center; border-radius: 16px;
+  border: 1.5px dashed rgba(255, 251, 254, .2); color: rgba(255, 251, 254, .6); font-size: .95rem;
+}
+
+/* timbre-poste dentelé sur les cartes « par avion » */
+.wall-item--card { padding-top: 3.4rem; }
+.card__airmail { max-width: calc(100% - 56px); white-space: nowrap; overflow: hidden; text-overflow: clip; }
+.card__stamp {
+  position: absolute; top: .7rem; right: .75rem; width: 34px; height: 40px; display: grid; place-items: end center; padding-bottom: 4px; transform: rotate(5deg);
+  background: radial-gradient(circle at 50% 36%, #f6e3c4 0 28%, transparent 30%), linear-gradient(160deg, #2f4a8f, #1d2f63);
+  outline: 4px dotted #f9f1e4; outline-offset: -2px; box-shadow: 0 0 0 2px #f9f1e4, 0 2px 4px rgba(0, 0, 0, .25);
+}
+.card__stamp b { font-family: var(--serif); font-size: .62rem; font-weight: 600; color: #f6e3c4; font-variant-numeric: lining-nums; }
+.wall-item:nth-child(4n+1) .card__stamp { background: radial-gradient(circle at 50% 36%, #f6e3c4 0 28%, transparent 30%), linear-gradient(160deg, #c8423a, #8f2a24); }
+
+/* ordinateur : formulaire fixe à gauche, mur à droite */
+@media (min-width: 980px) {
+  .live__main.bn { width: min(1180px, 100% - 64px); display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 20px 44px; align-items: start; }
+  .bn .live__title, .bn .live__sub { text-align: left; }
+  .bn .live__sub { margin-bottom: .4rem; }
+  .bn__side { position: sticky; top: 20px; }
+  .bn__wall .wall__title { margin-top: 0; text-align: left; }
+  .bn__wall .wall__title::after { margin-left: 0; }
+  .bn .wall { columns: 3 190px; column-gap: 18px; }
+  .bn .wall:empty::before { margin-top: 0; }
+}
+.wall-item { font-variant-numeric: lining-nums; }
+@media (max-width: 560px) { .card__airmail span { display: none; } }

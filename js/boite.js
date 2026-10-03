@@ -78,7 +78,7 @@
         "<figcaption>" + (e.message ? "<p>" + esc(e.message) + "</p>" : "") + '<small class="sig">' + esc(e.name) + "</small></figcaption></figure>";
     }
     return '<figure class="wall-item wall-item--card" data-id="' + esc(e.id) + '">' +
-      '<span class="card__airmail" aria-hidden="true">Par avion · Vol MC 5060</span>' +
+      '<span class="card__airmail" aria-hidden="true">Par avion<span> · Vol MC 5060</span></span><span class="card__stamp" aria-hidden="true"><b>50·60</b></span>' +
       "<p>" + esc(e.message) + '</p><small class="sig">' + esc(e.name) + "</small></figure>";
   }
 

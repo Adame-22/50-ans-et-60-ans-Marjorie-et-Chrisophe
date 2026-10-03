@@ -24,19 +24,20 @@
   <meta property="og:image:alt" content="Marjorie &amp; Christophe · 50 ans et 60 ans · samedi 7 novembre 2026, Draveil" />
   <meta property="og:locale" content="fr_FR" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261008" />
-  <link rel="stylesheet" href="css/style.css?v=20261008" />
-  <link rel="stylesheet" href="css/live.css?v=20261008" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261009" />
+  <link rel="stylesheet" href="css/style.css?v=20261009" />
+  <link rel="stylesheet" href="css/live.css?v=20261009" />
 </head>
 <body class="live">
   <header class="live__top">
     <a href="/" class="nav__brand"><span class="nav__mono">M<span>&amp;</span>C</span></a>
     <span class="live__tag">Enregistreur de vol</span>
   </header>
-  <main class="live__main">
+  <main class="live__main bn">
     <h1 class="live__title">La Boîte noire</h1>
     <p class="live__sub">Un mot, un souvenir, une photo pour Marjorie &amp; Christophe. Tout est enregistré&nbsp;!</p>
 
+    <div class="bn__side">
     <form class="live-card recorder" id="bn-form" novalidate>
       <div class="recorder__band" aria-hidden="true"><span class="rec"><i></i>REC</span><span>Enregistreur de vol · MC 5060</span></div>
       <div class="field">
@@ -60,13 +61,16 @@
       <button class="btn btn--gold btn--block" type="submit">Enregistrer</button>
       <p class="consent">Votre message et votre photo seront visibles sur le site et l'écran de la soirée, puis offerts à Marjorie &amp; Christophe. Ne publiez que des photos où chacun est d'accord pour apparaître. <a href="/mentions-legales#droits">Droits et retrait</a>.</p>
     </form>
+    </div>
 
-    <h2 class="wall__title" id="bn-title" hidden>Messages enregistrés</h2>
-    <div class="wall" id="bn-wall" aria-live="polite"></div>
+    <section class="bn__wall">
+      <h2 class="wall__title" id="bn-title" hidden>Messages enregistrés</h2>
+      <div class="wall" id="bn-wall" aria-live="polite"></div>
+    </section>
   </main>
   <p class="live__legal"><a href="/mentions-legales">Mentions légales &amp; confidentialité</a></p>
-  <script src="js/fx.js?v=20261008"></script>
-  <script src="js/boite.js?v=20261008"></script>
-  <script src="js/install.js?v=20261008"></script>
+  <script src="js/fx.js?v=20261009"></script>
+  <script src="js/boite.js?v=20261009"></script>
+  <script src="js/install.js?v=20261009"></script>
 </body>
 </html>
