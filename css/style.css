@@ -1338,3 +1338,4 @@ h3 { font-size: 1.6rem; }
   .passport .visa { left: clamp(92px, 9vw, 112px); top: clamp(168px, 15vw, 196px); right: auto; bottom: auto; }
 }
 @media (max-width: 700px) { .passport { background-size: 220px, 240px 60px, auto; background-position: right -60px bottom -60px, 0 0, 0 0; } }
+.infos { grid-template-columns: repeat(3, 1fr); } @media (max-width: 960px) { .infos { grid-template-columns: 1fr; } }

@@ -15,9 +15,8 @@ window.EVENT = {
   adresse: "1 allée des Alouettes, 91270 Draveil",
   ville: "Draveil",
   porte: "A50", // la « porte d'embarquement » affichée sur le tableau
-  dressCode: "Élégant — tenue de cocktail",
+  dressCode: "Simple et chic",
   rsvpAvant: "15 octobre 2026",
-  hebergement: "Une liste d'hôtels à proximité sera communiquée prochainement.",
   parking: "Parking disponible sur place.",
 
   // Heures de vol des passeports : avec les dates de naissance (AAAA-MM-JJ),
