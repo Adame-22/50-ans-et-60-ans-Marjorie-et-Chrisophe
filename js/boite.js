@@ -71,10 +71,15 @@
   });
 
   function item(e) {
-    return '<figure class="wall-item" data-id="' + esc(e.id) + '">' +
-      (e.photo ? '<img loading="lazy" src="/api/boite?photo=' + encodeURIComponent(e.id) + '" alt="Photo de ' + esc(e.name) + '" />' : "") +
-      (e.message ? "<p>" + esc(e.message) + "</p>" : "") +
-      "<small>" + esc(e.name) + "</small></figure>";
+    // photo : polaroïd ; mot seul : carte postale « Par avion »
+    if (e.photo) {
+      return '<figure class="wall-item wall-item--photo" data-id="' + esc(e.id) + '">' +
+        '<img loading="lazy" src="/api/boite?photo=' + encodeURIComponent(e.id) + '" alt="Photo de ' + esc(e.name) + '" />' +
+        "<figcaption>" + (e.message ? "<p>" + esc(e.message) + "</p>" : "") + '<small class="sig">' + esc(e.name) + "</small></figcaption></figure>";
+    }
+    return '<figure class="wall-item wall-item--card" data-id="' + esc(e.id) + '">' +
+      '<span class="card__airmail" aria-hidden="true">Par avion · Vol MC 5060</span>' +
+      "<p>" + esc(e.message) + '</p><small class="sig">' + esc(e.name) + "</small></figure>";
   }
 
   function load() {
@@ -82,6 +87,8 @@
       var known = {};
       wall.querySelectorAll("[data-id]").forEach(function (el) { known[el.getAttribute("data-id")] = true; });
       var fresh = (d.entries || []).filter(function (e) { return !known[e.id]; });
+      var title = document.getElementById("bn-title");
+      if (title) { title.hidden = !(d.entries || []).length; title.textContent = (d.entries || []).length + " message" + ((d.entries || []).length > 1 ? "s" : "") + " enregistré" + ((d.entries || []).length > 1 ? "s" : ""); }
       if (!wall.children.length) wall.innerHTML = (d.entries || []).map(item).join("");
       else if (fresh.length) wall.insertAdjacentHTML("afterbegin", fresh.map(item).join(""));
     }).catch(function () { /* on réessaie plus tard */ })

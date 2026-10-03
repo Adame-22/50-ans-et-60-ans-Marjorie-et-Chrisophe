@@ -37,6 +37,11 @@
     <h1 class="live__title">Radio de bord</h1>
     <p class="live__sub">Proposez une chanson ou votez pour celles des autres passagers. Le DJ s'occupe du reste.</p>
 
+    <div class="onair" aria-hidden="true">
+      <div class="onair__freq"><small>Sur les ondes</small><b>50.60</b><span>MC FM</span></div>
+      <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+
     <section class="live-card spotify" id="spotify" hidden>
       <p class="live__tag">La playlist de la soirée</p>
       <div class="spotify__frame"></div>
@@ -51,6 +56,7 @@
       <button class="btn btn--gold btn--block" type="submit">Proposer</button>
     </form>
 
+    <h2 class="wall__title">Le hit-parade des passagers</h2>
     <ol class="songs" id="r-list" aria-live="polite"></ol>
   </main>
   <p class="live__legal"><a href="/mentions-legales">Mentions légales &amp; confidentialité</a></p>

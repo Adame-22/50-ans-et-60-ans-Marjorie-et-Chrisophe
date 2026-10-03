@@ -37,7 +37,8 @@
     <h1 class="live__title">La Boîte noire</h1>
     <p class="live__sub">Un mot, un souvenir, une photo pour Marjorie &amp; Christophe. Tout est enregistré&nbsp;!</p>
 
-    <form class="live-card" id="bn-form" novalidate>
+    <form class="live-card recorder" id="bn-form" novalidate>
+      <div class="recorder__band" aria-hidden="true"><span class="rec"><i></i>REC</span><span>Enregistreur de vol · MC 5060</span></div>
       <div class="field">
         <label for="bn-name">Votre prénom</label>
         <input id="bn-name" name="name" maxlength="60" autocomplete="given-name" />
@@ -60,6 +61,7 @@
       <p class="consent">Votre message et votre photo seront visibles sur le site et l'écran de la soirée, puis offerts à Marjorie &amp; Christophe. Ne publiez que des photos où chacun est d'accord pour apparaître. <a href="/mentions-legales#droits">Droits et retrait</a>.</p>
     </form>
 
+    <h2 class="wall__title" id="bn-title" hidden>Messages enregistrés</h2>
     <div class="wall" id="bn-wall" aria-live="polite"></div>
   </main>
   <p class="live__legal"><a href="/mentions-legales">Mentions légales &amp; confidentialité</a></p>

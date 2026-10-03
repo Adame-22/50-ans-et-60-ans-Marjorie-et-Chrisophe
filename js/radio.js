@@ -38,12 +38,13 @@
   }
 
   function render() {
-    list.innerHTML = songs.map(function (s) {
+    list.innerHTML = songs.map(function (s, i) {
       var voted = !!mine[s.id];
-      return '<li class="song' + (s.played ? " is-played" : "") + '">' +
+      return '<li class="song' + (s.played ? " is-played" : "") + (i === 0 && !s.played ? " is-top" : "") + '">' +
+        '<span class="song__rank">' + (i + 1) + "</span>" +
         '<div class="song__txt"><b>' + esc(s.title) + "</b><small>" + esc(s.artist || "Artiste inconnu") + (s.played ? " · déjà diffusée" : "") + "</small></div>" +
         '<button class="vote' + (voted ? " is-voted" : "") + '" data-id="' + esc(s.id) + '"' + (voted || s.played ? " disabled" : "") + ' aria-label="Voter pour ' + esc(s.title) + '">' +
-        "▲<span>" + s.votes + "</span><small>" + (voted ? "VOTÉ" : "VOTER") + "</small></button></li>";
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg><span>' + s.votes + "</span><small>" + (voted ? "Voté" : "Voter") + "</small></button></li>";
     }).join("") || '<li class="live-card center muted">Aucune chanson pour l\'instant : lancez la première !</li>';
   }
 
