@@ -54,7 +54,7 @@ body.billet {
 
 /* Tampon de passeport sur le talon de chaque carte */
 .bp__stub { overflow: hidden; }
-.bp__visa { --s: 104px; --r: -12deg; --ink: var(--ink-red); --o: .55; right: 10px; top: calc(50% - 52px); }
-.bp:nth-child(3n+2) .bp__visa { --ink: var(--ink-blue); --r: 9deg; }
-.bp:nth-child(3n) .bp__visa { --ink: var(--ink-gold); --r: -4deg; }
+.bp__tampon { --s: 104px; --r: -12deg; --ink: var(--ink-red); --o: .55; right: 10px; top: calc(50% - 52px); }
+.bp:nth-child(3n+2) .bp__tampon { --ink: var(--ink-blue); --r: 9deg; }
+.bp:nth-child(3n) .bp__tampon { --ink: var(--ink-gold); --r: -4deg; }
 .bp__qr, .bp__stubtxt { position: relative; z-index: 1; }

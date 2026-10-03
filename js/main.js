@@ -129,7 +129,7 @@
   onScroll();
 
   /* ───────── Tampons de passeport : posés quand ils arrivent à l'écran ───────── */
-  var visas = document.querySelectorAll(".visa:not(.visa--done)");
+  var visas = document.querySelectorAll(".tampon:not(.tampon--done)");
   if ("IntersectionObserver" in window) {
     var vio = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
