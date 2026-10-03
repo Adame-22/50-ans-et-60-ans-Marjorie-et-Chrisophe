@@ -10,54 +10,96 @@
   <link rel="stylesheet" href="css/fonts.css?v=20261003" />
   <link rel="stylesheet" href="css/style.css?v=20261003" />
   <style>
-    body.legal { background: var(--ivory); }
-    .legal__top { background: var(--navy); color: var(--paper); padding: 18px clamp(16px, 4vw, 40px); display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    body.legal { background: #f6f1ea; font-variant-numeric: lining-nums; }
+    /* En-tête bleu nuit */
+    .legal__hero { position: relative; overflow: hidden; color: var(--paper); background: radial-gradient(ellipse 70% 90% at 50% 120%, rgba(166, 112, 70, .35), transparent 60%), linear-gradient(180deg, #00001f, var(--navy)); }
+    .legal__top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 18px clamp(16px, 4vw, 40px); }
     .legal__top a { color: inherit; text-decoration: none; }
-    .legal__top .back { font-family: var(--mono); font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-light); }
-    .legal__main { width: min(760px, 100% - 32px); margin: 40px auto 80px; }
-    .legal__main h1 { font-size: clamp(2.2rem, 7vw, 3.2rem); margin-bottom: .4rem; }
-    .legal__main .updated { color: var(--muted); font-size: .9rem; margin: 0 0 2rem; }
-    .toc { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 2.4rem; padding: 0; list-style: none; }
-    .toc a { display: inline-block; padding: .4rem .8rem; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; text-decoration: none; color: var(--ink); }
-    .toc a:hover { border-color: var(--gold); color: var(--gold); }
-    .legal__main section { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(20px, 4vw, 32px); margin-bottom: 18px; scroll-margin-top: 20px; }
-    .legal__main h2 { font-size: 1.9rem; margin-bottom: 1rem; }
-    .legal__main h3 { font-family: var(--sans); font-size: 1rem; font-weight: 600; margin: 1.4rem 0 .4rem; }
-    .legal__main p, .legal__main li { color: #2a2d3a; line-height: 1.7; }
+    .legal__top .back { font-size: .92rem; font-weight: 600; color: var(--gold-light); }
+    .legal__top .back:hover { text-decoration: underline; text-underline-offset: 4px; }
+    .legal__intro { width: min(1080px, 100% - 32px); margin: 0 auto; padding: clamp(28px, 6vw, 56px) 0 clamp(36px, 7vw, 64px); }
+    .legal__intro .eyebrow { color: var(--gold-light); }
+    .legal__intro h1 { font-size: clamp(2.4rem, 7vw, 3.8rem); line-height: 1.05; margin: .2rem 0 .7rem; }
+    .legal__intro .updated { margin: 0; color: rgba(255, 251, 254, .65); font-size: .95rem; }
+    .legal__hero .tampon { --s: clamp(130px, 18vw, 210px); --r: 12deg; --ink: var(--gold-light); --o: .16; right: clamp(-30px, 4vw, 80px); bottom: -30px; mix-blend-mode: normal; }
+
+    /* Mise en page : sommaire collant + contenu */
+    .legal__layout { width: min(1080px, 100% - 32px); margin: -28px auto 80px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 32px; align-items: start; position: relative; z-index: 1; }
+    .toc { position: sticky; top: 20px; margin: 40px 0 0; padding: 0; list-style: none; display: grid; gap: 2px; counter-reset: toc; }
+    .toc a { display: flex; gap: .7rem; align-items: baseline; padding: .55rem .8rem; border-radius: 10px; font-size: .92rem; font-weight: 500; text-decoration: none; color: var(--ink); }
+    .toc a::before { counter-increment: toc; content: counter(toc, decimal-leading-zero); font-family: var(--serif); font-weight: 600; color: var(--gold); }
+    .toc a:hover, .toc a.is-current { background: #fff; color: var(--navy); box-shadow: 0 6px 18px -14px rgba(0, 0, 51, .5); }
+    .legal__main { display: grid; gap: 16px; counter-reset: sec; }
+    .brief { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; background: #fff; border: 1px solid #ebe2d6; border-radius: var(--radius); overflow: hidden; box-shadow: 0 14px 40px -30px rgba(0, 0, 51, .6); }
+    .brief div { padding: 20px 22px; border-left: 1px solid #ebe2d6; }
+    .brief div:first-child { border-left: 0; }
+    .brief b { display: block; font-family: var(--serif); font-size: 1.35rem; font-weight: 600; color: var(--navy); margin-bottom: .2rem; }
+    .brief p { margin: 0; font-size: .9rem; line-height: 1.55; color: #5d6061; }
+    .legal__main section { counter-increment: sec; position: relative; background: #fff; border: 1px solid #ebe2d6; border-radius: var(--radius); padding: clamp(22px, 4vw, 36px); scroll-margin-top: 20px; box-shadow: 0 10px 30px -26px rgba(0, 0, 51, .45); }
+    .legal__main h2 { display: flex; align-items: baseline; gap: .8rem; font-size: clamp(1.6rem, 4.5vw, 2rem); margin: 0 0 1rem; }
+    .legal__main h2::before { content: counter(sec, decimal-leading-zero); font-size: .7em; font-weight: 600; color: var(--gold); }
+    .legal__main h3 { font-family: var(--sans); font-size: 1rem; font-weight: 700; color: var(--navy); margin: 1.6rem 0 .4rem; }
+    .legal__main p, .legal__main li { color: #2a2d3a; line-height: 1.75; }
     .legal__main ul { padding-left: 1.2rem; }
-    .legal__main table { width: 100%; border-collapse: collapse; font-size: .92rem; margin: .8rem 0; }
-    .legal__main th, .legal__main td { text-align: left; vertical-align: top; padding: .6rem .5rem; border-bottom: 1px solid var(--line); }
-    .legal__main th { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
-    .legal__main a { color: var(--gold); }
+    .legal__main li::marker { color: var(--gold); }
+    .legal__main table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .92rem; margin: 1rem 0; border: 1px solid #ebe2d6; border-radius: 12px; overflow: hidden; }
+    .legal__main th, .legal__main td { text-align: left; vertical-align: top; padding: .75rem .9rem; border-bottom: 1px solid #ebe2d6; }
+    .legal__main tr:last-child td { border-bottom: 0; }
+    .legal__main th { background: #faf6f0; font-size: .76rem; font-weight: 700; color: var(--muted); }
+    .legal__main td:first-child { font-weight: 600; color: var(--navy); }
+    .legal__main a { color: #8f5c38; text-underline-offset: 3px; }
+    .note { background: #faf6f0; border-left: 3px solid var(--gold); padding: .9rem 1.1rem; border-radius: 0 10px 10px 0; }
+    .legal__end { text-align: center; margin: 1.4rem 0 0; }
+    @media (max-width: 860px) {
+      .legal__layout { grid-template-columns: minmax(0, 1fr); gap: 18px; margin-top: 20px; }
+      .toc { position: static; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+      .toc a { background: #fff; border: 1px solid #ebe2d6; padding: .4rem .75rem; font-size: .84rem; }
+      .brief { grid-template-columns: minmax(0, 1fr); }
+      .brief div { border-left: 0; border-top: 1px solid #ebe2d6; }
+      .brief div:first-child { border-top: 0; }
+    }
     /* Petits écrans : chaque ligne du tableau devient une fiche */
     @media (max-width: 560px) {
       .legal__main thead { display: none; }
-      .legal__main tr { display: block; padding: .7rem 0; border-bottom: 1px solid var(--line); }
+      .legal__main table { border: 0; }
+      .legal__main tr { display: block; padding: .8rem 0; border-bottom: 1px solid #ebe2d6; }
       .legal__main td { display: block; padding: .1rem 0; border: 0; hyphens: auto; overflow-wrap: anywhere; }
-      .legal__main td:first-child { font-weight: 600; color: var(--ink); }
       .legal__main td:last-child { color: var(--muted); }
     }
-    .note { background: var(--ivory); border-left: 3px solid var(--gold); padding: .8rem 1rem; border-radius: 0 8px 8px 0; }
   </style>
 </head>
 <body class="legal">
-  <header class="legal__top">
-    <a href="/" class="nav__brand"><span class="nav__mono">M<span>&amp;</span>C</span></a>
-    <a href="/" class="back">← Retour au site</a>
-  </header>
+  <div class="legal__hero">
+    <span class="tampon tampon--france" aria-hidden="true"></span>
+    <header class="legal__top">
+      <a href="/" class="nav__brand"><span class="nav__mono">M<span>&amp;</span>C</span></a>
+      <a href="/" class="back">← Retour au site</a>
+    </header>
+    <div class="legal__intro">
+      <p class="eyebrow">Vol MC 5060 · Informations</p>
+      <h1>Mentions légales<br />&amp; confidentialité</h1>
+      <p class="updated">Dernière mise à jour : 27 septembre 2026</p>
+    </div>
+  </div>
+
+  <div class="legal__layout">
+    <nav aria-label="Sommaire">
+      <ul class="toc">
+        <li><a href="#mentions">Mentions légales</a></li>
+        <li><a href="#droits">Droits réservés</a></li>
+        <li><a href="#conditions">Conditions d'utilisation</a></li>
+        <li><a href="#confidentialite">Données personnelles</a></li>
+        <li><a href="#cookies">Cookies</a></li>
+        <li><a href="#credits">Crédits</a></li>
+      </ul>
+    </nav>
 
   <main class="legal__main">
-    <h1>Mentions légales &amp; confidentialité</h1>
-    <p class="updated">Dernière mise à jour : 27 septembre 2026</p>
-
-    <ul class="toc">
-      <li><a href="#mentions">Mentions légales</a></li>
-      <li><a href="#droits">Droits réservés</a></li>
-      <li><a href="#conditions">Conditions d'utilisation</a></li>
-      <li><a href="#confidentialite">Données personnelles</a></li>
-      <li><a href="#cookies">Cookies</a></li>
-      <li><a href="#credits">Crédits</a></li>
-    </ul>
+    <div class="brief">
+      <div><b>Un site privé</b><p>Fait par la famille pour la fête de Marjorie et Christophe. Rien n'est vendu, rien n'est payant.</p></div>
+      <div><b>Vos données</b><p>Servent uniquement à organiser la fête, visibles des seuls organisateurs, effacées au plus tard le 31 mars 2027.</p></div>
+      <div><b>Pas de pistage</b><p>Aucune publicité ni mesure d'audience. Seulement ce qu'il faut pour que le site fonctionne.</p></div>
+    </div>
 
     <section id="mentions">
       <h2>Mentions légales</h2>
@@ -155,10 +197,13 @@
         <li>Palette et carte « Anniversaires » : Lucie.</li>
         <li>Polices : Cormorant Garamond, Manrope, JetBrains Mono, Monsieur La Doulaise — licence SIL Open Font License 1.1.</li>
         <li>Bibliothèques : SortableJS (licence MIT), qrcode-generator de Kazuhiko Arase (licence MIT), node-postgres (licence MIT).</li>
+        <li>Tampons de passeport : planche vectorielle fournie par Adame.</li>
         <li>Pictogrammes et illustrations : créations originales du site.</li>
       </ul>
     </section>
+    <p class="legal__end"><a class="btn btn--gold" href="/">Retour au site de la fête</a></p>
   </main>
+  </div>
 
   <script src="js/config.js?v=20261003"></script>
   <script>
@@ -173,6 +218,14 @@
           el.textContent = contact || "directement auprès des organisateurs de la fête (Adame, Lucie, Marjorie ou Christophe).";
         }
       });
+      // sommaire : section en cours
+      var links = document.querySelectorAll(".toc a");
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) links.forEach(function (a) { a.classList.toggle("is-current", a.getAttribute("href") === "#" + e.target.id); }); });
+        }, { rootMargin: "-30% 0px -60% 0px" });
+        document.querySelectorAll(".legal__main section").forEach(function (sec) { io.observe(sec); });
+      }
       if (CFG.editeurLegal) {
         document.getElementById("editor-line").textContent = "Site édité par " + CFG.editeurLegal + ", particulier, à titre non professionnel.";
         document.getElementById("director-line").textContent = CFG.editeurLegal + ".";
