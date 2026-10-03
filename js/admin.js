@@ -182,6 +182,18 @@
   });
 
   /* ───────── Manifeste ───────── */
+  /* Téléphone : chaque cellule du manifeste porte le nom de sa colonne (affichage en cartes) */
+  (function labelCells() {
+    var table = document.getElementById("m-table");
+    if (!table || !("MutationObserver" in window)) return;
+    var heads = Array.prototype.map.call(table.querySelectorAll("thead th"), function (th) { return th.textContent.trim(); });
+    new MutationObserver(function () {
+      table.querySelectorAll("tbody tr").forEach(function (tr) {
+        Array.prototype.forEach.call(tr.children, function (td, i) { if (heads[i]) td.setAttribute("data-label", heads[i]); });
+      });
+    }).observe(table.querySelector("tbody"), { childList: true });
+  })();
+
   function loadRsvps() {
     return api("/api/rsvp").then(function (d) {
       state.rsvps = d.rsvps;
