@@ -25,8 +25,8 @@
   <meta property="og:image:alt" content="Marjorie &amp; Christophe · 50 ans et 60 ans · samedi 7 novembre 2026, Draveil" />
   <meta property="og:locale" content="fr_FR" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261005" />
-  <link rel="stylesheet" href="css/style.css?v=20261005" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261006" />
+  <link rel="stylesheet" href="css/style.css?v=20261006" />
   <script>
     /* Ciel de jour entre le lever et le coucher du soleil à Draveil (calcul
        astronomique selon la date, algorithme de SunCalc), ou choix mémorisé.
@@ -518,23 +518,36 @@
       </form>
 
       <div class="checkin-done" id="checkin-done" hidden>
-        <div class="done-visa" aria-hidden="true"><span class="tampon tampon--suisse tampon--done"></span><span class="stamp">Enregistré</span></div>
-        <h3 id="done-title">Bon vol&nbsp;!</h3>
-        <p id="done-text"></p>
-        <a class="btn btn--gold done-pass" id="done-pass" hidden>Ma carte d'embarquement numérique ✈</a>
-        <p class="done-sent" id="done-sent"></p>
-        <div class="big-actions">
-          <a class="big-btn" href="/agenda.ics" download="vol-mc5060.ics"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4"/></svg><span><b>Ajouter à mon agenda</b><small>iPhone, Android, Outlook</small></span></a>
-          <a class="big-btn" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=Vol+MC+5060+%C2%B7+50+ans+de+Marjorie+%26+60+ans+de+Christophe&amp;dates=20261107T113000Z%2F20261107T225900Z&amp;location=Salle+des+f%C3%AAtes+de+Champrosay%2C+1+all%C3%A9e+des+Alouettes%2C+91270+Draveil&amp;details=Embarquement+%C3%A0+12h30.+Toutes+les+infos+%3A+https%3A%2F%2F50-ans-et-60-ans-marjorie-et-chriso.vercel.app%2F&amp;ctz=Europe%2FParis" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.4 3-7.3z"/><path fill="currentColor" opacity=".75" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="currentColor" opacity=".55" d="M6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9z"/><path fill="currentColor" opacity=".85" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.7 9.4 5.9 12 5.9z"/></svg><span><b>Google Agenda</b><small>Ouvre Google Agenda</small></span></a>
+        <div class="done__head">
+          <span class="checkin__airline">M<span>&amp;</span>C Airlines</span>
+          <span class="done__status" id="done-status">Enregistrement confirmé</span>
         </div>
-        <div class="big-actions">
-          <a class="big-btn" href="webcal://50-ans-et-60-ans-marjorie-et-chriso.vercel.app/agenda.ics" data-webcal><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M9 15l2 2 4-4"/></svg><span><b>S'abonner au calendrier</b><small>iPhone · mis à jour automatiquement</small></span></a>
-          <a class="big-btn" href="https://calendar.google.com/calendar/render?cid=webcal%3A%2F%2F50-ans-et-60-ans-marjorie-et-chriso.vercel.app%2Fagenda.ics" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M9 15l2 2 4-4"/></svg><span><b>S'abonner dans Google</b><small>Android · mis à jour automatiquement</small></span></a>
+        <div class="done__body">
+          <div class="done-visa" aria-hidden="true"><span class="tampon tampon--suisse tampon--done"></span><span class="stamp">Enregistré</span></div>
+          <h3 id="done-title">Bon vol&nbsp;!</h3>
+          <p id="done-text"></p>
+          <dl class="done__sum" id="done-sum" hidden>
+            <div><dt>Passagers</dt><dd id="done-sum-pax"></dd></div>
+            <div><dt>Date</dt><dd id="done-sum-date"></dd></div>
+            <div><dt>Embarquement</dt><dd data-cfg="heure"></dd></div>
+            <div><dt>Porte</dt><dd data-cfg="porte"></dd></div>
+          </dl>
+          <a class="btn btn--gold done-pass" id="done-pass" hidden>Ma carte d'embarquement numérique ✈</a>
+          <p class="done-sent" id="done-sent"></p>
         </div>
-        <div class="push-slot" data-push></div>
-        <div class="checkin-done__actions">
+        <div class="done__more">
+          <p class="done__label">Ne manquez pas le décollage</p>
+          <div class="big-actions done__cal">
+            <a class="big-btn" href="/agenda.ics" download="vol-mc5060.ics"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4"/></svg><span><b>Ajouter à mon agenda</b><small>iPhone, Android, Outlook</small></span></a>
+            <a class="big-btn" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=Vol+MC+5060+%C2%B7+50+ans+de+Marjorie+%26+60+ans+de+Christophe&amp;dates=20261107T113000Z%2F20261107T225900Z&amp;location=Salle+des+f%C3%AAtes+de+Champrosay%2C+1+all%C3%A9e+des+Alouettes%2C+91270+Draveil&amp;details=Embarquement+%C3%A0+12h30.+Toutes+les+infos+%3A+https%3A%2F%2F50-ans-et-60-ans-marjorie-et-chriso.vercel.app%2F&amp;ctz=Europe%2FParis" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.4 3-7.3z"/><path fill="currentColor" opacity=".75" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="currentColor" opacity=".55" d="M6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9z"/><path fill="currentColor" opacity=".85" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.7 9.4 5.9 12 5.9z"/></svg><span><b>Google Agenda</b><small>Ouvre Google Agenda</small></span></a>
+            <a class="big-btn" href="webcal://50-ans-et-60-ans-marjorie-et-chriso.vercel.app/agenda.ics" data-webcal><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M9 15l2 2 4-4"/></svg><span><b>S'abonner au calendrier</b><small>iPhone · mis à jour automatiquement</small></span></a>
+            <a class="big-btn" href="https://calendar.google.com/calendar/render?cid=webcal%3A%2F%2F50-ans-et-60-ans-marjorie-et-chriso.vercel.app%2Fagenda.ics" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M9 15l2 2 4-4"/></svg><span><b>S'abonner dans Google</b><small>Android · mis à jour automatiquement</small></span></a>
+          </div>
+          <div class="push-slot" data-push></div>
+        </div>
+        <div class="done__foot checkin-done__actions">
           <a href="#itineraire" class="btn btn--ghost">Voir l'itinéraire</a>
-          <a href="#carte" class="btn btn--ghost">Voir ma carte d'embarquement</a>
+          <a href="#carte" class="btn btn--ghost">Revoir l'invitation</a>
         </div>
       </div>
     </div>
@@ -549,12 +562,12 @@
     <p class="footer__small">© 2026 · <a href="/mentions-legales" class="footer__crew">Mentions légales &amp; confidentialité</a> · <a href="/admin" class="footer__crew">Accès équipage</a></p>
   </footer>
 
-  <script src="js/config.js?v=20261005"></script>
-  <script src="js/programme.js?v=20261005"></script>
-  <script src="js/main.js?v=20261005"></script>
-  <script src="js/fx.js?v=20261005"></script>
-  <script src="js/motion.js?v=20261005"></script>
-  <script src="js/install.js?v=20261005"></script>
-  <script src="js/push.js?v=20261005"></script>
+  <script src="js/config.js?v=20261006"></script>
+  <script src="js/programme.js?v=20261006"></script>
+  <script src="js/main.js?v=20261006"></script>
+  <script src="js/fx.js?v=20261006"></script>
+  <script src="js/motion.js?v=20261006"></script>
+  <script src="js/install.js?v=20261006"></script>
+  <script src="js/push.js?v=20261006"></script>
 </body>
 </html>

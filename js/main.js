@@ -482,6 +482,14 @@
       ? "Votre enregistrement est confirmé pour " + data.passagers + " passager" + (data.passagers > 1 ? "s" : "") + " : " + fareSummary(data) +
         ". Rendez-vous porte " + (CFG.porte || "A50") + "."
       : "Vous nous manquerez à bord. Votre message a bien été transmis à l'équipage.";
+    var status = document.getElementById("done-status"), sum = document.getElementById("done-sum");
+    if (status) status.textContent = yes ? "Enregistrement confirmé" : "Réponse bien reçue";
+    if (sum) {
+      sum.hidden = !yes;
+      document.getElementById("done-sum-pax").textContent = data.passagers;
+      var d = String(CFG.dateLabel || "").match(/\d+\s+\S+/);
+      document.getElementById("done-sum-date").textContent = d ? d[0] : (CFG.dateLabel || "");
+    }
     if (yes) {
       passName.textContent = data.nom;
       passName.classList.add("is-new");
