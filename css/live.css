@@ -227,3 +227,9 @@ form.live-card { display: grid; gap: 1rem; }
 .live .consent { color: rgba(255, 251, 254, .55); }
 .live .consent a { color: var(--gold-light); }
 .push-slot--dark { margin: 0 0 16px; }
+
+/* Finition : étiquettes en casse normale, icône dessinée au lieu d'un emoji */
+.live__tag { font-family: var(--sans); font-size: .82rem; font-weight: 600; letter-spacing: .04em; text-transform: none; }
+.field__label { font-family: var(--sans); font-size: .9rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.q-meta { font-family: var(--sans); font-weight: 600; letter-spacing: .08em; }
+.table-tile small, .pick-list button small { font-family: var(--sans); font-weight: 600; letter-spacing: .1em; }

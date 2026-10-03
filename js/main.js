@@ -410,7 +410,7 @@
     if (!f) return;
     shrink(f).then(function (d) {
       photoData = d; photoPreview.src = d; photoPreview.hidden = false;
-      document.getElementById("f-photo-label").textContent = "📷 Changer de photo";
+      document.getElementById("f-photo-label").textContent = "Changer de photo";
     }).catch(function (e) { showError(e.message); });
   });
 

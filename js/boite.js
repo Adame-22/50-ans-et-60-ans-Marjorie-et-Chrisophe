@@ -39,7 +39,7 @@
     var f = fileInput.files[0];
     photoData = ""; preview.hidden = true;
     if (!f) return;
-    shrink(f).then(function (d) { photoData = d; preview.src = d; preview.hidden = false; document.getElementById("bn-photo-label").textContent = "📷 Changer de photo"; })
+    shrink(f).then(function (d) { photoData = d; preview.src = d; preview.hidden = false; document.getElementById("bn-photo-label").textContent = "Changer de photo"; })
       .catch(function (e) { errorEl.textContent = e.message; errorEl.hidden = false; });
   });
 
@@ -57,7 +57,7 @@
     }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || "Erreur"); return d; }); })
       .then(function (d) {
         form.message.value = ""; fileInput.value = ""; photoData = ""; preview.hidden = true;
-        document.getElementById("bn-photo-label").textContent = "📷 Ajouter une photo";
+        document.getElementById("bn-photo-label").textContent = "Ajouter une photo";
         if (d.entry) {
           wall.insertAdjacentHTML("afterbegin", item(d.entry));
           if (wall.firstElementChild) wall.firstElementChild.classList.add("fx-land");

@@ -47,3 +47,7 @@ body.billet {
 .billet .big-btn svg { color: var(--gold-light); }
 .billet .big-btn small { color: rgba(255, 251, 254, .65); }
 @media (prefers-reduced-motion: reduce) { .bp { animation: none; } }
+
+/* Finition */
+.billet__tag { font-family: var(--sans); font-size: .82rem; font-weight: 600; letter-spacing: .04em; text-transform: none; }
+.billet .big-btn { border-color: rgba(255, 177, 0, .3); }

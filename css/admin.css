@@ -423,3 +423,8 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .announce__log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .9rem; }
 .announce__log li { padding: .5rem .7rem; border-radius: 8px; background: var(--ivory); }
 .announce__log small { color: var(--muted); }
+
+/* Finition : menus et boutons en casse normale (les capitales restent pour les petites étiquettes) */
+.btn--small { font-size: .86rem; letter-spacing: .005em; padding: .6rem 1.1rem; }
+.tabs button { font-family: var(--sans); font-size: .9rem; font-weight: 500; letter-spacing: .01em; text-transform: none; }
+.tabs button[aria-selected="true"] { font-weight: 650; }
