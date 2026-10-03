@@ -11,6 +11,9 @@
   var quiz = null, offset = 0, quizKey = "", timerRaf = 0;
   var entries = [], songs = [], shown = {}, seating = null, teams = null, podiumDone = "";
   var ROTATION = ["info", "tables", "entry", "teams", "entry", "radio", "entry", "tables", "entry", "teams"];
+  // ?vue=tables (ou info, entry, radio, teams) : n'affiche que cette vue, pour la vérifier avant la soirée
+  var only = new URLSearchParams(location.search).get("vue");
+  if (only && ["info", "tables", "entry", "teams", "radio"].indexOf(only) !== -1) ROTATION = [only];
   var slideTimer = 0, slideIdx = 0, bnIdx = 0, inQuiz = false;
 
   function esc(s) {
@@ -45,27 +48,40 @@
       : "Bienvenue à bord<small>Vol MC 5060 · " + esc(CFG.lieu || "") + "</small>";
     return '<section class="slide info-slide"><p class="step">' + line + "</p>" +
       '<div class="qr-row">' +
-      '<div class="qr">' + qr("/table") + "<b>À table&nbsp;!</b><span>/table</span></div>" +
-      '<div class="qr">' + qr("/boite") + "<b>La Boîte noire</b><span>/boite</span></div>" +
-      '<div class="qr">' + qr("/radio") + "<b>Radio de bord</b><span>/radio</span></div>" +
-      '<div class="qr">' + qr("/quiz") + "<b>Quiz de bord</b><span>/quiz</span></div>" +
+      qrCard("/table", "À table&nbsp;!", "Signalez votre table", "M4 11h16M6 11v8M18 11v8M8 7a4 2 0 0 0 8 0") +
+      qrCard("/boite", "La Boîte noire", "Un mot, une photo", "M4 7h16v12H4zM8 7V5h8v2M9 13h6") +
+      qrCard("/radio", "Radio de bord", "Votre chanson", "M9 18V6l10-2v12M9 18a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0M19 16a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0") +
+      qrCard("/quiz", "Quiz de bord", "Jouez avec nous", "M9.2 9a3 3 0 1 1 4.3 2.7c-.9.4-1.5 1.1-1.5 2.1v.4M12 17.6v.1M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19") +
       "</div></section>";
+  }
+  function qrCard(path, title, hint, icon) {
+    return '<div class="qcard"><div class="qcard__code">' + qr(path) + '</div><div class="qcard__txt">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + icon + '"/></svg><b>' + title + "</b><small>" + hint + "</small>" +
+      '<span class="qcard__url">' + esc(location.host) + path + "</span></div></div>";
   }
   function slideEntry(e) {
     shown[e.id] = true;
-    return '<section class="slide bn-slide' + (e.photo ? "" : " no-photo") + '">' +
-      (e.photo ? '<div class="bn-slide__photo"><img src="/api/boite?photo=' + encodeURIComponent(e.id) + '" alt="" /></div>' : "") +
-      "<div>" + (e.message ? '<p class="bn-slide__msg">' + esc(e.message) + "</p>" : "") +
-      '<p class="bn-slide__by">' + esc(e.name) + " · Boîte noire</p></div></section>";
+    if (!e.photo) {
+      return '<section class="slide bn-slide no-photo"><div class="postcard">' +
+        '<span class="postcard__air">Par avion · Boîte noire · Vol MC 5060</span>' +
+        '<p class="bn-slide__msg">' + esc(e.message) + '</p><p class="bn-slide__by">' + esc(e.name) + "</p></div></section>";
+    }
+    return '<section class="slide bn-slide">' +
+      '<div class="bn-slide__photo"><figure class="polaroid"><img src="/api/boite?photo=' + encodeURIComponent(e.id) + '" alt="" /></figure></div>' +
+      '<div><p class="eyebrow-xl">La Boîte noire</p>' + (e.message ? '<p class="bn-slide__msg">' + esc(e.message) + "</p>" : "") +
+      '<p class="bn-slide__by">' + esc(e.name) + "</p></div></section>";
   }
   function slideRadio() {
     var top = songs.filter(function (s) { return !s.played; }).slice(0, 5);
     var pl = String(CFG.spotifyPlaylist || "").replace(/[^A-Za-z0-9]/g, "");
-    return '<section class="slide radio-slide' + (pl ? " has-spotify" : "") + '"><div class="center"><p class="eyebrow-xl">Radio de bord · /radio</p><h2 class="title-xl">Vos demandes</h2></div>' +
-      (pl ? '<div class="qr radio-spotify">' + qr("https://open.spotify.com/playlist/" + pl) + "<span>La playlist sur Spotify</span></div>" : "") +
-      '<ol class="radio-list">' + top.map(function (s) {
-        return "<li><div><b>" + esc(s.title) + "</b><small>" + esc(s.artist || "") + '</small></div><span class="votes">▲ ' + s.votes + "</span></li>";
-      }).join("") + "</ol></section>";
+    return '<section class="slide radio-slide">' +
+      '<aside class="onair-xl"><p class="onair-xl__live">Sur les ondes</p><p class="onair-xl__freq">50.60</p><p class="onair-xl__name">Radio de bord</p>' +
+      '<div class="eq-xl" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
+      '<div class="onair-xl__qr">' + qr(pl ? "https://open.spotify.com/playlist/" + pl : "/radio") + "<span>" + (pl ? "La playlist sur Spotify" : "Proposez votre chanson") + "</span></div></aside>" +
+      '<div><p class="eyebrow-xl">Le hit-parade des passagers</p><h2 class="title-xl">Vos demandes</h2>' +
+      '<ol class="radio-list">' + top.map(function (s, i) {
+        return '<li class="' + (i === 0 ? "is-top" : "") + '"><div><b>' + esc(s.title) + "</b><small>" + esc(s.artist || "") + '</small></div><span class="votes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>' + s.votes + "</span></li>";
+      }).join("") + "</ol></div></section>";
   }
 
   function slideTables() {
@@ -75,11 +91,11 @@
       '<div><p class="eyebrow-xl">À table&nbsp;!</p><h2 class="title-xl">Qui est à quelle table&nbsp;?</h2><p class="tables-slide__sub">' + head + "</p></div>" +
       '<div class="qr">' + qr("/table") + "<span>Pas encore signalé&nbsp;? Scannez le QR code posé sur votre table</span></div></div>" +
       '<div class="tables-grid' + (d.tables.length > 10 ? " is-dense" : "") + '">' + d.tables.map(function (t, i) {
-        var pct = Math.min(100, Math.round((t.count / Math.max(1, t.seats)) * 100));
-        return '<div class="tcard' + (t.count ? "" : " is-empty") + '" style="animation-delay:' + (i * 0.06).toFixed(2) + 's">' +
-          '<div class="tcard__head"><b>' + esc(t.name) + "</b><span>" + t.count + " / " + t.seats + "</span></div>" +
-          '<div class="tcard__fill"><i style="width:' + pct + '%"></i></div>' +
-          '<p class="tcard__names">' + (t.people.length ? t.people.map(function (p) { return esc(p.nom) + (p.passagers > 1 ? " ×" + p.passagers : ""); }).join(" · ") : "En attente de passagers") + "</p></div>";
+        var n = Math.max(4, Math.min(16, t.seats || 8)), seats = "";
+        for (var k = 0; k < n; k++) seats += '<i class="' + (k < t.count ? "is-taken" : "") + '" style="--i:' + k + '"></i>';
+        return '<div class="tcard' + (t.count ? "" : " is-empty") + (t.count >= t.seats ? " is-full" : "") + '" style="animation-delay:' + (i * 0.06).toFixed(2) + 's">' +
+          '<div class="rt" style="--n:' + n + '">' + seats + '<span class="rt__top"><b>' + esc(t.name.replace(/^Table\s+/i, "")) + "</b><small>" + t.count + "/" + t.seats + "</small></span></div>" +
+          '<p class="tcard__names">' + (t.people.length ? t.people.map(function (p) { return esc(p.nom) + (p.passagers > 1 ? " <em>+" + (p.passagers - 1) + "</em>" : ""); }).join("<br>") : "Places libres") + "</p></div>";
       }).join("") + "</div></section>";
   }
 
@@ -88,8 +104,8 @@
     return '<section class="slide teams-slide"><div class="center"><p class="eyebrow-xl">Les escadrilles de la soirée</p><h2 class="title-xl">Les équipes</h2></div>' +
       '<div class="teams-wall' + (list.length > 8 ? " is-dense" : "") + '">' + list.map(function (t, i) {
         return '<div class="team-tile" style="--team:' + esc(t.color) + ";animation-delay:" + (i * 0.08).toFixed(2) + 's">' +
-          '<div class="team-tile__head"><b>' + esc(t.name) + "</b><span>" + t.count + " pers.</span></div>" +
-          (teams.mode !== "mix" && t.tables.length ? '<p class="team-tile__tables">' + t.tables.map(esc).join(" · ") + "</p>" : "") +
+          '<div class="team-tile__head"><b>' + esc(t.name) + "</b><span>" + t.count + " passager" + (t.count > 1 ? "s" : "") + "</span></div>" +
+          (teams.mode !== "mix" && t.tables.length && !(t.tables.length === 1 && t.tables[0] === t.name) ? '<p class="team-tile__tables">' + t.tables.map(esc).join(" · ") + "</p>" : "") +
           '<p class="team-tile__names">' + t.people.map(function (p) { return esc(p.nom); }).join(" · ") + "</p></div>";
       }).join("") + "</div></section>";
   }
