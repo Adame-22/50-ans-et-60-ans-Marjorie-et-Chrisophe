@@ -25,8 +25,8 @@
   <meta property="og:image:alt" content="Marjorie &amp; Christophe · 50 ans et 60 ans · samedi 7 novembre 2026, Draveil" />
   <meta property="og:locale" content="fr_FR" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261004" />
-  <link rel="stylesheet" href="css/style.css?v=20261004" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261005" />
+  <link rel="stylesheet" href="css/style.css?v=20261005" />
   <script>
     /* Ciel de jour entre le lever et le coucher du soleil à Draveil (calcul
        astronomique selon la date, algorithme de SunCalc), ou choix mémorisé.
@@ -376,8 +376,15 @@
       </header>
 
       <form class="checkin reveal" id="checkin" novalidate>
+        <div class="checkin__head" aria-hidden="true">
+          <span class="checkin__airline">M<span>&amp;</span>C Airlines</span>
+          <span class="checkin__meta">Check-in · Vol MC 5060 · Porte <b data-cfg="porte"></b></span>
+        </div>
+
+        <div class="ck-step">
+        <header class="ck-step__head"><span class="ck-step__num" aria-hidden="true"></span><div><h3>Le passager</h3><p>Votre nom, tel qu'il figurera sur votre carte.</p></div></header>
+
         <div class="field">
-          <span class="field__label">Passager principal</span>
           <div class="name-row">
             <div class="sub-field"><label for="f-first">Prénom</label><input id="f-first" name="prenom" type="text" autocomplete="given-name" autocapitalize="words" maxlength="40" required placeholder="Ex. Jeanne" /></div>
             <div class="sub-field"><label for="f-last">Nom</label><input id="f-last" name="nomFamille" type="text" autocomplete="family-name" autocapitalize="words" maxlength="40" required placeholder="Ex. Martin" /></div>
@@ -389,6 +396,10 @@
           <label class="choice"><input type="radio" name="presence" value="oui" checked /><span>Oui, j'embarque</span></label>
           <label class="choice"><input type="radio" name="presence" value="non" /><span>Je reste au sol</span></label>
         </fieldset>
+        </div>
+
+        <div class="ck-step" data-show-if="oui">
+        <header class="ck-step__head"><span class="ck-step__num" aria-hidden="true"></span><div><h3>Votre vol</h3><p>Le moment où vous embarquez, et qui vous accompagne.</p></div></header>
 
         <fieldset class="field fares" data-show-if="oui">
           <legend>Votre billet à vous&nbsp;: à quel moment embarquez-vous&nbsp;?</legend>
@@ -453,14 +464,23 @@
           <input id="f-allergies" name="allergies" type="text" maxlength="300" placeholder="Ex. : arachides, lactose…" />
         </div>
 
+        </div>
+
+        <div class="ck-step">
+        <header class="ck-step__head"><span class="ck-step__num" aria-hidden="true"></span><div><h3>Votre carte d'embarquement</h3><p>Nous vous l'envoyons dès votre enregistrement validé.</p></div></header>
+
         <div class="field">
-          <span class="field__label">Pour recevoir votre carte d'embarquement</span>
           <small class="field__help">Indiquez au moins votre e-mail <b>ou</b> votre numéro de portable (les deux, c'est encore mieux).</small>
           <div class="name-row">
             <div class="sub-field"><label for="f-email">E-mail</label><input id="f-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="vous@exemple.fr" /></div>
             <div class="sub-field"><label for="f-phone">Portable</label><input id="f-phone" name="telephone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="06 12 34 56 78" /></div>
           </div>
         </div>
+
+        </div>
+
+        <div class="ck-step ck-step--extra">
+        <header class="ck-step__head"><span class="ck-step__num" aria-hidden="true"></span><div><h3>Un souvenir pour eux</h3><p>Tout est facultatif, mais ça leur fera plaisir.</p></div></header>
 
         <div class="field">
           <label for="f-msg">Un mot pour Marjorie & Christophe <small>(facultatif)</small></label>
@@ -483,6 +503,9 @@
           <small class="field__help">Elle sera ajoutée aux demandes de la Radio de bord pour le DJ.</small>
         </div>
 
+        </div>
+
+        <div class="ck-end">
         <div class="hp" aria-hidden="true">
           <label for="f-website">Ne pas remplir</label>
           <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" />
@@ -491,6 +514,7 @@
         <p class="form-error" id="form-error" role="alert" hidden></p>
         <button type="submit" class="btn btn--gold btn--block btn--magnet"><span class="btn__label">Valider mon enregistrement</span><svg class="btn__plane" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" transform="rotate(90 12 12)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></button>
         <p class="consent">Vos réponses (dont allergies et régime, facultatifs) servent uniquement à organiser la fête et le repas, sont visibles des seuls organisateurs et supprimées au plus tard le 31 mars 2027. <a href="/mentions-legales#confidentialite">En savoir plus</a>.</p>
+        </div>
       </form>
 
       <div class="checkin-done" id="checkin-done" hidden>
@@ -525,12 +549,12 @@
     <p class="footer__small">© 2026 · <a href="/mentions-legales" class="footer__crew">Mentions légales &amp; confidentialité</a> · <a href="/admin" class="footer__crew">Accès équipage</a></p>
   </footer>
 
-  <script src="js/config.js?v=20261004"></script>
-  <script src="js/programme.js?v=20261004"></script>
-  <script src="js/main.js?v=20261004"></script>
-  <script src="js/fx.js?v=20261004"></script>
-  <script src="js/motion.js?v=20261004"></script>
-  <script src="js/install.js?v=20261004"></script>
-  <script src="js/push.js?v=20261004"></script>
+  <script src="js/config.js?v=20261005"></script>
+  <script src="js/programme.js?v=20261005"></script>
+  <script src="js/main.js?v=20261005"></script>
+  <script src="js/fx.js?v=20261005"></script>
+  <script src="js/motion.js?v=20261005"></script>
+  <script src="js/install.js?v=20261005"></script>
+  <script src="js/push.js?v=20261005"></script>
 </body>
 </html>

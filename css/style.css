@@ -1409,3 +1409,60 @@ h3 { font-size: 1.6rem; }
 
 /* pied de page */
 .footer .footer__small { font-family: var(--sans); font-size: .82rem; font-weight: 500; letter-spacing: .02em; text-transform: none; }
+
+/* ═════ Formulaire d'enregistrement : billet en étapes ═════ */
+.checkin {
+  padding: 0; gap: 0; overflow: hidden; counter-reset: ck; font-variant-numeric: lining-nums;
+  background: url("../assets/guilloche.svg") 0 0 / 240px 60px repeat, linear-gradient(175deg, #fffcf7 0%, #f8f1e6 100%);
+  border: 1px solid #e6d8c4; border-radius: 22px;
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 51, .45);
+}
+.checkin__head {
+  display: flex; justify-content: space-between; align-items: center; gap: .6rem 1rem; flex-wrap: wrap;
+  padding: 18px clamp(20px, 4vw, 40px); background: var(--navy); color: var(--paper); border-bottom: 3px solid var(--gold-light);
+}
+.checkin__airline { font-family: var(--serif); font-size: 1.4rem; font-weight: 500; }
+.checkin__airline span { color: var(--gold); font-style: italic; }
+.checkin__meta { font-size: .85rem; font-weight: 600; color: rgba(255, 251, 254, .7); }
+.checkin__meta b { color: var(--gold-light); }
+
+.ck-step { counter-increment: ck; position: relative; display: grid; gap: 1.4rem; padding: clamp(26px, 4vw, 40px) clamp(20px, 4vw, 40px); }
+.ck-step + .ck-step, .ck-end { border-top: 2px dashed #e2d2bb; }
+/* trous de perforation sur chaque pointillé */
+.ck-step + .ck-step::before, .ck-step + .ck-step::after, .ck-end::before, .ck-end::after {
+  content: ""; position: absolute; top: -12px; width: 22px; height: 22px; border-radius: 50%;
+  background: #f3eee9; box-shadow: inset 0 0 0 1px #e6d8c4;
+}
+.ck-step + .ck-step::before, .ck-end::before { left: -12px; }
+.ck-step + .ck-step::after, .ck-end::after { right: -12px; }
+.ck-step__head { display: flex; align-items: center; gap: 1rem; }
+.ck-step__num {
+  flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  background: var(--navy); color: var(--gold-light); font-family: var(--serif); font-size: 1.35rem; font-weight: 600;
+  box-shadow: 0 0 0 4px #fffcf7, 0 0 0 5px #e2d2bb;
+}
+.ck-step__num::before { content: counter(ck); }
+.ck-step__head h3 { margin: 0; font-size: clamp(1.5rem, 4vw, 1.8rem); color: var(--navy); line-height: 1.1; }
+.ck-step__head p { margin: .15rem 0 0; font-size: .92rem; color: var(--muted); }
+.ck-step--extra .ck-step__num { background: #fffcf7; color: var(--gold); box-shadow: 0 0 0 1.5px var(--gold); }
+
+.ck-end { position: relative; display: grid; gap: 1rem; padding: clamp(24px, 4vw, 36px) clamp(20px, 4vw, 40px); background: rgba(239, 227, 207, .45); }
+
+/* champs blancs sur le papier ivoire */
+.checkin .field input, .checkin .field select, .checkin .field textarea { background-color: #fff; border-color: #e2d6c6; border-radius: 12px; }
+.checkin .field input:hover, .checkin .field select:hover, .checkin .field textarea:hover { border-color: #cdb79a; }
+.checkin .field input:focus, .checkin .field select:focus, .checkin .field textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 4px rgba(166, 112, 70, .14); outline: 0; }
+.checkin .field__label { font-size: .9rem; color: var(--muted); }
+.checkin .sub-field label { font-size: .88rem; font-weight: 600; color: #5d6061; }
+.choice span { background: #fff; border-color: #e2d6c6; border-radius: 14px; }
+.fare__card { background: #fff; border-color: #e2d6c6; }
+.companion { background: #fff; border-color: #e6d8c4; padding: 16px; }
+.companion__title { font-family: var(--serif); font-size: 1.25rem; color: var(--navy); }
+.pill span { background: #fffcf7; }
+.checkin .photo-btn { background: #fff; }
+.consent { text-align: center; }
+@media (max-width: 520px) {
+  .checkin__meta { font-size: .78rem; }
+  .ck-step__head { align-items: flex-start; }
+  .ck-step__num { width: 40px; height: 40px; font-size: 1.2rem; }
+}
