@@ -128,6 +128,19 @@
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
+  /* ───────── Tampons de passeport : posés quand ils arrivent à l'écran ───────── */
+  var visas = document.querySelectorAll(".visa:not(.visa--done)");
+  if ("IntersectionObserver" in window) {
+    var vio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("is-in"); vio.unobserve(e.target); }
+      });
+    }, { threshold: 0.4 });
+    visas.forEach(function (el) { vio.observe(el); });
+  } else {
+    visas.forEach(function (el) { el.classList.add("is-in"); });
+  }
+
   /* ───────── Reveal on scroll ───────── */
   if ("IntersectionObserver" in window) {
     var io = new IntersectionObserver(function (entries) {

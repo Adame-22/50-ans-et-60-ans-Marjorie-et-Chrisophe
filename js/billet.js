@@ -1,6 +1,7 @@
 /* Carte d'embarquement numérique personnelle : /billet?p=<jeton> */
 (function () {
   "use strict";
+  var VISAS = ["france", "italie", "japon", "grece", "portugal", "maroc", "espagne", "mexique", "canada", "royaume_uni", "islande", "suisse"];
   var CFG = window.EVENT || {};
   var app = document.getElementById("app");
   var token = new URLSearchParams(location.search).get("p") || "";
@@ -40,7 +41,7 @@
         '<div><dt>Billet</dt><dd>' + f.name + "</dd></div>" +
         "<div><dt>Présent</dt><dd>" + f.when + "</dd></div>" +
         "</dl>" +
-        '<div class="bp__stub"><div class="bp__qr">' + qr(location.origin + "/billet?p=" + token + "#" + (i + 1)) + "</div>" +
+        '<div class="bp__stub"><span class="visa bp__visa visa--' + VISAS[i % VISAS.length] + '" aria-hidden="true"></span><div class="bp__qr">' + qr(location.origin + "/billet?p=" + token + "#" + (i + 1)) + "</div>" +
         '<div class="bp__stubtxt"><small>Réf.</small><b>' + esc(d.ref) + "-" + (i + 1) + "</b><small>Terminal</small><span>" + esc(CFG.lieu || "") + "</span></div></div>" +
         "</article>";
     }).join("");

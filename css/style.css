@@ -1232,3 +1232,80 @@ h3 { font-size: 1.6rem; }
 }
 .field label, .field legend { font-family: var(--sans); font-size: .9rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .info .info__links { font-family: var(--sans); font-weight: 600; letter-spacing: 0; text-transform: none; }
+
+/* ═════ Tampons de passeport (« visas ») ═════
+   Dessins vectoriels recolorés à l'encre du site par masque CSS ;
+   ils se posent d'un coup de tampon quand leur section arrive à l'écran. */
+:root { --ink-red: #9b3a30; --ink-blue: #26407e; --ink-gold: #a67046; }
+.visa {
+  position: absolute; z-index: 0; pointer-events: none;
+  width: var(--s, 150px); aspect-ratio: var(--ar, 1);
+  background: var(--ink, var(--ink-gold));
+  -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat;
+  opacity: var(--o, .55); transform: rotate(var(--r, -8deg));
+  mix-blend-mode: multiply;
+}
+.section > .container { position: relative; z-index: 1; }
+.motion-ok .visa:not(.is-in):not(.visa--done) { opacity: 0; transform: rotate(var(--r, -8deg)) scale(1.35); }
+.motion-ok .visa { transition: opacity .25s ease-out, transform .38s cubic-bezier(.2, 1.4, .4, 1); transition-delay: var(--dl, 0s); }
+
+.visa--canada { --m: url("../assets/stamps/canada.svg"); }
+.visa--espagne { --m: url("../assets/stamps/espagne.svg"); }
+.visa--france { --m: url("../assets/stamps/france.svg"); }
+.visa--grece { --m: url("../assets/stamps/grece.svg"); }
+.visa--islande { --m: url("../assets/stamps/islande.svg"); --ar: 1.31; }
+.visa--italie { --m: url("../assets/stamps/italie.svg"); }
+.visa--japon { --m: url("../assets/stamps/japon.svg"); }
+.visa--maroc { --m: url("../assets/stamps/maroc.svg"); }
+.visa--mexique { --m: url("../assets/stamps/mexique.svg"); }
+.visa--portugal { --m: url("../assets/stamps/portugal.svg"); }
+.visa--royaume_uni { --m: url("../assets/stamps/royaume_uni.svg"); }
+.visa--suisse { --m: url("../assets/stamps/suisse.svg"); --ar: 1.53; }
+
+/* Invitation : page de passeport tamponnée dans les marges */
+.visa--carte-a { --s: 170px; --r: -14deg; --ink: var(--ink-blue); --o: .5; top: 210px; left: max(18px, calc(50% - 720px)); }
+.visa--carte-b { --s: 150px; --r: 11deg; --ink: var(--ink-red); --o: .5; top: 560px; right: max(18px, calc(50% - 700px)); --dl: .12s; }
+.visa--carte-c { --s: 175px; --r: 6deg; --o: .45; top: 980px; left: max(30px, calc(50% - 690px)); --dl: .24s; }
+/* Passagers */
+.visa--pax-a { --s: 130px; --r: 9deg; --ink: var(--ink-blue); --o: .4; top: 70px; right: max(18px, calc(50% - 690px)); }
+.visa--pax-b { --s: 120px; --r: -10deg; --o: .4; bottom: 60px; left: max(18px, calc(50% - 680px)); --dl: .12s; }
+/* Programme : tampon qui déborde du coin de la carte */
+.menu-card { position: relative; }
+.visa--menu { --s: 132px; --r: 14deg; --ink: var(--ink-red); --o: .78; top: -38px; right: -46px; z-index: 2; }
+/* Infos : grand filigrane */
+.visa--infos { --s: 300px; --r: -12deg; --ink: var(--navy); --o: .06; top: 40px; right: max(-60px, calc(50% - 760px)); mix-blend-mode: normal; }
+/* Enregistrement */
+.visa--rsvp-a { --s: 150px; --r: -9deg; --o: .4; top: 140px; left: max(18px, calc(50% - 680px)); }
+.visa--rsvp-b { --s: 140px; --r: 12deg; --ink: var(--ink-red); --o: .38; top: 46%; right: max(18px, calc(50% - 680px)); --dl: .12s; }
+
+/* Les tampons des marges n'ont de place que sur grand écran */
+@media (max-width: 1180px) {
+  .visa--carte-a, .visa--carte-b, .visa--carte-c, .visa--pax-a, .visa--pax-b, .visa--rsvp-a, .visa--rsvp-b { display: none; }
+}
+@media (max-width: 700px) {
+  .visa--menu { --s: 96px; top: -30px; right: -14px; }
+  .visa--infos { --s: 220px; right: -70px; }
+}
+
+/* Écran « Bon vol » : vrai coup de tampon */
+.done-visa { position: relative; display: inline-grid; place-items: center; width: 168px; height: 150px; }
+.visa--done { position: absolute; inset: 0; margin: auto; --s: 168px; --r: -8deg; --ink: var(--ink-gold); --o: .85; }
+.done-visa .stamp { position: relative; z-index: 1; background: var(--paper); transform: rotate(-6deg) translateY(48px); font-size: .72rem; padding: .35rem .9rem; }
+.motion-ok .checkin-done:not([hidden]) .visa--done { animation: visa-slam .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes visa-slam { 0% { opacity: 0; transform: rotate(-8deg) scale(1.8); } 60% { opacity: .9; } 100% { opacity: .85; transform: rotate(-8deg) scale(1); } }
+
+/* Pied de page : frise de destinations */
+.footer__visas { display: flex; justify-content: center; flex-wrap: wrap; gap: clamp(10px, 2.4vw, 28px); margin: 0 auto 2.2rem; max-width: 900px; }
+.footer__visas .visa { position: relative; --s: clamp(54px, 8vw, 84px); --ink: var(--gold-light); --o: .32; mix-blend-mode: normal; transform: rotate(var(--r, 0deg)); }
+.footer__visas .visa:nth-child(odd) { --r: -7deg; }
+.footer__visas .visa:nth-child(even) { --r: 6deg; margin-top: 10px; }
+.footer__visas .visa:nth-child(n+6) { display: var(--more, block); }
+@media (max-width: 520px) { .footer__visas { --more: none; } }
+
+/* Grain de papier sur les sections claires */
+.section--paper, #passagers, #enregistrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+.done-visa { display: inline-flex; flex-direction: column; align-items: center; width: auto; height: auto; }
+.visa--done { position: relative; inset: auto; margin: 0; }
+.done-visa .stamp { transform: rotate(-4deg); margin-top: -10px; }
