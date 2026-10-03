@@ -16,7 +16,7 @@ window.EVENT = {
   ville: "Draveil",
   porte: "A50", // la « porte d'embarquement » affichée sur le tableau
   dressCode: "Élégant — tenue de cocktail",
-  rsvpAvant: "30 septembre 2026",
+  rsvpAvant: "15 octobre 2026",
   hebergement: "Une liste d'hôtels à proximité sera communiquée prochainement.",
   parking: "Parking disponible sur place.",
 

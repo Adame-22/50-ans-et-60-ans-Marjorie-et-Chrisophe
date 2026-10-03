@@ -134,7 +134,7 @@
       entries.forEach(function (e) {
         if (e.isIntersecting) { e.target.classList.add("is-visible"); io.unobserve(e.target); }
       });
-    }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+    }, { threshold: 0, rootMargin: "0px 0px -8% 0px" }); // seuil 0 : un bloc très haut (le formulaire sur téléphone) apparaît dès son entrée
     document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
   } else {
     document.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("is-visible"); });
