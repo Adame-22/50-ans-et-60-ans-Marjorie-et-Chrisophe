@@ -6,61 +6,92 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>QR codes à imprimer · Vol MC 5060</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261007" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261008" />
   <style>
     /* Page d'impression : une carte A6 par table (4 par feuille A4), une planche
        Boîte noire / Radio / Quiz / À table, puis deux affiches A4.
        Ouvrir puis Fichier → Imprimer (A4, marges « aucune », graphiques d'arrière-plan activés). */
-    :root { --navy: #000033; --gold: #a67046; --amber: #ffb100; --grey: #7a7d7d; --paper: #fffbfe; }
+    :root { --navy: #000033; --gold: #a67046; --amber: #ffb100; --grey: #7a7d7d; --paper: #fffbfe; --line: #e2d2bb; }
     @page { size: A4; margin: 0; }
     * { box-sizing: border-box; }
     html, body { margin: 0; background: #e9e4de; }
-    body { font-family: "Manrope", system-ui, sans-serif; color: var(--navy); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .sheet { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; position: relative; overflow: hidden; page-break-after: always; break-after: page; }
+    body { font-family: "Manrope", system-ui, sans-serif; color: var(--navy); font-variant-numeric: lining-nums; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sheet { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; position: relative; overflow: hidden; page-break-after: always; break-after: page; box-shadow: 0 20px 50px -30px rgba(0, 0, 51, .5); }
     .sheet:last-child { page-break-after: auto; break-after: auto; }
-    @media print { html, body { background: #fff; } .sheet { margin: 0; } .screen-only { display: none; } }
-    .screen-only { max-width: 210mm; margin: 16px auto 0; font-size: 14px; line-height: 1.5; color: #444; }
-    .screen-only b { color: var(--navy); }
+    @media print { html, body { background: #fff; } .sheet { margin: 0; box-shadow: none; } .screen-only { display: none !important; } }
+
+    /* ── Bandeau d'écran (non imprimé) ── */
+    .screen-only { max-width: 210mm; margin: 16px auto 0; border-radius: 16px; overflow: hidden; background: var(--navy); color: rgba(255, 251, 254, .75); box-shadow: 0 20px 50px -30px rgba(0, 0, 51, .6); }
+    .intro__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 18px 22px; border-bottom: 3px solid var(--amber); }
+    .intro__top h1 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 30px; color: var(--paper); }
+    .intro__top h1 span { color: var(--gold); font-style: italic; }
+    .intro__print { font: 700 15px "Manrope", sans-serif; color: var(--navy); background: var(--amber); border: 0; border-radius: 999px; padding: 12px 22px; cursor: pointer; }
+    .intro__print:hover { filter: brightness(1.08); }
+    .intro__text { margin: 0; padding: 16px 22px 18px; font-size: 14px; line-height: 1.6; }
+    .intro__text b { color: var(--paper); }
 
     /* ── Planche de 4 cartes A6 ── */
     .grid { display: grid; grid-template-columns: 105mm 105mm; grid-template-rows: 148.5mm 148.5mm; }
     .grid::before, .grid::after { content: ""; position: absolute; border: 0 dashed #c9c3bb; }
     .grid::before { left: 105mm; top: 0; bottom: 0; border-left-width: .3mm; }
     .grid::after { top: 148.5mm; left: 0; right: 0; border-top-width: .3mm; }
-    .card { padding: 6mm; }
-    .frame { height: 100%; border: 1.1mm solid var(--navy); padding: 7mm 6mm 6mm; display: grid; grid-template-rows: auto auto 1fr auto; justify-items: center; text-align: center; position: relative; }
-    .script { font-family: "Monsieur La Doulaise", cursive; color: var(--gold); line-height: 1.1; }
-    .card .script { font-size: 9.5mm; margin: 0; }
-    .card h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 8.4mm; margin: 1.5mm 0 0; }
-    .card .qr { width: 52mm; height: 52mm; align-self: center; }
-    .card p { margin: 0; font-size: 3.2mm; line-height: 1.4; color: #333; }
-    .card p.script, .card p.eyebrow, .card p.url { color: var(--gold); }
-    .url { font-family: "JetBrains Mono", monospace; font-size: 2.6mm; letter-spacing: .2mm; color: var(--gold); margin-top: 1.6mm !important; }
-    .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 2.4mm; letter-spacing: .8mm; text-transform: uppercase; color: var(--gold); margin: 0; }
-
-    /* ── Carte de table ── */
-    .table-card .frame { grid-template-rows: auto auto auto 1fr auto; padding-top: 6mm; }
-    .table-card .eyebrow { margin-top: 1.2mm; }
-    .table-card h2 { font-size: 15mm; line-height: 1; margin: 1mm 0 0; }
-    .table-card .qr { width: 50mm; height: 50mm; }
-    .table-card .corner { position: absolute; top: 3mm; font-family: "JetBrains Mono", monospace; font-size: 2.2mm; letter-spacing: .5mm; color: var(--grey); }
-    .table-card .corner--l { left: 3.5mm; }
-    .table-card .corner--r { right: 3.5mm; }
+    .card { padding: 5mm; }
+    .frame {
+      height: 100%; position: relative; overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; text-align: center;
+      border-radius: 3.5mm; border: .35mm solid #d9c6aa;
+      background: url("assets/guilloche.svg") 0 0 / 60mm 15mm repeat, linear-gradient(170deg, #fffcf7 0%, #f5ecdf 100%);
+    }
+    .head { display: flex; justify-content: space-between; align-items: center; padding: 3mm 4.5mm; background: var(--navy); color: var(--paper); border-bottom: .9mm solid var(--amber); font-size: 2.7mm; font-weight: 700; }
+    .head .air { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 4.4mm; }
+    .head .air span { color: var(--gold); font-style: italic; }
+    .head .num { color: var(--amber); }
+    .body { position: relative; display: grid; grid-template-rows: auto auto 1fr; justify-items: center; padding: 4.5mm 5mm 3mm; }
+    .kicker { margin: 0; font-size: 3mm; font-weight: 700; color: var(--gold); }
+    .card h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 9mm; line-height: 1.05; margin: .8mm 0 0; position: relative; z-index: 1; }
+    .table-card h2 { font-size: 15mm; }
+    .stamp { position: absolute; width: 30mm; aspect-ratio: 1; right: -6mm; top: 6mm; background: var(--gold); opacity: .22; transform: rotate(14deg);
+      -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat; }
+    /* QR dans un cadre de visée */
+    .scan { position: relative; z-index: 1; align-self: center; padding: 3.5mm; background: #fff; border-radius: 3mm; box-shadow: 0 0 0 .3mm #eadfce, 0 3mm 6mm -4mm rgba(0, 0, 51, .35); }
+    .scan::before, .scan::after, .scan i::before, .scan i::after { content: ""; position: absolute; width: 5mm; height: 5mm; border: .7mm solid var(--gold); }
+    .scan::before { left: -1.6mm; top: -1.6mm; border-right: 0; border-bottom: 0; border-top-left-radius: 2mm; }
+    .scan::after { right: -1.6mm; top: -1.6mm; border-left: 0; border-bottom: 0; border-top-right-radius: 2mm; }
+    .scan i::before { left: -1.6mm; bottom: -1.6mm; border-right: 0; border-top: 0; border-bottom-left-radius: 2mm; }
+    .scan i::after { right: -1.6mm; bottom: -1.6mm; border-left: 0; border-top: 0; border-bottom-right-radius: 2mm; }
+    .qr { width: 44mm; height: 44mm; }
+    .qr svg { width: 100%; height: 100%; display: block; }
+    /* talon détachable */
+    .stub { position: relative; padding: 3.2mm 5mm 3.8mm; border-top: .5mm dashed var(--line); background: rgba(239, 227, 207, .5); }
+    .stub::before, .stub::after { content: ""; position: absolute; top: -2.6mm; width: 5mm; height: 5mm; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 .3mm #d9c6aa; }
+    .stub::before { left: -2.8mm; } .stub::after { right: -2.8mm; }
+    .stub p { margin: 0; font-size: 3mm; line-height: 1.45; color: #3a3d48; }
+    .url { margin-top: 1.2mm !important; font-size: 2.6mm !important; font-weight: 700; color: var(--gold) !important; }
 
     /* ── Affiches A4 ── */
     .poster { padding: 12mm; }
-    .poster .frame { border-width: 1.6mm; padding: 18mm 16mm 14mm; grid-template-rows: auto auto auto 1fr auto; }
-    .poster .script { font-size: 17mm; margin: 0; }
-    .poster h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 17mm; margin: 4mm 0 2mm; }
-    .poster .lead { font-size: 5mm; color: #333; max-width: 150mm; margin: 0; line-height: 1.45; }
-    .poster .qr { width: 118mm; height: 118mm; align-self: center; }
-    .poster .url { font-size: 4mm; }
-    .poster .foot { display: grid; gap: 2mm; justify-items: center; }
-    .qr svg { width: 100%; height: 100%; display: block; }
+    .poster .frame { border-radius: 6mm; border-width: .5mm; background-size: 90mm 22.5mm, auto; }
+    .poster .head { padding: 6mm 10mm; font-size: 4.4mm; border-bottom-width: 1.6mm; }
+    .poster .head .air { font-size: 8mm; }
+    .poster .body { padding: 10mm 14mm 6mm; }
+    .poster .script { font-family: "Monsieur La Doulaise", cursive; color: var(--gold); font-size: 12.5mm; line-height: 1.1; margin: 0; position: relative; z-index: 1; }
+    .poster .kicker { margin-top: 4mm; font-size: 4.6mm; }
+    .poster h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 20mm; line-height: 1; margin: 1.5mm 0 0; position: relative; z-index: 1; }
+    .poster .scan { padding: 6mm; border-radius: 5mm; }
+    .poster .scan::before, .poster .scan::after, .poster .scan i::before, .poster .scan i::after { width: 11mm; height: 11mm; border-width: 1.3mm; }
+    .poster .scan::before, .poster .scan i::before { left: -3.5mm; } .poster .scan::after, .poster .scan i::after { right: -3.5mm; }
+    .poster .scan::before, .poster .scan::after { top: -3.5mm; } .poster .scan i::before, .poster .scan i::after { bottom: -3.5mm; }
+    .poster .qr { width: 96mm; height: 96mm; }
+    .poster .stamp { width: 70mm; right: -12mm; top: 20mm; opacity: .16; }
+    .poster .stamp--b { left: -16mm; right: auto; top: auto; bottom: 8mm; transform: rotate(-12deg); }
+    .poster .stub { padding: 7mm 16mm 9mm; }
+    .poster .stub::before, .poster .stub::after { width: 10mm; height: 10mm; top: -5.2mm; }
+    .poster .stub::before { left: -5.5mm; } .poster .stub::after { right: -5.5mm; }
+    .poster .stub p { font-size: 5mm; }
+    .poster .url { font-size: 4.2mm !important; margin-top: 2.5mm !important; }
   </style>
 </head>
 <body>
-  <p class="screen-only" id="intro">Préparation des QR codes…</p>
+  <div class="screen-only"><div class="intro__top"><h1>QR codes · M<span>&amp;</span>C Airlines</h1><button class="intro__print" type="button" onclick="window.print()">Imprimer</button></div><p class="intro__text" id="intro">Préparation des QR codes…</p></div>
   <main id="sheets"></main>
 
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
@@ -78,28 +109,36 @@
           return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
         });
       }
-      function card(title, path, text, cls, extra) {
-        return '<div class="card ' + (cls || "") + '"><div class="frame">' + (extra || "") +
-          '<p class="script">Vol MC 5060</p>' + title +
-          '<div class="qr" data-path="' + esc(path) + '"></div>' +
-          "<div><p>" + text + '</p><p class="url" data-url="' + esc(path) + '"></p></div></div></div>';
+      var STAMPS = ["france", "italie", "japon", "grece", "portugal", "maroc", "mexique", "canada", "espagne", "suisse", "islande", "royaume_uni"];
+      var nStamp = 0;
+      function stamp(cls) {
+        return '<span class="stamp ' + (cls || "") + '" style="--m:url(assets/stamps/' + STAMPS[nStamp++ % STAMPS.length] + '.svg)" aria-hidden="true"></span>';
+      }
+      function head(right) {
+        return '<div class="head"><span class="air">M<span>&amp;</span>C Airlines</span><span class="num">' + right + "</span></div>";
+      }
+      function scan(path) { return '<div class="scan"><i></i><div class="qr" data-path="' + esc(path) + '"></div></div>'; }
+      function card(kicker, title, path, text, cls, right) {
+        return '<div class="card ' + (cls || "") + '"><div class="frame">' + head(right || "Vol MC 5060") +
+          '<div class="body">' + stamp() + '<p class="kicker">' + kicker + "</p><h2>" + title + "</h2>" + scan(path) + "</div>" +
+          '<div class="stub"><p>' + text + '</p><p class="url" data-url="' + esc(path) + '"></p></div></div></div>';
       }
       function tableCard(t, i, n) {
-        return card('<p class="eyebrow">À table !</p><h2>' + esc(t.name) + "</h2>", "/table?t=" + encodeURIComponent(t.id),
-          "Installé·e à cette table&nbsp;? Scannez pour le signaler<br />et découvrir vos voisins de table.", "table-card",
-          '<span class="corner corner--l">MC 5060</span><span class="corner corner--r">' + (i + 1) + " / " + n + "</span>");
+        return card("À table !", esc(t.name), "/table?t=" + encodeURIComponent(t.id),
+          "Installé·e à cette table&nbsp;? Scannez pour le signaler<br />et découvrir vos voisins de table.", "table-card", (i + 1) + " / " + n);
       }
-      var GENERIC = card("<h2>À table&nbsp;!</h2>", "/table", "Signalez à quelle table vous êtes installé·e<br />et retrouvez vos voisins de table.");
+      var GENERIC = card("Plan de cabine", "À table&nbsp;!", "/table", "Signalez à quelle table vous êtes installé·e<br />et retrouvez vos voisins de table.");
       var SERVICES = [
-        card("<h2>La Boîte noire</h2>", "/boite", "Un mot, un souvenir, une photo<br />pour Marjorie &amp; Christophe."),
-        card("<h2>Radio de bord</h2>", "/radio", "Proposez vos chansons, votez,<br />retrouvez la playlist Spotify."),
-        card("<h2>Quiz de bord</h2>", "/quiz", "Connaissez-vous vos commandants de bord&nbsp;?<br />Rendez-vous sur l'écran géant."),
+        card("Enregistreur de vol", "La Boîte noire", "/boite", "Un mot, un souvenir, une photo<br />pour Marjorie &amp; Christophe."),
+        card("En cabine", "Radio de bord", "/radio", "Proposez vos chansons, votez,<br />retrouvez la playlist Spotify."),
+        card("Divertissement à bord", "Quiz de bord", "/quiz", "Connaissez-vous vos commandants de bord&nbsp;?<br />Rendez-vous sur l'écran géant."),
         GENERIC,
       ];
-      function poster(eyebrow, title, path, lead) {
-        return '<section class="sheet poster"><div class="frame"><p class="script">Anniversaires Christophe &amp; Marjorie</p>' +
-          '<p class="eyebrow" style="margin-top:6mm;font-size:3.4mm">' + eyebrow + "</p><h2>" + title + "</h2>" +
-          '<div class="qr" data-path="' + path + '"></div><div class="foot"><p class="lead">' + lead + '</p><p class="url" data-url="' + path + '"></p></div></div></section>';
+      function poster(kicker, title, path, lead) {
+        return '<section class="sheet poster"><div class="frame">' + head("Vol MC 5060 · 7 novembre 2026") +
+          '<div class="body">' + stamp() + stamp("stamp--b") + '<p class="script">Anniversaires<br />Christophe &amp; Marjorie</p>' +
+          '<p class="kicker">' + kicker + "</p><h2>" + title + "</h2>" + scan(path) + "</div>" +
+          '<div class="stub"><p>' + lead + '</p><p class="url" data-url="' + path + '"></p></div></div></section>';
       }
 
       function build(tables) {
@@ -108,9 +147,9 @@
         cards = cards.concat(SERVICES);
         var html = "";
         for (var i = 0; i < cards.length; i += 4) html += '<section class="sheet grid">' + cards.slice(i, i + 4).join("") + "</section>";
-        html += poster("Plan de cabine · Vol MC 5060", "À table&nbsp;!", "/table",
+        html += poster("Plan de cabine", "À table&nbsp;!", "/table",
           "Installez-vous où vous le souhaitez, puis scannez le QR code posé sur votre table&nbsp;: vous verrez qui vous entoure, et les équipes des jeux se formeront toutes seules.");
-        html += poster("Enregistreur de vol · Vol MC 5060", "La Boîte noire", "/boite",
+        html += poster("Enregistreur de vol", "La Boîte noire", "/boite",
           "Laissez un message, un souvenir ou une photo&nbsp;: ils apparaîtront sur l'écran géant et resteront dans la boîte noire du vol.");
         document.getElementById("sheets").innerHTML = html;
 
@@ -123,7 +162,7 @@
         document.querySelectorAll("[data-url]").forEach(function (el) { el.textContent = host + el.getAttribute("data-url"); });
 
         var sheets = document.querySelectorAll(".sheet").length;
-        document.getElementById("intro").innerHTML = "Aperçu avant impression — imprimez en <b>A4, sans marges, avec les couleurs d'arrière-plan</b>. " +
+        document.getElementById("intro").innerHTML = "Imprimez en <b>A4, sans marges, avec les couleurs d'arrière-plan</b>. " +
           "<b>" + tables.length + " carte" + (tables.length > 1 ? "s" : "") + " de table</b> (une par table, à découper au format A6), " +
           "une planche Boîte noire · Radio · Quiz · À table, puis deux affiches pour l'entrée — " + sheets + " pages en tout. " +
           "Les cartes suivent la liste des tables du Plan de cabine : si vous en ajoutez, réimprimez cette page.";
