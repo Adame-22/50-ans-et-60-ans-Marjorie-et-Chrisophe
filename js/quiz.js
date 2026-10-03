@@ -3,6 +3,8 @@
   "use strict";
 
   var SHAPES = ["▲", "◆", "●", "■"];
+  var LETTERS = ["A", "B", "C", "D"];
+  function badge(i) { return '<span class="shape" aria-hidden="true"><b>' + LETTERS[i] + "</b><i>" + SHAPES[i] + "</i></span>"; }
   var app = document.getElementById("app");
   var meTag = document.getElementById("q-me");
   var me = load("mc-quiz");     // { pid, pub, name, at, rid, table }
@@ -76,11 +78,14 @@
     app.innerHTML =
       '<h1 class="live__title fx-rise">Quiz de bord</h1>' +
       '<p class="live__sub fx-rise">Connaissez-vous vos commandants de bord&nbsp;?</p>' +
-      '<form class="live-card fx-rise" id="join" novalidate>' +
-      '<div class="field"><label for="j-name">Votre pseudo</label>' +
+      '<form class="ticket fx-rise" id="join" novalidate>' +
+      '<div class="ticket__head"><span>Vol MC 5060</span><span>Divertissement à bord</span></div>' +
+      '<div class="ticket__body"><p class="ticket__title">Carte de joueur</p>' +
+      '<div class="field"><label for="j-name">Nom du passager</label>' +
       '<input id="j-name" maxlength="24" autocomplete="nickname" placeholder="Ex. Tonton Jacques" value="' + esc(s.nom.split(" ")[0] || "") + '" required /></div>' +
       '<p class="form-error" role="alert"' + (msg ? "" : " hidden") + ">" + esc(msg || "") + "</p>" +
-      '<button class="btn btn--gold btn--block" type="submit">Embarquer</button></form>';
+      '<button class="btn btn--gold btn--block" type="submit">Embarquer</button></div>' +
+      '<div class="ticket__stub"><span>Porte <b>A50</b></span><span>Questions <b>' + (state && state.total ? state.total : "12") + '</b></span><span>Classe <b>Quiz</b></span></div></form>';
     var f = document.getElementById("join");
     f.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -119,7 +124,13 @@
         extra = '<p class="muted team-line">Pour jouer avec votre équipe, signalez-vous à votre table&nbsp;: <a href="/table">À table&nbsp;!</a></p>';
       }
     }
-    renderWaiting("Vous êtes à bord, " + esc(me.name) + "&nbsp;!", "Le quiz va commencer. Regardez l'écran géant.", extra);
+    var n = (state.leaderboard || []).length;
+    app.innerHTML =
+      '<div class="ticket fx-rise">' +
+      '<div class="ticket__head"><span>Vol MC 5060</span><span class="ticket__live"><i></i>Embarquement</span></div>' +
+      '<div class="ticket__body"><p class="ticket__label">Passager</p><p class="ticket__name">' + esc(me.name) + "</p>" +
+      '<p class="ticket__text">Vous êtes à bord&nbsp;! Le quiz va commencer&nbsp;: gardez les yeux sur l\'écran géant.</p>' + extra + "</div>" +
+      '<div class="ticket__stub"><span>Porte <b>A50</b></span><span>À bord <b>' + (n || 1) + '</b></span><span>Statut <b>Prêt</b></span></div></div>';
     var btn = document.getElementById("q-link");
     if (btn) btn.addEventListener("click", function () {
       var v = document.getElementById("q-table").value;
@@ -138,13 +149,13 @@
     var q = state.question;
     var mine = picked[state.round];
     app.innerHTML =
-      '<div class="q-meta"><span>Question ' + (state.index + 1) + " / " + state.total + '</span><span id="q-left"></span></div>' +
-      '<div class="q-timer" id="q-timer"><i id="q-bar"></i></div>' +
+      '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
+      '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
       '<p class="q-text fx-rise">' + esc(q.q) + "</p>" +
       '<div class="choices' + (mine !== undefined ? " is-locked" : "") + '" id="choices">' +
       q.choices.map(function (c, i) {
         return '<button class="choice-btn c' + i + (mine === i ? " is-picked" : "") + '" data-i="' + i + '"' + (mine !== undefined ? " disabled" : "") +
-          ' style="animation-delay:' + (0.06 * i) + 's"><span class="shape">' + SHAPES[i] + "</span><span>" + esc(c) + "</span></button>";
+          ' style="animation-delay:' + (0.06 * i) + 's">' + badge(i) + '<span class="choice-btn__txt">' + esc(c) + "</span></button>";
       }).join("") + "</div>" +
       '<p class="center muted" id="q-status" style="margin-top:1rem">' + (mine !== undefined ? "Réponse enregistrée ✓" : "") + "</p>";
 
@@ -177,6 +188,7 @@
       var rest = Math.max(0, state.endsAt - (Date.now() + offset));
       var sec = Math.ceil(rest / 1000);
       bar.style.transform = "scaleX(" + Math.min(1, rest / total) + ")";
+      box.style.setProperty("--p", Math.min(1, rest / total).toFixed(4));
       left.textContent = sec + " s";
       // cinq dernières secondes : la jauge s'emballe
       var hurry = rest > 0 && rest <= 5000;
@@ -202,13 +214,13 @@
     var r = myRank(), t = myTeam();
     app.innerHTML =
       '<div class="live-card"><div class="result ' + (mine === undefined ? "" : ok ? "is-ok" : "is-ko") + '">' +
-      '<div class="result__icon">' + (mine === undefined ? "⏱" : ok ? "✈️" : "🌧") + "</div>" +
-      '<p class="result__title">' + (mine === undefined ? "Pas de réponse" : ok ? "Bonne réponse&nbsp;!" : "Raté…") + "</p>" +
-      '<p class="result__pts">' + (gain ? "+ " + gain + " pts" : "0 pt") + "</p></div>" +
+      '<div class="verdict">' + (mine === undefined ? "Trop tard" : ok ? "Validé" : "Refusé") + "</div>" +
+      '<p class="result__title">' + (mine === undefined ? "Pas de réponse" : ok ? "Bonne réponse&nbsp;!" : "Raté, ce sera pour la prochaine") + "</p>" +
+      '<p class="result__pts"><b>' + (gain ? "+" + gain : "0") + "</b> point" + (gain > 1 ? "s" : "") + "</p></div>" +
       '<div class="choices is-revealed">' + q.choices.map(function (c, i) {
-        return '<div class="choice-btn c' + i + (i === state.correct ? " is-correct" : "") + (i === mine ? " is-picked" : "") + '"><span class="shape">' + SHAPES[i] + "</span><span>" + esc(c) + "</span></div>";
+        return '<div class="choice-btn c' + i + (i === state.correct ? " is-correct" : "") + (i === mine ? " is-picked" : "") + '">' + badge(i) + '<span class="choice-btn__txt">' + esc(c) + "</span></div>";
       }).join("") + "</div>" +
-      (r ? '<div class="rankline"><span>Rang ' + r.rank + " / " + r.total + "</span><span>" + r.score + " pts</span></div>" : "") +
+      (r ? '<div class="rankline"><span>Rang <b>' + r.rank + "</b> / " + r.total + "</span><span><b>" + r.score + "</b> pts</span></div>" : "") +
       (t ? '<div class="rankline rankline--team" style="--team:' + esc(t.color) + '"><span>Équipe ' + esc(t.name) + " · " + ord(t.rank) + "</span><span>" + t.score + " pts</span></div>" : "") +
       "</div>";
     var k = "r" + state.round;
@@ -231,7 +243,7 @@
       '<p class="live__sub fx-rise">' + sub + "</p>" +
       (final && teams.length ? teamsHtml : "") +
       '<div class="live-card fx-rise"><p class="live__tag" style="margin:0 0 .6rem">' + (teams.length ? "Meilleurs joueurs" : "Top " + top.length) + '</p><ol class="lb">' + top.map(function (p, i) {
-        return '<li class="' + (me && p.pub === me.pub ? "is-me" : "") + '" style="animation-delay:' + (0.08 * i) + 's"><b>' + esc(p.name) + "</b><span>" + p.score + "</span></li>";
+        return '<li class="' + (me && p.pub === me.pub ? "is-me " : "") + (i < 3 ? "is-top is-top" + (i + 1) : "") + '" style="animation-delay:' + (0.08 * i) + 's"><b>' + esc(p.name) + "</b><span>" + p.score + "</span></li>";
       }).join("") + "</ol></div>" +
       (!final && teams.length ? teamsHtml : "");
     if (final && !celebrated.podium && ((r && r.rank <= 3) || (t && t.rank === 1))) {

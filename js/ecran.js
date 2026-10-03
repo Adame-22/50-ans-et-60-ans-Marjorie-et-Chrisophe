@@ -147,7 +147,7 @@
       var n = reveal ? quiz.counts[i] || 0 : 0;
       return '<div class="qz-tile c' + i + (reveal && i === quiz.correct ? " is-correct" : "") + '">' +
         (reveal ? '<span class="fill" style="width:' + Math.round((n / total) * 100) + '%"></span>' : "") +
-        '<span class="shape">' + SHAPES[i] + "</span><span>" + esc(c) + "</span>" +
+        '<span class="shape"><b>' + "ABCD".charAt(i) + "</b><i>" + SHAPES[i] + "</i></span><span>" + esc(c) + "</span>" +
         (reveal ? '<span class="count">' + n + "</span>" : "") + "</div>";
     }).join("") + "</div>";
   }

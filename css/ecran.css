@@ -171,3 +171,26 @@ body.is-fullscreen .screen__fs { display: none; }
 .radio-slide.has-spotify { position: relative; }
 .radio-spotify { position: absolute; right: 0; bottom: 0; }
 .radio-spotify .qr__code { width: 10vw; }
+
+/* ═════ Quiz : mêmes réponses lettrées que sur les téléphones ═════ */
+.qz-tile { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 0 0 1px rgba(255, 255, 255, .1), 0 2vh 4vh -2vh rgba(0, 0, 0, .8); }
+.qz-tile.c0 { background: linear-gradient(150deg, #2d3598 0%, #161a63 100%); }
+.qz-tile.c1 { background: linear-gradient(150deg, #bf875c 0%, #8c5833 100%); }
+.qz-tile.c2 { background: linear-gradient(150deg, #ffc84a 0%, #eba200 100%); color: var(--navy); }
+.qz-tile.c3 { background: linear-gradient(150deg, #33857d 0%, #1b4f4a 100%); }
+.qz-tile .shape { display: inline-flex; align-items: center; gap: .6vw; padding: .5vw .9vw; border-radius: .8vw; background: rgba(255, 255, 255, .16); font-size: 1.6vw; line-height: 1; }
+.qz-tile.c2 .shape { background: rgba(0, 0, 51, .1); }
+.qz-tile .shape b { font-family: var(--serif); font-size: 2.6vw; font-weight: 600; }
+.qz-tile .shape i { font-style: normal; font-size: 1.1vw; opacity: .75; }
+.is-reveal .qz-tile:not(.is-correct) { opacity: .26; filter: saturate(.3); }
+.qz-tile.is-correct { box-shadow: 0 0 0 .35vw var(--paper), 0 0 6vh rgba(255, 177, 0, .35); }
+.qz-top { font-family: var(--sans); font-weight: 600; letter-spacing: .14em; }
+.qz-bar i { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+
+/* Podium : marches en relief, médailles */
+.podium__block { position: relative; box-shadow: inset 0 .4vh 0 rgba(255, 255, 255, .35), inset 0 -3vh 4vh rgba(0, 0, 0, .18), 0 3vh 6vh -3vh rgba(0, 0, 0, .8); }
+.podium__step:nth-child(1) .podium__block { background: linear-gradient(180deg, #f3f4f7 0%, #aab0bc 100%); }
+.podium__step:nth-child(2) .podium__block { background: linear-gradient(180deg, #ffe08a 0%, #e7a400 100%); }
+.podium__step:nth-child(3) .podium__block { background: linear-gradient(180deg, #e7b083 0%, #a76a3e 100%); color: #fff; }
+.podium__score { font-family: var(--sans); font-weight: 600; letter-spacing: .04em; }
+.podium__block, .podium__name { font-variant-numeric: lining-nums; }
