@@ -343,21 +343,27 @@
     var n = Math.max(0, parseInt(form.passagers.value, 10) - 1);
     var old = Array.prototype.map.call(compList.querySelectorAll(".companion"), function (row) {
       var c = row.querySelector("input[type=radio]:checked");
-      return { nom: row.querySelector("input[type=text]").value, f: c ? c.value : "", touched: row.dataset.touched === "1" };
+      var t = row.querySelectorAll("input[type=text]");
+      return { prenom: t[0].value, nom: t[1].value, f: c ? c.value : "", touched: row.dataset.touched === "1" };
     });
     compList.innerHTML = "";
     for (var i = 0; i < n; i++) {
-      var o = old[i] || { nom: "", f: mainFare(), touched: false };
+      var o = old[i] || { prenom: "", nom: "", f: mainFare(), touched: false };
       var row = document.createElement("div");
       row.className = "companion";
       if (o.touched) row.dataset.touched = "1";
-      var html = '<input type="text" maxlength="60" autocomplete="off" placeholder="Passager ' + (i + 2) + ' : prénom et nom" aria-label="Nom du passager ' + (i + 2) + '" />' +
+      var html = '<p class="companion__title">Passager ' + (i + 2) + "</p>" +
+        '<div class="name-row">' +
+        '<div class="sub-field"><label for="cp' + i + '">Prénom</label><input id="cp' + i + '" type="text" maxlength="40" autocomplete="off" autocapitalize="words" /></div>' +
+        '<div class="sub-field"><label for="cn' + i + '">Nom</label><input id="cn' + i + '" type="text" maxlength="40" autocomplete="off" autocapitalize="words" /></div></div>' +
+        '<p class="companion__q">Vient-il ou elle&nbsp;:</p>' +
         '<div class="companion__fares" role="radiogroup" aria-label="Billet du passager ' + (i + 2) + '">';
       FARES.forEach(function (f) {
         html += '<label class="pill"><input type="radio" name="cf' + i + '" value="' + f[0] + '"' + (o.f === f[0] ? " checked" : "") + " /><span>" + f[1] + "</span></label>";
       });
       row.innerHTML = html + "</div>";
-      row.querySelector("input[type=text]").value = o.nom;
+      var tx = row.querySelectorAll("input[type=text]");
+      tx[0].value = o.prenom; tx[1].value = o.nom;
       row.addEventListener("change", function (e) { if (e.target.type === "radio") this.dataset.touched = "1"; });
       compList.appendChild(row);
     }
@@ -441,7 +447,16 @@
     return keys.map(function (k) { return by[k] + " pour " + lbl[k][0]; }).join(", ");
   }
 
-  function finish(data, id) {
+  function finish(data, id, res) {
+    res = res || {};
+    var link = document.getElementById("done-pass");
+    if (link && res.pass && data.presence === "oui") {
+      link.href = "/billet?p=" + encodeURIComponent(res.pass);
+      link.hidden = false;
+      try { localStorage.setItem("mc-pass", res.pass); } catch (e) { /* ignoré */ }
+      var note = document.getElementById("done-sent");
+      if (note) note.textContent = res.emailed ? "Nous vous l'avons aussi envoyée par e-mail." : "Gardez ce lien : c'est votre carte d'embarquement numérique.";
+    }
     var yes = data.presence === "oui";
     // le jour J, la page « À table ! » reconnaîtra l'invité sur ce téléphone
     if (yes && id) {
@@ -462,11 +477,18 @@
     if (window.McFx) setTimeout(function () { yes ? window.McFx.celebrate() : window.McFx.plane({ y: 0.6 }); }, 450);
   }
 
+  // « jeanne  MARTIN » → « Jeanne Martin »
+  function tidy(v) {
+    return String(v || "").trim().replace(/\s+/g, " ").toLowerCase().replace(/(^|[\s'-])(\S)/g, function (m, a, b) { return a + b.toUpperCase(); });
+  }
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     showError("");
     var data = {
-      nom: form.nom.value.trim(),
+      prenom: tidy(form.prenom.value),
+      nomFamille: tidy(form.nomFamille.value),
+      telephone: form.telephone.value.trim(),
       presence: form.presence.value,
       passagers: form.presence.value === "oui" ? parseInt(form.passagers.value, 10) : 0,
       creneau: form.presence.value === "oui" ? ((form.querySelector('input[name="creneau"]:checked') || {}).value || "") : "",
@@ -478,13 +500,19 @@
       message: form.message.value.trim(),
       website: form.website.value
     };
-    if (!data.nom) { showError("Merci d'indiquer le nom du passager."); form.nom.focus(); form.classList.remove("is-shake"); void form.offsetWidth; form.classList.add("is-shake"); return; }
+    data.nom = (data.prenom + " " + data.nomFamille).trim();
+    function stop(msg, el) { showError(msg); if (el) el.focus(); form.classList.remove("is-shake"); void form.offsetWidth; form.classList.add("is-shake"); }
+    if (!data.prenom) return stop("Merci d'indiquer votre prénom.", form.prenom);
+    if (!data.nomFamille) return stop("Merci d'indiquer votre nom.", form.nomFamille);
+    if (!data.email && !data.telephone) return stop("Indiquez votre e-mail ou votre numéro de portable pour recevoir votre carte d'embarquement.", form.email);
+    if (data.telephone && data.telephone.replace(/\D/g, "").length < 9) return stop("Le numéro de téléphone semble incomplet.", form.telephone);
     if (data.presence === "oui") {
       var rows = compList.querySelectorAll(".companion"), missing = null;
       rows.forEach(function (row, i) {
         var c = row.querySelector("input[type=radio]:checked");
         if (!c && !missing) missing = row;
-        data.accompagnants.push(row.querySelector("input[type=text]").value.trim() || "Passager " + (i + 2));
+        var tx = row.querySelectorAll("input[type=text]");
+        data.accompagnants.push((tidy(tx[0].value) + " " + tidy(tx[1].value)).trim() || "Passager " + (i + 2));
         data.creneauxAcc.push(c ? c.value : "");
       });
       if (data.creneau && missing) {
@@ -514,7 +542,7 @@
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (res) {
         if (!r.ok) throw new Error(res.error || "");
-        return sendExtras(data).then(function () { finish(data, res.id); });
+        return sendExtras(data).then(function () { finish(data, res.id, res); });
       });
     }).catch(function (err) {
       showError(err.message || "Oups, l'envoi a échoué. Réessayez dans un instant.");

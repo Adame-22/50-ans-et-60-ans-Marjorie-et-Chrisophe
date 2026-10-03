@@ -71,6 +71,17 @@ Le jour J, la page d'accueil et l'écran géant affichent l'étape en cours du p
 
 Le quiz tient la charge : l'état du jeu est mis en cache une seconde par Vercel, donc les téléphones ne sollicitent presque pas le serveur, qu'il y ait 70 joueurs ou plus. Il en va de même pour la page « À table ! » : chaque placement est écrit à part, si bien que 70 invités peuvent s'installer au même moment sans s'écraser.
 
+### Comptes
+
+- **Super admin** (Adame) : au-dessus de tous. Personne d'autre ne peut modifier, réinitialiser ou supprimer ce compte. Dans « Mon compte », il génère des **codes de secours** : en cas d'oubli du mot de passe, on tape un code de secours à la place du mot de passe, puis on en choisit un nouveau.
+- **Commandants** : Marjorie, Christophe, Lucie, Michael, Alexis, Anthony (code provisoire à la première connexion).
+
+### Carte d'embarquement numérique
+
+Chaque réponse reçoit un lien personnel `/billet?p=…` : une carte par passager (nom, billet midi / soir, QR code), agenda et itinéraire. Elle s'affiche après l'enregistrement et s'envoie :
+- **à la main**, gratuitement : boutons ✉ et SMS sur chaque ligne du Manifeste (ils ouvrent un message prêt à partir depuis le téléphone) ;
+- **automatiquement** avec [Brevo](https://www.brevo.com) : e-mail dès l'enregistrement et boutons « Envoyer par e-mail / par SMS » dans le Manifeste. Variables Vercel : `BREVO_API_KEY`, `MAIL_FROM` (expéditeur validé dans Brevo), éventuellement `MAIL_FROM_NAME`, `SMS_SENDER` (11 caractères max), `SITE_URL`. L'e-mail est gratuit jusqu'à 300 par jour ; les SMS sont payants (crédits Brevo, quelques centimes par SMS en France).
+
 ### Partage, agenda et appli
 
 - **Aperçu du lien** : en envoyant l'adresse du site par WhatsApp, SMS ou Messenger, une carte « Marjorie & Christophe · 50 ans · 60 ans » s'affiche (`assets/og.jpg`). WhatsApp garde parfois l'ancien aperçu en mémoire quelques heures.

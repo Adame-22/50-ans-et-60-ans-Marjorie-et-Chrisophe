@@ -167,7 +167,7 @@
     $all("[data-tab]").forEach(function (b) { b.setAttribute("aria-selected", String(b === tab)); });
     $all(".panel").forEach(function (p) { p.hidden = p.id !== "tab-" + name; });
     history.replaceState(null, "", "#" + name);
-    if (name === "manifeste") loadRsvps();
+    if (name === "manifeste") { loadRsvps(); loadNotify(); }
     if (name === "cabine") startCabin(); else stopCabin();
     if (name === "comptes") loadUsers();
     if (name === "constellation") loadGraph(); else destroyGraph();
@@ -188,6 +188,59 @@
       renderRsvps();
     }).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
   }
+
+  /* Envoi des cartes d'embarquement : automatique (Brevo) ou à la main depuis le téléphone */
+  var notify = { email: false, sms: false, site: location.origin };
+  function passLink(r) { return notify.site + "/billet?p=" + encodeURIComponent(r.passToken || ""); }
+  function passText(r) {
+    var first = r.prenom || String(r.nom || "").split(" ")[0];
+    return "Bonjour " + first + " ! Voici votre carte d'embarquement pour les 50 & 60 ans de Marjorie et Christophe (samedi 7 novembre, 12h30, Draveil) : " + passLink(r);
+  }
+  function sendLinks(r) {
+    if (r.presence !== "oui" || !r.passToken) return "";
+    var out = "";
+    if (r.email) out += '<a class="btn btn--small btn--line" title="Ouvrir un e-mail prêt à envoyer" href="mailto:' + encodeURIComponent(r.email) +
+      "?subject=" + encodeURIComponent("✈ Votre carte d'embarquement · Vol MC 5060") + "&body=" + encodeURIComponent(passText(r)) + '">✉</a> ';
+    if (r.telephone) out += '<a class="btn btn--small btn--line" title="Ouvrir un SMS prêt à envoyer" href="sms:' + encodeURIComponent(r.telephone.replace(/[^\d+]/g, "")) +
+      "?&body=" + encodeURIComponent(passText(r)) + '">SMS</a> ';
+    out += '<a class="btn btn--small btn--line" title="Voir sa carte" target="_blank" rel="noopener" href="' + passLink(r) + '">Carte</a> ';
+    return out;
+  }
+  function loadNotify() {
+    api("/api/rsvp?view=notify").then(function (d) {
+      notify = d;
+      $("#send-status").innerHTML = d.email || d.sms
+        ? "Envoi automatique actif (" + esc(d.provider) + ") : la carte part par e-mail dès l'enregistrement. Les boutons ci-contre l'envoient à ceux qui ne l'ont pas encore reçue."
+        : "Envoi automatique pas encore configuré : utilisez les boutons ✉ et SMS de chaque ligne (ils ouvrent un message prêt à envoyer depuis votre téléphone), ou demandez la configuration Brevo (voir README).";
+      updateSendButtons();
+      renderRsvps();
+    }).catch(function () {});
+  }
+  function pending(channel) {
+    return state.rsvps.filter(function (r) {
+      return r.presence === "oui" && (channel === "email" ? r.email && !r.emailedAt : r.telephone && !r.smsAt);
+    });
+  }
+  function updateSendButtons() {
+    var e = pending("email"), m = pending("sms");
+    $("#send-email").disabled = !notify.email || !e.length;
+    $("#send-sms").disabled = !notify.sms || !m.length;
+    $("#send-email").textContent = "Envoyer par e-mail (" + e.length + ")";
+    $("#send-sms").textContent = "Envoyer par SMS (" + m.length + ")";
+  }
+  ["email", "sms"].forEach(function (ch) {
+    $("#send-" + ch).addEventListener("click", function () {
+      var list = pending(ch);
+      if (!list.length || !confirm("Envoyer la carte d'embarquement par " + (ch === "sms" ? "SMS" : "e-mail") + " à " + list.length + " réponse(s) qui ne l'ont pas encore reçue ?")) return;
+      var btn = this; btn.disabled = true; btn.textContent = "Envoi…";
+      api("/api/rsvp", { method: "POST", body: { action: "send", channel: ch, ids: list.map(function (r) { return r.id; }) } })
+        .then(function (d) {
+          toast(d.sent + " envoyé(s)" + (d.errors.length ? ", " + d.errors.length + " erreur(s)" : "") + ".", !!d.errors.length);
+          if (d.errors.length) console.warn(d.errors);
+          loadRsvps();
+        }).catch(function (e) { toast(e.message, true); updateSendButtons(); });
+    });
+  });
 
   function renderRsvps() {
     var list = state.rsvps;
@@ -222,7 +275,8 @@
         "<td>" + (yesR ? '<button class="checkin-btn' + (r.arrivedAt ? " is-in" : "") + '" data-checkin="' + esc(r.id) + '" title="' + (r.arrivedAt ? "Arrivé à " + fmtDate(r.arrivedAt) : "Pointer l'arrivée") + '" aria-label="Pointer l\'arrivée de ' + esc(r.nom) + '">✓</button>' : "") + "</td>" +
         "<td><b>" + esc(r.nom) + "</b>" + (r.source === "sur place" ? ' <span class="tag tag--gold" title="Ajouté·e depuis la page À table !, le jour J">sur place</span>' : "") +
         companionsHtml(r) +
-        (r.email ? "<small>" + esc(r.email) + "</small>" : "") + "</td>" +
+        (r.email ? "<small>" + esc(r.email) + (r.emailedAt ? " ✓" : "") + "</small>" : "") +
+        (r.telephone ? "<small>" + esc(r.telephone) + (r.smsAt ? " ✓" : "") + "</small>" : "") + "</td>" +
         "<td>" + (yesR ? '<span class="tag tag--ok">À bord</span>' : '<span class="tag tag--no">Au sol</span>') + "</td>" +
         "<td>" + (yesR ? fareTags(r) : "—") + "</td>" +
         "<td>" + (yesR ? r.passagers : "—") + "</td>" +
@@ -230,10 +284,11 @@
         "<td>" + esc(r.allergies || "") + "</td>" +
         '<td class="msg">' + esc(r.message || "") + "</td>" +
         "<td>" + fmtDate(r.createdAt) + "</td>" +
-        '<td class="actions"><button class="btn btn--small btn--line btn--danger" data-del="' + esc(r.id) + '">Supprimer</button></td>' +
+        '<td class="actions">' + sendLinks(r) + '<button class="btn btn--small btn--line btn--danger" data-del="' + esc(r.id) + '">Supprimer</button></td>' +
         "</tr>";
     }).join("");
     $("#m-empty").hidden = rows.length > 0;
+    updateSendButtons();
   }
 
   $("#m-search").addEventListener("input", renderRsvps);
@@ -272,7 +327,8 @@
     var f = e.target;
     formError(f, "");
     api("/api/rsvp", { method: "POST", body: {
-      nom: f.nom.value, presence: f.presence.value, passagers: f.passagers.value, repas: f.repas.value, allergies: f.allergies.value
+      nom: f.nom.value, presence: f.presence.value, passagers: f.passagers.value, repas: f.repas.value, allergies: f.allergies.value,
+      creneau: "journee", source: "equipage"
     } }).then(function () {
       f.reset();
       f.hidden = true;
@@ -293,11 +349,11 @@
   function exportCsv(plan) {
     var tableOf = {};
     plan.tables.forEach(function (t) { tableOf[t.id] = t.name; });
-    var head = ["Nom", "Accompagnants", "Présence", "Billet", "Passagers", "Régime alimentaire", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
+    var head = ["Nom", "Prénom", "Nom de famille", "Téléphone", "Accompagnants", "Présence", "Billet", "Passagers", "Régime alimentaire", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
     var lines = [head.join(";")].concat(state.rsvps.map(function (r) {
       var table = plan.assign[r.id] ? tableOf[plan.assign[r.id]] || "" : "";
       var fs = fares(r);
-      return [r.nom, (r.accompagnants || []).map(function (n, i) { return n + " (" + FARE[fs[i + 1] || fs[0]][1] + ")"; }).join(", "), r.presence === "oui" ? "À bord" : "Au sol", r.presence === "oui" ? FARE[fareOf(r)][1] : "", r.passagers, r.repas, r.allergies, r.email, r.message, table,
+      return [r.nom, r.prenom || "", r.nomFamille || "", r.telephone || "", (r.accompagnants || []).map(function (n, i) { return n + " (" + FARE[fs[i + 1] || fs[0]][1] + ")"; }).join(", "), r.presence === "oui" ? "À bord" : "Au sol", r.presence === "oui" ? FARE[fareOf(r)][1] : "", r.passagers, r.repas, r.allergies, r.email, r.message, table,
         r.arrivedAt ? fmtDate(r.arrivedAt) : "", fmtDate(r.createdAt)]
         .map(csvCell).join(";");
     }));

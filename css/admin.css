@@ -398,3 +398,10 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 
 .bk-codes { columns: 2; font-size: 1.05rem; margin: .4rem 0 1rem; padding-left: 1.4rem; }
 .bk-codes code { font-family: var(--mono); letter-spacing: .08em; }
+
+.send-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.send-box h3 { font-size: 1.3rem; margin-bottom: .2rem; }
+.send-box .hint { max-width: 640px; }
+.send-box__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+#m-table td small { display: block; }
+#m-table .actions { white-space: nowrap; }

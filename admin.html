@@ -116,6 +116,17 @@
         <a class="btn btn--small btn--line" id="m-backup" href="/api/backup" download title="Réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe) dans un fichier">Sauvegarde complète</a>
       </div>
 
+      <div class="card send-box" id="send-box">
+        <div>
+          <h3>Cartes d'embarquement</h3>
+          <p class="hint" id="send-status">Vérification de l'envoi automatique…</p>
+        </div>
+        <div class="send-box__actions">
+          <button class="btn btn--small btn--gold" id="send-email" type="button" disabled>Envoyer par e-mail</button>
+          <button class="btn btn--small btn--line" id="send-sms" type="button" disabled>Envoyer par SMS</button>
+        </div>
+      </div>
+
       <form class="card add-pax" id="add-pax" hidden novalidate>
         <h3>Ajouter une réponse reçue hors site</h3>
         <div class="grid-4">

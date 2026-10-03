@@ -1117,3 +1117,13 @@ h3 { font-size: 1.6rem; }
 .pill input:focus-visible + span { box-shadow: 0 0 0 4px rgba(166, 112, 70, .3); }
 .pill span { white-space: nowrap; padding: .5rem .3rem; font-size: .98rem; }
 @media (max-width: 360px) { .pill span { font-size: .9rem; } .pill input:checked + span::before { content: "✓"; } }
+
+/* Prénom / nom séparés, coordonnées */
+.name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) { .name-row { grid-template-columns: 1fr; } }
+.sub-field { display: grid; gap: 4px; min-width: 0; }
+.checkin .sub-field label { font-size: .88rem; font-weight: 500; color: var(--muted); }
+.companion__title { margin: 0; font-family: var(--serif); font-size: 1.25rem; font-weight: 600; color: var(--navy); }
+.companion__q { margin: 2px 0 0; font-size: .95rem; color: var(--muted); }
+.done-pass { margin: 0 auto .6rem; }
+.done-sent { color: var(--muted); font-size: .95rem; margin: 0 0 1.4rem !important; }

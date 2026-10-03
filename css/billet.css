@@ -1,0 +1,49 @@
+/* Carte d'embarquement numérique (/billet) */
+html:has(> body.billet) { background: #000033; }
+body.billet {
+  min-height: 100vh; min-height: 100svh; color: var(--paper);
+  background: radial-gradient(ellipse 90% 50% at 50% 115%, rgba(166, 112, 70, .3), transparent 65%), linear-gradient(180deg, #00001f 0%, var(--navy) 60%, #0a0d45 100%);
+  background-attachment: fixed;
+}
+.billet__top { display: flex; justify-content: space-between; align-items: center; padding: 16px clamp(16px, 4vw, 32px); }
+.billet__top .nav__brand { color: var(--paper); }
+.billet__tag { font-family: var(--mono); font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-light); }
+.billet__main { width: min(520px, 100% - 32px); margin: 0 auto; padding: 8px 0 48px; display: grid; gap: 18px; }
+.billet__loading, .billet__hello { text-align: center; font-size: 1.1rem; margin: 1rem 0 .2rem; }
+.billet__loading a { color: var(--gold-light); }
+.billet__tip { text-align: center; color: rgba(255, 251, 254, .65); font-size: .95rem; margin: 0; }
+.bp {
+  background: #fff; color: var(--ink); border-radius: 20px; overflow: hidden; position: relative;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .7); animation: fx-rise .7s var(--ease) both;
+}
+.bp--ground { padding: 28px; text-align: center; }
+.bp--ground h1 { font-size: 2.2rem; margin: .4rem 0; }
+.bp__eyebrow { font-family: var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--gold); font-size: .75rem; margin: 0; }
+.bp__head { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; background: var(--navy); color: var(--paper); }
+.bp__airline { font-family: var(--serif); font-size: 1.35rem; }
+.bp__airline span { color: var(--gold); font-style: italic; }
+.bp__class { font-family: var(--mono); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; padding: .4rem .8rem; border-radius: 999px; background: var(--gold-light); color: var(--navy); }
+.bp__class--midi { background: #fff3d6; }
+.bp__class--soir { background: #c9cdf4; }
+.bp__route { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px 6px; }
+.bp__route small, .bp__grid dt, .bp__stubtxt small { display: block; font-family: var(--mono); font-size: .66rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+.bp__route b { font-family: var(--serif); font-size: 2.8rem; font-weight: 500; line-height: 1; color: var(--navy); }
+.bp__route .r { text-align: right; }
+.bp__route svg { width: 34px; height: 34px; color: var(--gold); }
+.bp__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; margin: 0; padding: 14px 22px 20px; }
+.bp__grid .wide { grid-column: 1 / -1; }
+.bp__grid dd { margin: .2rem 0 0; font-size: 1.08rem; font-weight: 600; }
+.bp__grid .wide dd { font-family: var(--serif); font-size: 1.7rem; font-weight: 500; }
+.bp__stub { display: flex; align-items: center; gap: 18px; padding: 18px 22px; border-top: 2px dashed var(--line); background: #fbf5f1; position: relative; }
+.bp__stub::before, .bp__stub::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: #0a0d45; }
+.bp__stub::before { left: -10px; } .bp__stub::after { right: -10px; }
+.bp__qr { width: 104px; height: 104px; flex: none; background: #fff; padding: 6px; border-radius: 8px; }
+.bp__qr svg { width: 100%; height: 100%; display: block; }
+.bp__stubtxt b { display: block; font-family: var(--mono); font-size: 1.1rem; margin-bottom: .5rem; }
+.bp__stubtxt span { font-size: .95rem; }
+.billet__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 420px) { .billet__actions { grid-template-columns: 1fr; } }
+.billet .big-btn { background: rgba(255, 251, 254, .06); color: var(--paper); border-color: rgba(255, 177, 0, .55); box-shadow: none; }
+.billet .big-btn svg { color: var(--gold-light); }
+.billet .big-btn small { color: rgba(255, 251, 254, .65); }
+@media (prefers-reduced-motion: reduce) { .bp { animation: none; } }

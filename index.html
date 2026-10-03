@@ -371,8 +371,11 @@
 
       <form class="checkin reveal" id="checkin" novalidate>
         <div class="field">
-          <label for="f-name">Votre prénom et nom</label>
-          <input id="f-name" name="nom" type="text" autocomplete="name" required placeholder="Prénom Nom" />
+          <span class="field__label">Passager principal</span>
+          <div class="name-row">
+            <div class="sub-field"><label for="f-first">Prénom</label><input id="f-first" name="prenom" type="text" autocomplete="given-name" autocapitalize="words" maxlength="40" required placeholder="Ex. Jeanne" /></div>
+            <div class="sub-field"><label for="f-last">Nom</label><input id="f-last" name="nomFamille" type="text" autocomplete="family-name" autocapitalize="words" maxlength="40" required placeholder="Ex. Martin" /></div>
+          </div>
         </div>
 
         <fieldset class="field field--choice">
@@ -445,8 +448,12 @@
         </div>
 
         <div class="field">
-          <label for="f-email">E-mail <small>(facultatif)</small></label>
-          <input id="f-email" name="email" type="email" autocomplete="email" placeholder="vous@exemple.fr" />
+          <span class="field__label">Pour recevoir votre carte d'embarquement</span>
+          <small class="field__help">Indiquez au moins votre e-mail <b>ou</b> votre numéro de portable (les deux, c'est encore mieux).</small>
+          <div class="name-row">
+            <div class="sub-field"><label for="f-email">E-mail</label><input id="f-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="vous@exemple.fr" /></div>
+            <div class="sub-field"><label for="f-phone">Portable</label><input id="f-phone" name="telephone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="06 12 34 56 78" /></div>
+          </div>
         </div>
 
         <div class="field">
@@ -484,6 +491,8 @@
         <div class="stamp" aria-hidden="true">Enregistré</div>
         <h3 id="done-title">Bon vol&nbsp;!</h3>
         <p id="done-text"></p>
+        <a class="btn btn--gold done-pass" id="done-pass" hidden>Ma carte d'embarquement numérique ✈</a>
+        <p class="done-sent" id="done-sent"></p>
         <div class="big-actions">
           <a class="big-btn" href="/agenda.ics" download="vol-mc5060.ics"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 5h14v15H5zM5 10h14M9 3v4M15 3v4"/></svg><span><b>Ajouter à mon agenda</b><small>iPhone, Android, Outlook</small></span></a>
           <a class="big-btn" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=Vol+MC+5060+%C2%B7+50+ans+de+Marjorie+%26+60+ans+de+Christophe&amp;dates=20261107T113000Z%2F20261107T225900Z&amp;location=Salle+des+f%C3%AAtes+de+Champrosay%2C+1+all%C3%A9e+des+Alouettes%2C+91270+Draveil&amp;details=Embarquement+%C3%A0+12h30.+Toutes+les+infos+%3A+https%3A%2F%2F50-ans-et-60-ans-marjorie-et-chriso.vercel.app%2F&amp;ctz=Europe%2FParis" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.4 3-7.3z"/><path fill="currentColor" opacity=".75" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="currentColor" opacity=".55" d="M6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9z"/><path fill="currentColor" opacity=".85" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.7 9.4 5.9 12 5.9z"/></svg><span><b>Google Agenda</b><small>Ouvre Google Agenda</small></span></a>
