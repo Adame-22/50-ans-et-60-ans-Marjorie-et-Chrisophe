@@ -7,7 +7,9 @@
  *   GET    ?pass=<jeton>   (public)   → carte d'embarquement d'une réponse (lien personnel)
  *   GET    ?view=notify    (équipage) → envoi automatique par e-mail configuré ?
  *   POST   { action: "send", ids } (équipage) → envoie les cartes par e-mail
- *   À l'enregistrement, la carte est envoyée par e-mail si l'envoi est configuré (Brevo).
+ *   POST   { action: "mail-config", provider, key, from, fromName } (admin) → réglages d'envoi
+ *   POST   { action: "mail-test", to } (admin) → e-mail d'essai ; { action: "mail-off" } → efface les réglages
+ *   À l'enregistrement, la carte est envoyée par e-mail si l'envoi est configuré (Brevo ou AgentMail).
  */
 const crypto = require("crypto");
 const L = require("./_lib");
@@ -39,8 +41,17 @@ module.exports = L.handler(async (req, res) => {
 
   if (req.method === "POST") {
     const b = await L.readBody(req);
+    if (b.action === "mail-config" || b.action === "mail-test" || b.action === "mail-off") {
+      const me = await L.requireUser(req, { admin: true });
+      if (b.action === "mail-config") await N.saveConfig(b, me.username);
+      if (b.action === "mail-off") await N.clearConfig();
+      if (b.action === "mail-test") await N.sendTest(req, L.str(b.to, 120));
+      return L.send(res, 200, Object.assign(await N.adminView(), { site: N.siteUrl(req) }));
+    }
     if (b.action === "send") {
       await L.requireUser(req);
+      const cfg = await N.getConfig();
+      if (!(await N.status()).email) throw new L.HttpError(400, "L'envoi automatique n'est pas encore réglé (Manifeste → Réglages de l'envoi).");
       const channel = "email";
       const ids = (Array.isArray(b.ids) ? b.ids : []).slice(0, 300).map((x) => L.str(x, 64));
       const out = { sent: 0, skipped: 0, errors: [] };
@@ -51,7 +62,7 @@ module.exports = L.handler(async (req, res) => {
         if (channel === "email" ? !e.email : !N.phoneE164(e.telephone)) { out.skipped++; continue; }
         try {
           N.ensureToken(e);
-          await N.sendEmail(req, e);
+          await N.sendEmail(req, e, cfg);
           e[channel === "email" ? "emailedAt" : "smsAt"] = new Date().toISOString();
           await L.redis(["HSET", L.K.rsvps, e.id, JSON.stringify(e)]);
           out.sent++;
@@ -91,17 +102,18 @@ module.exports = L.handler(async (req, res) => {
     await L.redis(["HSET", L.K.rsvps, entry.id, JSON.stringify(entry)]);
     // carte d'embarquement envoyée tout de suite par e-mail, si l'envoi est configuré
     let emailed = false;
-    if (entry.email && N.status().email) {
+    if (entry.email && (await N.status()).email) {
       try { await N.sendEmail(req, entry); entry.emailedAt = new Date().toISOString(); emailed = true; await L.redis(["HSET", L.K.rsvps, entry.id, JSON.stringify(entry)]); }
       catch (e) { console.error("e-mail non envoyé", e.message); }
     }
     return L.send(res, 201, { ok: true, id: entry.id, pass: entry.passToken, emailed });
   }
 
-  await L.requireUser(req);
+  const me = await L.requireUser(req);
 
   if (req.method === "GET" && q.get("view") === "notify") {
-    return L.send(res, 200, Object.assign(N.status(), { site: N.siteUrl(req) }));
+    const view = L.isAdmin(me) ? Object.assign(await N.adminView(), { admin: true }) : await N.status();
+    return L.send(res, 200, Object.assign(view, { site: N.siteUrl(req) }));
   }
 
   if (req.method === "GET") {

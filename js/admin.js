@@ -204,16 +204,72 @@
     out += '<a class="btn btn--small btn--line" title="Voir sa carte" target="_blank" rel="noopener" href="' + passLink(r) + '">Carte</a> ';
     return out;
   }
-  function loadNotify() {
-    api("/api/rsvp?view=notify").then(function (d) {
-      notify = d;
-      $("#send-status").innerHTML = d.email
-        ? "Envoi automatique actif : la carte part par e-mail dès l'enregistrement. Le bouton ci-contre l'envoie à ceux qui ne l'ont pas encore reçue."
-        : "Envoi automatique par e-mail pas encore activé (Brevo, gratuit : voir README). En attendant, les boutons ✉ de chaque ligne ouvrent un e-mail prêt à envoyer depuis votre téléphone.";
-      updateSendButtons();
-      renderRsvps();
-    }).catch(function () {});
+  var MAIL_HELP = {
+    brevo: "Brevo : clé dans Paramètres → SMTP & API → onglet « Clés API » (commence par xkeysib-). L'adresse d'expéditeur doit être validée dans Brevo (Expéditeurs), et le blocage des IP inconnues désactivé (Sécurité → Adresses IP autorisées).",
+    agentmail: "AgentMail : clé dans console.agentmail.to → API Keys. Adresse d'expéditeur = la boîte AgentMail, par exemple vol-mc5060@agentmail.to.",
+  };
+  function mailHelp() {
+    var p = $("#mail-provider").value;
+    $("#mail-help").textContent = MAIL_HELP[p];
+    $("#mail-key").placeholder = notify.keyEnd && notify.provider === p ? "Enregistrée (…" + notify.keyEnd + ") · vide = inchangée" : p === "agentmail" ? "am_…" : "xkeysib-…";
+    $("#mail-from").placeholder = p === "agentmail" ? "vol-mc5060@agentmail.to" : "votre.adresse@gmail.com";
+    $("#mail-from-label").textContent = p === "agentmail" ? "Boîte AgentMail" : "Adresse d'expéditeur";
   }
+  function renderNotify(d) {
+    notify = d;
+    var who = ({ brevo: "Brevo", agentmail: "AgentMail" }[d.provider] || d.provider) + (d.from ? " · " + d.from : "");
+    $("#send-status").innerHTML = d.email
+      ? "<b>Envoi automatique actif</b> (" + esc(who) + ") : la carte part par e-mail dès l'enregistrement. Le bouton ci-contre l'envoie à ceux qui ne l'ont pas encore reçue."
+      : "Envoi automatique par e-mail <b>pas encore réglé</b>" + (d.admin ? " : ouvrez « Réglages de l'envoi automatique » ci-dessous (2 minutes, gratuit)." : " (à faire par un commandant de bord).") + " En attendant, les boutons ✉ de chaque ligne ouvrent un e-mail prêt à envoyer depuis votre téléphone.";
+    if (d.admin) {
+      $("#mail-provider").value = d.provider || "brevo";
+      $("#mail-from").value = d.from || "";
+      $("#mail-name").value = d.fromName || "";
+      $("#mail-key").value = "";
+      $("#mail-off").hidden = d.source !== "admin";
+      if (!d.email) $("#mail-setup").open = true;
+      mailHelp();
+      if (d.source === "vercel") $("#mail-help").textContent += " (Réglages actuels lus dans Vercel ; ceux enregistrés ici seront prioritaires.)";
+      $("#mail-log").innerHTML = (d.log || []).map(function (l) {
+        return '<li class="' + (l.ok ? "mail-log-ok" : "mail-log-err") + '">' + (l.ok ? "✓ " : "✕ ") + esc(l.to) + " · " + esc(l.detail) + " <small>· " + fmtDate(l.at) + "</small></li>";
+      }).join("");
+    }
+    updateSendButtons();
+    renderRsvps();
+  }
+  function loadNotify() {
+    api("/api/rsvp?view=notify").then(renderNotify).catch(function () {});
+  }
+  $("#mail-provider").addEventListener("change", mailHelp);
+  $("#mail-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var form = this, err = form.querySelector(".form-error");
+    err.hidden = true;
+    api("/api/rsvp", { method: "POST", body: {
+      action: "mail-config", provider: $("#mail-provider").value, key: $("#mail-key").value.trim(),
+      from: $("#mail-from").value.trim(), fromName: $("#mail-name").value.trim(),
+    } }).then(function (d) {
+      d.admin = true; renderNotify(d);
+      toast("Réglages enregistrés. Envoyez-vous un e-mail d'essai pour vérifier.");
+      $("#mail-test-to").focus();
+    }).catch(function (x) { err.textContent = x.message; err.hidden = false; });
+  });
+  $("#mail-test").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var btn = this.querySelector("button"), to = $("#mail-test-to").value.trim();
+    if (!to) { $("#mail-test-to").focus(); return; }
+    btn.disabled = true; btn.textContent = "Envoi…";
+    api("/api/rsvp", { method: "POST", body: { action: "mail-test", to: to } })
+      .then(function (d) { d.admin = true; renderNotify(d); toast("E-mail d'essai envoyé à " + to + " : regardez aussi les spams."); })
+      .catch(function (x) { toast(x.message, true); loadNotify(); })
+      .then(function () { btn.disabled = false; btn.textContent = "Envoyer l'essai"; });
+  });
+  $("#mail-off").addEventListener("click", function () {
+    if (!confirm("Désactiver l'envoi automatique des cartes par e-mail ?")) return;
+    api("/api/rsvp", { method: "POST", body: { action: "mail-off" } })
+      .then(function (d) { d.admin = true; renderNotify(d); toast("Envoi automatique désactivé."); })
+      .catch(function (x) { toast(x.message, true); });
+  });
   function pending(channel) {
     return state.rsvps.filter(function (r) {
       return r.presence === "oui" && (channel === "email" ? r.email && !r.emailedAt : r.telephone && !r.smsAt);
@@ -231,9 +287,10 @@
       var btn = this; btn.disabled = true; btn.textContent = "Envoi…";
       api("/api/rsvp", { method: "POST", body: { action: "send", channel: ch, ids: list.map(function (r) { return r.id; }) } })
         .then(function (d) {
-          toast(d.sent + " envoyé(s)" + (d.errors.length ? ", " + d.errors.length + " erreur(s)" : "") + ".", !!d.errors.length);
+          toast(d.sent + " envoyé(s)" + (d.errors.length ? ", " + d.errors.length + " erreur(s) — " + d.errors[0] : "") + ".", !!d.errors.length);
           if (d.errors.length) console.warn(d.errors);
           loadRsvps();
+          loadNotify();
         }).catch(function (e) { toast(e.message, true); updateSendButtons(); });
     });
   });

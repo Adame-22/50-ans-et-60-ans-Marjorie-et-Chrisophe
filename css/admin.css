@@ -403,6 +403,15 @@ body.admin { background: var(--ivory); min-height: 100vh; }
 .send-box h3 { font-size: 1.3rem; margin-bottom: .2rem; }
 .send-box .hint { max-width: 640px; }
 .send-box__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.mail-setup { flex-basis: 100%; border-top: 1px solid var(--line, #e8e1dc); padding-top: 12px; }
+.mail-setup summary { cursor: pointer; font-weight: 700; padding: .3rem 0; }
+.mail-setup form { display: grid; gap: 12px; margin-top: 12px; }
+.grid-mail { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+@media (max-width: 640px) { .grid-mail { grid-template-columns: minmax(0, 1fr); } }
+.mail-test { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+@media (max-width: 640px) { .mail-test { grid-template-columns: minmax(0, 1fr); } }
+.mail-log-ok { color: #2e7d4f; }
+.mail-log-err { color: #b3261e; }
 #m-table td small { display: block; }
 #m-table .actions { white-space: nowrap; }
 
