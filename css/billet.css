@@ -58,3 +58,65 @@ body.billet {
 .bp:nth-child(3n+2) .bp__tampon { --ink: var(--ink-blue); --r: 9deg; }
 .bp:nth-child(3n) .bp__tampon { --ink: var(--ink-gold); --r: -4deg; }
 .bp__qr, .bp__stubtxt { position: relative; z-index: 1; }
+
+/* ═════ Carte d'embarquement : finition ═════ */
+.billet { font-variant-numeric: lining-nums; }
+.billet__intro { text-align: center; margin: .4rem 0 .4rem; }
+.billet__kicker { margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-light); }
+.billet__intro h1 { margin: .35rem 0 .3rem; font-family: var(--serif); font-weight: 500; font-size: clamp(2.3rem, 9vw, 3rem); line-height: 1.05; }
+.billet__intro p:last-child { margin: 0 auto; max-width: 30rem; color: rgba(255, 251, 254, .7); font-size: .98rem; }
+
+/* couleur par billet : Première (or), Business (ambre clair), Premium (bleu) */
+.bp { --accent: var(--gold-light); --accent-ink: var(--navy); border-radius: 22px; background:
+    url("../assets/guilloche.svg") 0 0 / 240px 60px repeat,
+    linear-gradient(170deg, #fffcf7 0%, #f5ecdf 100%); }
+.bp--midi { --accent: #ffe1a1; }
+.bp--soir { --accent: #b9c3f5; }
+.bp__head { padding: 16px 20px; border-bottom: 3px solid var(--accent); gap: .8rem; }
+.bp__airline { margin-right: auto; }
+.bp__count { font-size: .78rem; font-weight: 600; color: rgba(255, 251, 254, .6); }
+.bp__class { font-family: var(--sans); font-weight: 700; font-size: .76rem; letter-spacing: .1em; background: var(--accent); color: var(--accent-ink); }
+
+.bp__route { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 10px; padding: 20px 22px 4px; }
+.bp__route > div:not(.bp__arc) { display: grid; }
+.bp__route small, .bp__grid dt, .bp__stubtxt small { font-family: var(--sans); font-weight: 700; font-size: .66rem; letter-spacing: .14em; color: #8b8f8f; }
+.bp__route b { font-family: var(--serif); font-size: 3rem; font-weight: 600; letter-spacing: .02em; }
+.bp__route i { font-size: 1.35rem; line-height: 1; color: var(--gold); margin-top: .1rem; }
+.bp__arc { position: relative; align-self: center; color: var(--gold); text-align: center; margin-bottom: 1.2rem; }
+.bp__arc svg:first-child { width: 100%; height: 34px; display: block; }
+.bp__plane { position: absolute; left: 50%; top: -6px; width: 24px; height: 24px; margin-left: -12px; color: var(--navy); }
+.bp__arc span { display: block; margin-top: -2px; font-size: .68rem; font-weight: 700; letter-spacing: .14em; color: #8b8f8f; }
+
+.bp__grid { gap: 14px 18px; padding: 16px 22px 20px; }
+.bp__grid .wide { padding-bottom: 12px; border-bottom: 1px solid rgba(166, 112, 70, .2); }
+.bp__grid .wide dd { font-size: 1.9rem; line-height: 1.1; }
+.bp__grid dd { font-size: 1.05rem; font-weight: 600; color: var(--navy); }
+.bp__grid div:nth-child(4) dd, .bp__grid div:nth-child(5) dd { font-family: var(--serif); font-size: 1.7rem; font-weight: 600; line-height: 1.05; }
+
+/* talon : QR, référence, tampon rangé à droite */
+.bp__stub { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; padding: 18px 20px; border-top: 2px dashed #dccdb9; background: rgba(166, 112, 70, .07); }
+.bp__stub::before, .bp__stub::after { background: #050742; }
+.bp__qr { width: 96px; height: 96px; box-shadow: 0 0 0 1px #eadfce; }
+.bp__stubtxt b { font-family: var(--mono); font-size: 1.15rem; letter-spacing: .04em; color: var(--navy); margin: .1rem 0 .55rem; }
+.bp__stubtxt span { display: block; font-size: .9rem; line-height: 1.3; color: #3c3f45; }
+.bp__tampon { position: relative; right: auto; top: auto; --s: 78px; align-self: center; }
+@media (max-width: 360px) { .bp__tampon { display: none; } .bp__stub { grid-template-columns: auto 1fr; } }
+/* code-barres décoratif en pied de carte */
+.bp__barcode { height: 26px; margin: 0 22px 16px; opacity: .75;
+  background: repeating-linear-gradient(90deg, var(--navy) 0 2px, transparent 2px 4px, var(--navy) 4px 5px, transparent 5px 8px, var(--navy) 8px 11px, transparent 11px 13px, var(--navy) 13px 14px, transparent 14px 17px); }
+
+/* préparer le voyage : grille compacte */
+.billet__prep h2 { margin: .6rem 0 .8rem; text-align: center; font-family: var(--serif); font-weight: 500; font-size: 1.6rem; }
+.billet__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 420px) { .billet__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bact {
+  display: grid; justify-items: start; gap: .15rem; padding: 14px 14px 13px; border-radius: 16px; text-decoration: none;
+  color: var(--paper); background: rgba(255, 251, 254, .05); border: 1px solid rgba(255, 251, 254, .12);
+  transition: border-color .25s, background .25s, transform .25s var(--ease);
+}
+.bact:hover { border-color: var(--gold-light); background: rgba(255, 177, 0, .08); transform: translateY(-2px); }
+.bact svg { width: 26px; height: 26px; margin-bottom: .35rem; fill: none; stroke: var(--gold-light); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.bact b { font-size: 1.02rem; font-weight: 650; }
+.bact small { font-size: .8rem; color: rgba(255, 251, 254, .6); }
+.billet__tip { font-size: .9rem; line-height: 1.6; }
+.billet__tip a { color: var(--gold-light); }
