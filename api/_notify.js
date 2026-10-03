@@ -188,7 +188,7 @@ async function sendTest(req, to) {
   const c = await getConfig();
   if (!ready(c)) throw new L.HttpError(400, "Enregistrez d'abord les réglages d'envoi.");
   const demo = { nom: "Passager test", prenom: "Passager test", presence: "oui", passagers: 1, creneau: "journee", email: to };
-  try { await sendEmail(req, demo, c, siteUrl(req) + "/"); }
+  try { await sendEmail(req, demo, c, siteUrl(req) + "/billet?p=demo"); }
   catch (e) { throw new L.HttpError(502, e.message); }
 }
 

@@ -205,22 +205,21 @@
     return out;
   }
   var MAIL_HELP = {
-    brevo: "Brevo : clé dans Paramètres → SMTP & API → onglet « Clés API » (commence par xkeysib-). L'adresse d'expéditeur doit être validée dans Brevo (Expéditeurs), et le blocage des IP inconnues désactivé (Sécurité → Adresses IP autorisées).",
-    agentmail: "AgentMail : clé dans console.agentmail.to → API Keys. Adresse d'expéditeur = la boîte AgentMail, par exemple vol-mc5060@agentmail.to.",
+    brevo: "Brevo : clé API « xkeysib-… » (Paramètres → SMTP & API → Clés API) ; expéditeur validé dans Brevo ; blocage des IP inconnues désactivé.",
+    agentmail: "AgentMail : clé API (console.agentmail.to → API Keys) ; expéditeur = la boîte, ex. vol-mc5060@agentmail.to.",
   };
+  var PROVIDER = { brevo: "Brevo", agentmail: "AgentMail" };
   function mailHelp() {
     var p = $("#mail-provider").value;
-    $("#mail-help").textContent = MAIL_HELP[p];
-    $("#mail-key").placeholder = notify.keyEnd && notify.provider === p ? "Enregistrée (…" + notify.keyEnd + ") · vide = inchangée" : p === "agentmail" ? "am_…" : "xkeysib-…";
-    $("#mail-from").placeholder = p === "agentmail" ? "vol-mc5060@agentmail.to" : "votre.adresse@gmail.com";
-    $("#mail-from-label").textContent = p === "agentmail" ? "Boîte AgentMail" : "Adresse d'expéditeur";
+    $("#mail-help").textContent = MAIL_HELP[p] + (notify.source === "vercel" ? " Réglages actuels lus dans Vercel." : "");
+    $("#mail-key").placeholder = notify.keyEnd && notify.provider === p ? "Enregistrée (…" + notify.keyEnd + ")" : p === "agentmail" ? "am_…" : "xkeysib-…";
+    $("#mail-from").placeholder = p === "agentmail" ? "vol-mc5060@agentmail.to" : "adresse validée dans Brevo";
   }
   function renderNotify(d) {
     notify = d;
-    var who = ({ brevo: "Brevo", agentmail: "AgentMail" }[d.provider] || d.provider) + (d.from ? " · " + d.from : "");
     $("#send-status").innerHTML = d.email
-      ? "<b>Envoi automatique actif</b> (" + esc(who) + ") : la carte part par e-mail dès l'enregistrement. Le bouton ci-contre l'envoie à ceux qui ne l'ont pas encore reçue."
-      : "Envoi automatique par e-mail <b>pas encore réglé</b>" + (d.admin ? " : ouvrez « Réglages de l'envoi automatique » ci-dessous (2 minutes, gratuit)." : " (à faire par un commandant de bord).") + " En attendant, les boutons ✉ de chaque ligne ouvrent un e-mail prêt à envoyer depuis votre téléphone.";
+      ? "✓ Envoi automatique actif · " + esc(PROVIDER[d.provider] || d.provider) + (d.from ? " · " + esc(d.from) : "") + ". La carte part toute seule à chaque enregistrement."
+      : "Envoi automatique pas encore réglé" + (d.admin ? " (voir « Réglages » ci-dessous)" : "") + ". En attendant : bouton ✉ sur chaque ligne.";
     if (d.admin) {
       $("#mail-provider").value = d.provider || "brevo";
       $("#mail-from").value = d.from || "";
@@ -229,9 +228,8 @@
       $("#mail-off").hidden = d.source !== "admin";
       if (!d.email) $("#mail-setup").open = true;
       mailHelp();
-      if (d.source === "vercel") $("#mail-help").textContent += " (Réglages actuels lus dans Vercel ; ceux enregistrés ici seront prioritaires.)";
-      $("#mail-log").innerHTML = (d.log || []).map(function (l) {
-        return '<li class="' + (l.ok ? "mail-log-ok" : "mail-log-err") + '">' + (l.ok ? "✓ " : "✕ ") + esc(l.to) + " · " + esc(l.detail) + " <small>· " + fmtDate(l.at) + "</small></li>";
+      $("#mail-log").innerHTML = (d.log || []).slice(0, 5).map(function (l) {
+        return '<li class="' + (l.ok ? "mail-log-ok" : "mail-log-err") + '">' + (l.ok ? "✓ " : "✕ ") + esc(l.to) + " · " + esc(l.detail) + " · " + fmtDate(l.at) + "</li>";
       }).join("");
     }
     updateSendButtons();

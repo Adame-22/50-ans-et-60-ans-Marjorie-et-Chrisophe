@@ -125,17 +125,16 @@
           <button class="btn btn--small btn--gold" id="send-email" type="button" disabled>Envoyer par e-mail</button>
         </div>
         <details class="mail-setup" id="mail-setup" data-admin-only hidden>
-          <summary>Réglages de l'envoi automatique</summary>
+          <summary>Réglages et e-mail d'essai</summary>
           <form id="mail-form" novalidate>
-            <p class="hint">Gratuit, au choix : <b>Brevo</b> (300 e-mails/jour, expéditeur = votre adresse validée dans Brevo) ou <b>AgentMail</b> (boîte <i>vol-mc5060@agentmail.to</i>). Collez la clé API ici : elle reste sur le serveur et n'est plus jamais affichée.</p>
-            <div class="grid-mail">
+            <div class="grid-4">
               <div class="field"><label for="mail-provider">Service</label>
                 <select id="mail-provider"><option value="brevo">Brevo</option><option value="agentmail">AgentMail</option></select></div>
-              <div class="field"><label for="mail-key">Clé API</label><input id="mail-key" type="password" autocomplete="off" spellcheck="false" placeholder="xkeysib-…" /></div>
-              <div class="field"><label for="mail-from" id="mail-from-label">Adresse d'expéditeur</label><input id="mail-from" type="email" autocomplete="off" placeholder="votre.adresse@gmail.com" /></div>
+              <div class="field"><label for="mail-key">Clé API</label><input id="mail-key" type="password" autocomplete="off" spellcheck="false" /></div>
+              <div class="field"><label for="mail-from" id="mail-from-label">Expéditeur</label><input id="mail-from" type="email" autocomplete="off" /></div>
               <div class="field"><label for="mail-name">Nom affiché</label><input id="mail-name" maxlength="60" placeholder="Vol MC 5060" /></div>
             </div>
-            <p class="hint" id="mail-help"></p>
+            <p class="hint hint--tiny" id="mail-help"></p>
             <p class="form-error" role="alert" hidden></p>
             <div class="row-end">
               <button class="btn btn--small btn--line btn--danger" id="mail-off" type="button" hidden>Désactiver</button>
@@ -143,10 +142,10 @@
             </div>
           </form>
           <form class="mail-test" id="mail-test" novalidate>
-            <div class="field"><label for="mail-test-to">Envoyer un e-mail d'essai à</label><input id="mail-test-to" type="email" placeholder="votre.adresse@gmail.com" /></div>
+            <input id="mail-test-to" type="email" placeholder="Adresse pour un e-mail d'essai" aria-label="Adresse pour un e-mail d'essai" />
             <button class="btn btn--small btn--line" type="submit">Envoyer l'essai</button>
           </form>
-          <ul class="announce__log" id="mail-log"></ul>
+          <ul class="mail-log" id="mail-log"></ul>
         </details>
       </div>
 
@@ -155,7 +154,7 @@
           <h3>Annonce aux invités</h3>
           <span class="hint" id="an-count"></span>
         </div>
-        <p class="hint">Une notification gratuite sur les téléphones qui ont activé « Recevoir les annonces » (et le texte s'ajoute à l'événement des agendas abonnés). Ex. : « Le bus part à 23h30 », « Le quiz commence dans 5 minutes ! ».</p>
+        <p class="hint">Notification sur les téléphones abonnés aux annonces (et dans les agendas abonnés).</p>
         <div class="grid-announce">
           <div class="field"><label for="an-title">Titre</label><input id="an-title" maxlength="60" placeholder="Vol MC 5060" /></div>
           <div class="field"><label for="an-url">Ouvre la page</label>

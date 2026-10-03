@@ -33,6 +33,10 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "GET" && q.get("pass")) {
     await L.rateLimit(req, "pass", 300, 600);
     const token = L.str(q.get("pass"), 40);
+    // carte de démonstration (lien des e-mails d'essai)
+    if (token === "demo") {
+      return L.send(res, 200, passView({ id: "demo00", presence: "oui", nom: "Passager test", prenom: "Passager", passagers: 1, creneau: "journee", repas: "Standard" }));
+    }
     const all = Object.values(await L.hgetallJson(L.K.rsvps));
     const e = token.length >= 12 && all.find((r) => r.passToken === token);
     if (!e) throw new L.HttpError(404, "Carte introuvable : le lien est peut-être incomplet.");
