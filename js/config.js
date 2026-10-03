@@ -47,7 +47,7 @@ window.EVENT = {
   programme: [
     { heure: "12h30", titre: "Enregistrement", texte: "Accueil des passagers et remise des cartes d'embarquement." },
     { heure: "13h00", titre: "Embarquement", texte: "Apéritif et champagne au salon première classe." },
-    { heure: "14h00", titre: "Service à bord", texte: "Déjeuner servi à table. Le commandant vous souhaite bon appétit." },
+    { heure: "14h00", titre: "Service à bord", texte: "Un buffet qui réveillera vos papilles. On y a mis tout notre cœur… Bon appétit !" },
     { heure: "16h30", titre: "Altitude de croisière", texte: "Discours, surprises et gâteau d'anniversaire." },
     { heure: "17h30", titre: "Zone de turbulences", texte: "La piste de danse est ouverte. Ceintures détachées." },
     { heure: "Tard", titre: "Atterrissage", texte: "Dernier verre et retour en douceur." },
