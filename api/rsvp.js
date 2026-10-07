@@ -6,6 +6,7 @@
  *   DELETE (équipage) ?id=…
  *   GET    ?pass=<jeton>   (public)   → carte d'embarquement d'une réponse (lien personnel)
  *   GET    ?view=notify    (équipage) → envoi automatique par e-mail configuré ?
+ *   GET    ?view=report    (en-tête Authorization: Bearer <REPORT_TOKEN>) → point des réponses en lecture seule, sans coordonnées
  *   POST   { action: "send", ids } (équipage) → envoie les cartes par e-mail
  *   POST   { action: "mail-config", provider, key, from, fromName } (admin) → réglages d'envoi
  *   POST   { action: "mail-test", to } (admin) → e-mail d'essai ; { action: "mail-off" } → efface les réglages
@@ -28,8 +29,35 @@ function passView(e) {
   return { presence: e.presence, nom: e.nom, prenom: e.prenom || String(e.nom || "").split(" ")[0], passagers: e.passagers, people, repas: e.repas, ref: String(e.id).slice(0, 6).toUpperCase() };
 }
 
+// Point des réponses en lecture seule, sans coordonnées (ni e-mail, ni téléphone, ni photo, ni lien de carte)
+function report(all) {
+  const t = { reponses: all.length, oui: 0, non: 0, passagers: 0, midi: 0, soir: 0, journee: 0, repas: {} };
+  const list = all.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))).map(function (e) {
+    const yes = e.presence === "oui";
+    if (yes) {
+      t.oui++; t.passagers += e.passagers || 1;
+      const fares = [e.creneau || "journee"].concat(e.creneauxAcc || []);
+      for (let i = 0; i < (e.passagers || 1); i++) { const f = fares[i] || fares[0]; if (t[f] !== undefined) t[f]++; }
+      if (e.repas) t.repas[e.repas] = (t.repas[e.repas] || 0) + 1;
+    } else t.non++;
+    return { nom: e.nom, presence: e.presence, passagers: yes ? e.passagers || 1 : 0, creneau: e.creneau || null, creneauxAcc: e.creneauxAcc || [],
+      accompagnants: e.accompagnants || [], repas: e.repas || null, allergies: e.allergies || "", carteEnvoyee: !!e.emailedAt, le: e.createdAt };
+  });
+  // déjeuner = midi + journée, dîner = soir + journée
+  return { totaux: Object.assign(t, { auDejeuner: t.midi + t.journee, auDiner: t.soir + t.journee }), reponses: list, genereLe: new Date().toISOString() };
+}
+
 module.exports = L.handler(async (req, res) => {
   const q = L.query(req);
+  // Lecture seule avec la clé REPORT_TOKEN (variable d'environnement Vercel), demandée par l'organisateur
+  if (req.method === "GET" && q.get("view") === "report") {
+    await L.rateLimit(req, "report", 60, 600);
+    const key = process.env.REPORT_TOKEN || "";
+    const given = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const ok = key.length >= 24 && given.length === key.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(key));
+    if (!ok) throw new L.HttpError(401, "Clé de lecture absente ou invalide.");
+    return L.send(res, 200, report(Object.values(await L.hgetallJson(L.K.rsvps))));
+  }
   if (req.method === "GET" && q.get("pass")) {
     await L.rateLimit(req, "pass", 300, 600);
     const token = L.str(q.get("pass"), 40);
