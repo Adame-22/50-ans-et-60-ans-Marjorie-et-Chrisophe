@@ -71,6 +71,7 @@ module.exports = L.handler(async (req, res) => {
       if (name) user.name = name;
     }
     if (body.role !== undefined && ROLES.includes(body.role) && body.role !== user.role) {
+      if (L.HOSTS.includes(user.username)) throw new L.HttpError(400, "Marjorie et Christophe restent en « Fêté·e » jusqu'à la fête, pour garder les surprises.");
       if (body.role === "superadmin" && me.role !== "superadmin") throw new L.HttpError(403, "Seul un super admin peut nommer un super admin.");
       if (L.isAdmin(user) && !L.isAdmin({ role: body.role })) await assertAnotherAdmin(user.username);
       user.role = body.role;

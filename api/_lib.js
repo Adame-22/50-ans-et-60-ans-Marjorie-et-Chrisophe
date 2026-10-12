@@ -115,6 +115,7 @@ const EXTRA_ACCOUNTS = [
   { username: "anthony", name: "Anthony", role: "admin", hash: "fcefbe8db4380726ec28a0b702cceba0:ca47af3e8803dc4e88881aca09ca5d1d71fd749a5dc29b875984c5750baf3f7957e366458e87783bcff19556364d644c59418c65c919f6b03345f658f611ae3d" },
 ];
 const SUPERADMINS = ["adame"]; // au-dessus de tous les comptes ; seul un super admin peut le modifier
+const HOSTS = ["marjorie", "christophe"]; // les fêtés : rôle « hote », sans les surprises (forcé à chaque démarrage)
 
 // « hote » : Marjorie et Christophe. Accès commandant, sans rien de ce qui doit rester une surprise
 // (messages des invités, Boîte noire, quiz, sauvegarde) ni la gestion des comptes.
@@ -134,6 +135,11 @@ async function migrateAccounts() {
     await redis(["HSETNX", K.users, u.username, JSON.stringify({
       username: u.username, name: u.name, role: u.role, hash: u.hash, mustChange: true, createdAt: now, createdBy: "adame",
     })]);
+  }
+  for (const name of HOSTS) {
+    const raw = await redis(["HGET", K.users, name]);
+    const user = raw && JSON.parse(raw);
+    if (user && user.role !== "hote") { user.role = "hote"; await redis(["HSET", K.users, name, JSON.stringify(user)]); }
   }
   for (const name of SUPERADMINS) {
     const raw = await redis(["HGET", K.users, name]);
@@ -290,6 +296,6 @@ function str(v, max) {
 
 module.exports = {
   K, HttpError, redis, hgetallJson, hashPassword, verifyPassword, tempCode,
-  ensureSeed, getUser, isAdmin, isHost, noSpoil, boiteSealed, readSession, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
+  ensureSeed, getUser, isAdmin, isHost, HOSTS, noSpoil, boiteSealed, readSession, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
   readBody, send, handler, query, str, clientIp, rateLimit,
 };
