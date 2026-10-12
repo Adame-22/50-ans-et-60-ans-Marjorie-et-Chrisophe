@@ -21,6 +21,7 @@ async function hash(key) {
 
 module.exports = L.handler(async (req, res) => {
   const me = await L.requireUser(req);
+  L.noSpoil(me); // la sauvegarde contient les messages et la Boîte noire
   if (req.method !== "GET") return L.send(res, 405, { error: "Méthode non autorisée." });
 
   const plan = await T.getPlan();

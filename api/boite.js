@@ -1,6 +1,8 @@
 /*
  * /api/boite — la « Boîte noire » : messages et photos des invités
- *   GET                 (public)   → messages, du plus récent au plus ancien (cache 3 s)
+ *   GET                 (public)   → messages, du plus récent au plus ancien (cache 3 s).
+ *                                    Avant le jour de la fête, la boîte est « scellée » : seul le nombre de messages
+ *                                    est public (pour ne rien gâcher à Marjorie et Christophe) ; l'équipage connecté voit tout.
  *   GET ?photo=<id>     (public)   → l'image (mise en cache longue durée)
  *   POST { name, message, photo }  → photo = data URL JPEG/PNG/WebP déjà réduite côté téléphone
  *   GET ?view=admin     (équipage) → tout, avec la place occupée par les photos
@@ -55,23 +57,29 @@ module.exports = L.handler(async (req, res) => {
   }
 
   if (req.method === "GET" && params.get("view") === "admin") {
-    await L.requireUser(req);
+    L.noSpoil(await L.requireUser(req));
     const entries = Object.values(await L.hgetallJson(K.list)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     const used = entries.reduce((n, e) => n + (e.photo ? e.size || 400000 : 0), 0);
     return L.send(res, 200, { entries, used, budget: PHOTO_BUDGET });
   }
 
   if (req.method === "GET") {
-    const entries = Object.values(await L.hgetallJson(K.list))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .slice(0, 400);
-    return L.send(res, 200, { entries }, { "Cache-Control": "public, max-age=0, s-maxage=3, stale-while-revalidate=5" });
+    const all = Object.values(await L.hgetallJson(K.list));
+    if (L.boiteSealed()) {
+      // scellée : l'équipage connecté (pas les fêtés) voit quand même tout, par exemple pour tester l'écran géant
+      const me = await L.readSession(req).catch(() => null);
+      if (!me || me.mustChange || L.isHost(me)) {
+        return L.send(res, 200, { entries: [], sealed: true, count: all.length, opensOn: process.env.MC_EVENT_DAY || "2026-11-07" }, { "Cache-Control": "private, no-store" });
+      }
+    }
+    const entries = all.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 400);
+    return L.send(res, 200, { entries }, { "Cache-Control": L.boiteSealed() ? "private, no-store" : "public, max-age=0, s-maxage=3, stale-while-revalidate=5" });
   }
 
   if (req.method === "POST") {
     const b = await L.readBody(req);
     if (b.action === "purge") {
-      await L.requireUser(req);
+      L.noSpoil(await L.requireUser(req));
       const ids = (Array.isArray(b.ids) ? b.ids : []).slice(0, 1000).map((x) => L.str(x, 64)).filter(Boolean);
       for (const id of ids) await removePhoto(id, !!b.photoOnly);
       return L.send(res, 200, { ok: true, count: ids.length });
@@ -98,7 +106,7 @@ module.exports = L.handler(async (req, res) => {
   }
 
   if (req.method === "DELETE") {
-    await L.requireUser(req);
+    L.noSpoil(await L.requireUser(req));
     const id = L.str(params.get("id"), 64);
     await removePhoto(id, params.get("photo") === "1");
     return L.send(res, 200, { ok: true });

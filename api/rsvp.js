@@ -29,6 +29,9 @@ function passView(e) {
   return { presence: e.presence, nom: e.nom, prenom: e.prenom || String(e.nom || "").split(" ")[0], passagers: e.passagers, people, repas: e.repas, ref: String(e.id).slice(0, 6).toUpperCase() };
 }
 
+// Ce que les invités écrivent pour Marjorie et Christophe reste une surprise pour eux
+function hideSurprise(e) { const c = Object.assign({}, e); delete c.message; return c; }
+
 // Point des réponses en lecture seule, sans coordonnées (ni e-mail, ni téléphone, ni photo, ni lien de carte)
 function report(all) {
   const t = { reponses: all.length, oui: 0, non: 0, passagers: 0, midi: 0, soir: 0, journee: 0, repas: {} };
@@ -154,8 +157,9 @@ module.exports = L.handler(async (req, res) => {
     for (const e of Object.values(map)) {
       if (!e.passToken) { N.ensureToken(e); await L.redis(["HSET", L.K.rsvps, e.id, JSON.stringify(e)]); }
     }
-    const rsvps = Object.values(await L.hgetallJson(L.K.rsvps)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    return L.send(res, 200, { rsvps });
+    let rsvps = Object.values(await L.hgetallJson(L.K.rsvps)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    if (L.isHost(me)) rsvps = rsvps.map(hideSurprise); // pas les mots laissés aux fêtés
+    return L.send(res, 200, { rsvps, surprisesHidden: L.isHost(me) });
   }
 
   if (req.method === "PATCH") {
@@ -165,7 +169,7 @@ module.exports = L.handler(async (req, res) => {
     const entry = JSON.parse(raw);
     entry.arrivedAt = b.arrived ? new Date().toISOString() : null;
     await L.redis(["HSET", L.K.rsvps, entry.id, JSON.stringify(entry)]);
-    return L.send(res, 200, { rsvp: entry });
+    return L.send(res, 200, { rsvp: L.isHost(me) ? hideSurprise(entry) : entry });
   }
 
   if (req.method === "DELETE") {

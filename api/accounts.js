@@ -7,7 +7,7 @@
  */
 const L = require("./_lib");
 
-const ROLES = ["superadmin", "admin", "equipage"];
+const ROLES = ["superadmin", "admin", "hote", "equipage"];
 
 // Un super admin ne peut être modifié, réinitialisé ou supprimé que par un super admin
 function guard(me, user) {
@@ -19,12 +19,14 @@ async function allUsers() {
 }
 
 async function assertAnotherAdmin(exceptUsername) {
-  const admins = (await allUsers()).filter((u) => L.isAdmin(u) && u.username !== exceptUsername);
+  const admins = (await allUsers()).filter((u) => L.isAdmin(u) && !L.isHost(u) && u.username !== exceptUsername);
   if (!admins.length) throw new L.HttpError(400, "Il doit rester au moins un administrateur.");
 }
 
 module.exports = L.handler(async (req, res) => {
   const me = await L.requireUser(req, { admin: true });
+  // les fêtés ne gèrent pas les comptes (ils ne peuvent donc pas lever leur propre protection anti-surprise)
+  if (L.isHost(me)) throw new L.HttpError(403, "Les comptes sont gérés par l'équipage.");
 
   if (req.method === "GET") {
     const users = (await allUsers()).map(L.publicUser).sort((a, b) => a.name.localeCompare(b.name, "fr"));

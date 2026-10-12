@@ -511,3 +511,6 @@ body.admin { font-variant-numeric: lining-nums; background: #f6f1ea; }
 .row__seats { font-family: var(--sans); }
 .share__url, .share-full__url, .code-box dd, .bk-codes code { font-family: var(--mono); }
 .admin h1, .admin h2, .admin h3, .admin h4, .admin b, .admin strong, .admin [class*="name"], .admin [class*="title"] { font-variant-numeric: lining-nums; }
+
+/* Compte « fêté·e » : pas de colonne des messages laissés par les invités */
+.is-host .msg { display: none; }

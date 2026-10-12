@@ -88,6 +88,14 @@
       wall.querySelectorAll("[data-id]").forEach(function (el) { known[el.getAttribute("data-id")] = true; });
       var fresh = (d.entries || []).filter(function (e) { return !known[e.id]; });
       var title = document.getElementById("bn-title");
+      // Boîte scellée jusqu'au jour J : on n'affiche que le compteur, pour garder la surprise
+      if (d.sealed) {
+        var n = d.count || 0;
+        if (title) { title.hidden = false; title.textContent = n + " message" + (n > 1 ? "s" : "") + " à bord"; }
+        wall.innerHTML = '<div class="sealed"><span class="sealed__lock" aria-hidden="true">🔒</span><p><b>La boîte noire est scellée.</b></p>' +
+          "<p>Les messages et les photos restent secrets jusqu'à l'atterrissage, le 7 novembre : ils seront révélés à Marjorie et Christophe sur l'écran géant.</p></div>";
+        return;
+      }
       if (title) { title.hidden = !(d.entries || []).length; title.textContent = (d.entries || []).length + " message" + ((d.entries || []).length > 1 ? "s" : "") + " enregistré" + ((d.entries || []).length > 1 ? "s" : ""); }
       if (!wall.children.length) wall.innerHTML = (d.entries || []).map(item).join("");
       else if (fresh.length) wall.insertAdjacentHTML("afterbegin", fresh.map(item).join(""));

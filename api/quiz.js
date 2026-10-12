@@ -111,7 +111,7 @@ module.exports = L.handler(async (req, res) => {
     const cur = questions[state.index];
 
     if (view === "admin") {
-      await L.requireUser(req);
+      L.noSpoil(await L.requireUser(req)); // questions et réponses : surprise pour les fêtés
       const answered = state.round ? await L.redis(["HLEN", K.answers(state.round)]) : 0;
       const players = await L.redis(["HLEN", K.players]);
       return L.send(res, 200, { state, questions, answered, players, serverNow: Date.now() });
@@ -190,6 +190,7 @@ module.exports = L.handler(async (req, res) => {
 
   /* ───────── Animateur ───────── */
   const me = await L.requireUser(req);
+  L.noSpoil(me);
 
   if (req.method === "PUT") {
     const questions = sanitizeQuestions(body.questions);

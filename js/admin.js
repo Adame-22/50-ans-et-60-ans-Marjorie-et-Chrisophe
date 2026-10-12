@@ -2,7 +2,7 @@
   "use strict";
 
   var REPAS = ["Standard", "Végétarien", "Végétalien", "Sans gluten", "Sans porc", "Enfant", "Autre"];
-  var ROLE_LABEL = { superadmin: "Super admin", admin: "Commandant", equipage: "Équipage" };
+  var ROLE_LABEL = { superadmin: "Super admin", admin: "Commandant", hote: "Fêté·e (sans surprises)", equipage: "Équipage" };
   function isAdminRole(r) { return r === "admin" || r === "superadmin"; }
 
   var state = { me: null, rsvps: [], plan: null, users: [] };
@@ -104,6 +104,10 @@
     $all("[data-me=roleLabel]").forEach(function (el) { el.textContent = ROLE_LABEL[user.role] || user.role; });
     $all("[data-admin-only]").forEach(function (el) { el.hidden = !isAdminRole(user.role); });
     $all("[data-super-only]").forEach(function (el) { el.hidden = user.role !== "superadmin"; });
+    // Marjorie et Christophe : ni Boîte noire, ni quiz, ni messages des invités, ni sauvegarde
+    var host = user.role === "hote";
+    document.body.classList.toggle("is-host", host);
+    $all("[data-nospoil]").forEach(function (el) { el.hidden = host; });
     if (user.role === "superadmin" && $("#bk-left")) $("#bk-left").textContent = user.backupLeft ? user.backupLeft + " code(s) de secours encore valable(s)." : "Aucun code de secours pour l'instant.";
   }
 

@@ -582,3 +582,9 @@ body.live::before {
 }
 .wall-item { font-variant-numeric: lining-nums; }
 @media (max-width: 560px) { .card__airmail span { display: none; } }
+
+/* Boîte noire scellée avant le jour J */
+.sealed { column-span: all; text-align: center; padding: 1.6rem 1.2rem; border-radius: 18px; border: 1.5px dashed rgba(242, 107, 29, .5); background: rgba(26, 13, 5, .35); color: rgba(255, 251, 254, .78); }
+.sealed__lock { font-size: 2rem; display: block; margin-bottom: .4rem; }
+.sealed p { margin: .2rem 0; line-height: 1.55; }
+.sealed b { color: #ff9a5c; font-size: 1.05rem; }

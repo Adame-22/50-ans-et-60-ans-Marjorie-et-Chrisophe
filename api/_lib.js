@@ -116,7 +116,15 @@ const EXTRA_ACCOUNTS = [
 ];
 const SUPERADMINS = ["adame"]; // au-dessus de tous les comptes ; seul un super admin peut le modifier
 
-function isAdmin(user) { return user && (user.role === "admin" || user.role === "superadmin"); }
+// « hote » : Marjorie et Christophe. Accès commandant, sans rien de ce qui doit rester une surprise
+// (messages des invités, Boîte noire, quiz, sauvegarde) ni la gestion des comptes.
+function isHost(user) { return !!user && user.role === "hote"; }
+function isAdmin(user) { return !!user && (user.role === "admin" || user.role === "superadmin" || user.role === "hote"); }
+// Refuse l'accès aux surprises pour les fêtés
+function noSpoil(user) { if (isHost(user)) throw new HttpError(403, "Surprise ! Cette partie est réservée à l'équipage."); }
+// La Boîte noire publique est scellée jusqu'au jour de la fête (heure de Paris)
+const EVENT_DAY = process.env.MC_EVENT_DAY || "2026-11-07";
+function boiteSealed(now) { return (now || Date.now()) < Date.parse(EVENT_DAY + "T00:00:00+01:00"); }
 
 let migrated = false;
 async function migrateAccounts() {
@@ -282,6 +290,6 @@ function str(v, max) {
 
 module.exports = {
   K, HttpError, redis, hgetallJson, hashPassword, verifyPassword, tempCode,
-  ensureSeed, getUser, isAdmin, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
+  ensureSeed, getUser, isAdmin, isHost, noSpoil, boiteSealed, readSession, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
   readBody, send, handler, query, str, clientIp, rateLimit,
 };

@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261009" />
-  <link rel="stylesheet" href="css/style.css?v=20261009" />
-  <link rel="stylesheet" href="css/admin.css?v=20261009" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261012" />
+  <link rel="stylesheet" href="css/style.css?v=20261012" />
+  <link rel="stylesheet" href="css/admin.css?v=20261012" />
 </head>
 <body class="admin">
 
@@ -77,8 +77,8 @@
       <button role="tab" data-tab="cabine">Plan de cabine</button>
       <button role="tab" data-tab="constellation">Constellation</button>
       <button role="tab" data-tab="equipes">Équipes</button>
-      <button role="tab" data-tab="quiz">Quiz</button>
-      <button role="tab" data-tab="boite">Boîte noire</button>
+      <button role="tab" data-tab="quiz" data-nospoil>Quiz</button>
+      <button role="tab" data-tab="boite" data-nospoil>Boîte noire</button>
       <button role="tab" data-tab="radio">Radio</button>
       <button role="tab" data-tab="comptes" data-admin-only>Comptes</button>
       <button role="tab" data-tab="moi">Mon compte</button>
@@ -113,7 +113,7 @@
         <span class="toolbar__grow"></span>
         <button class="btn btn--small btn--line" id="m-add">+ Ajouter un passager</button>
         <button class="btn btn--small btn--gold" id="m-export">Exporter (Excel)</button>
-        <a class="btn btn--small btn--line" id="m-backup" href="/api/backup" download title="Réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe) dans un fichier">Sauvegarde complète</a>
+        <a class="btn btn--small btn--line" id="m-backup" data-nospoil href="/api/backup" download title="Réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe) dans un fichier">Sauvegarde complète</a>
       </div>
 
       <div class="ops">
@@ -190,7 +190,7 @@
       <div class="card table-wrap">
         <table class="table" id="m-table">
           <thead>
-            <tr><th>Arrivé</th><th>Passager</th><th>Statut</th><th>Billet</th><th>Nb</th><th>Repas spécial</th><th>Allergies</th><th>Message</th><th>Reçu le</th><th></th></tr>
+            <tr><th>Arrivé</th><th>Passager</th><th>Statut</th><th>Billet</th><th>Nb</th><th>Repas spécial</th><th>Allergies</th><th class="msg">Message</th><th>Reçu le</th><th></th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -366,6 +366,7 @@
             <select id="acc-role" name="role">
               <option value="equipage">Équipage : manifeste et plan</option>
               <option value="admin">Commandant : tout, y compris les comptes</option>
+              <option value="hote">Fêté·e : Marjorie ou Christophe, tout sauf les surprises</option>
             </select></div>
           <div class="field field--end"><button class="btn btn--small btn--gold btn--block" type="submit">Créer le compte</button></div>
         </div>
@@ -456,8 +457,8 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261009"></script>
+  <script src="js/graph.js?v=20261012"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261009"></script>
+  <script src="js/admin.js?v=20261012"></script>
 </body>
 </html>
