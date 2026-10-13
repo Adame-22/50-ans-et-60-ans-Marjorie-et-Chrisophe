@@ -201,6 +201,8 @@
   function loadRsvps() {
     return api("/api/rsvp").then(function (d) {
       state.rsvps = d.rsvps;
+      var dd = $("#m-dedupe");
+      if (dd) { dd.hidden = !d.doublons; dd.textContent = "Fusionner " + d.doublons + " doublon" + (d.doublons > 1 ? "s" : ""); }
       renderRsvps();
     }).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
   }
@@ -363,6 +365,7 @@
       return "<tr>" +
         "<td>" + (yesR ? '<button class="checkin-btn' + (r.arrivedAt ? " is-in" : "") + '" data-checkin="' + esc(r.id) + '" title="' + (r.arrivedAt ? "Arrivé à " + fmtDate(r.arrivedAt) : "Pointer l'arrivée") + '" aria-label="Pointer l\'arrivée de ' + esc(r.nom) + '">✓</button>' : "") + "</td>" +
         "<td><b>" + esc(r.nom) + "</b>" + (r.source === "sur place" ? ' <span class="tag tag--gold" title="Ajouté·e depuis la page À table !, le jour J">sur place</span>' : "") +
+        (r.updates ? ' <span class="tag" title="A rempli le formulaire ' + (r.updates + 1) + " fois ; dernière réponse le " + fmtDate(r.updatedAt) + '">modifiée</span>' : "") +
         companionsHtml(r) +
         (r.email ? "<small>" + esc(r.email) + (r.emailedAt ? " ✓" : "") + "</small>" : "") +
         (r.telephone ? "<small>" + esc(r.telephone) + (r.smsAt ? " ✓" : "") + "</small>" : "") + "</td>" +
@@ -430,6 +433,14 @@
     v = String(v == null ? "" : v);
     return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
+
+  // Inscriptions en double (même personne qui a rempli le formulaire plusieurs fois) : la plus récente l'emporte
+  $("#m-dedupe").addEventListener("click", function () {
+    if (!confirm("Fusionner les inscriptions en double ? Pour chaque personne, on garde une seule réponse : la plus récente, avec sa place à table et ses messages.")) return;
+    api("/api/rsvp", { method: "POST", body: { action: "dedupe" } })
+      .then(function (d) { toast(d.merged + " doublon" + (d.merged > 1 ? "s fusionnés" : " fusionné") + "."); loadRsvps(); })
+      .catch(function (err) { toast(err.message, true); });
+  });
 
   $("#m-export").addEventListener("click", function () {
     api("/api/seating").catch(function () { return state.plan || { tables: [], assign: {} }; }).then(exportCsv);

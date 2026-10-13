@@ -16,7 +16,7 @@ window.EVENT = {
   ville: "Draveil",
   porte: "A50", // la « porte d'embarquement » affichée sur le tableau
   dressCode: "Simple et chic",
-  rsvpAvant: "15 octobre 2026",
+  rsvpAvant: "25 octobre 2026",
   parking: "Parking disponible sur place.",
 
   // Heures de vol des passeports : avec les dates de naissance (AAAA-MM-JJ),

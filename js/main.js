@@ -483,7 +483,11 @@
         ". Rendez-vous porte " + (CFG.porte || "A50") + "."
       : "Vous nous manquerez à bord. Votre message a bien été transmis à l'équipage.";
     var status = document.getElementById("done-status"), sum = document.getElementById("done-sum");
-    if (status) status.textContent = yes ? "Enregistrement confirmé" : "Réponse bien reçue";
+    if (status) status.textContent = res.updated ? "Réponse mise à jour" : yes ? "Enregistrement confirmé" : "Réponse bien reçue";
+    // déjà inscrit·e : on le dit, sa nouvelle réponse remplace l'ancienne
+    if (res.updated) document.getElementById("done-text").textContent = (yes
+      ? "Nous vous avions déjà à bord : votre réponse est mise à jour pour " + data.passagers + " passager" + (data.passagers > 1 ? "s" : "") + " : " + fareSummary(data) + "."
+      : "Nous avions déjà votre réponse : elle est mise à jour, vous restez au sol.") + " Pas besoin de vous réinscrire, c'est bien noté.";
     if (sum) {
       sum.hidden = !yes;
       document.getElementById("done-sum-pax").textContent = data.passagers;

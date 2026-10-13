@@ -6,6 +6,8 @@
  *   DELETE (équipage) ?id=…
  *   GET    ?pass=<jeton>   (public)   → carte d'embarquement d'une réponse (lien personnel)
  *   GET    ?view=notify    (équipage) → envoi automatique par e-mail configuré ?
+ *   POST   { action: "dedupe" } (équipage) → fusionne les inscriptions en double déjà enregistrées
+ *   Une personne qui remplit le formulaire une deuxième fois met à jour sa réponse (pas de doublon).
  *   GET    ?view=report    (en-tête Authorization: Bearer <REPORT_TOKEN>) → point des réponses en lecture seule, sans coordonnées
  *   POST   { action: "send", ids } (équipage) → envoie les cartes par e-mail
  *   POST   { action: "mail-config", provider, key, from, fromName } (admin) → réglages d'envoi
@@ -27,6 +29,54 @@ function passView(e) {
     people.push({ nom: names[i] || "Passager " + (i + 1), creneau: fares[i] || fares[0] });
   }
   return { presence: e.presence, nom: e.nom, prenom: e.prenom || String(e.nom || "").split(" ")[0], passagers: e.passagers, people, repas: e.repas, ref: String(e.id).slice(0, 6).toUpperCase() };
+}
+
+/* ───────── Doublons ─────────
+   Même personne = même prénom + nom (sans accents, majuscules ni tirets),
+   ou même prénom avec le même e-mail ou le même portable (un couple qui partage un e-mail reste distinct). */
+function normName(s) { return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]+/g, " ").trim(); }
+function firstName(e) { return normName(e.prenom || String(e.nom || "").split(" ")[0]).split(" ")[0]; }
+function tel9(t) { const d = String(t || "").replace(/\D/g, ""); return d.length >= 9 ? d.slice(-9) : ""; }
+function samePerson(a, b) {
+  const na = normName(a.nom);
+  if (na && na === normName(b.nom)) return true;
+  const fa = firstName(a);
+  if (!fa || fa !== firstName(b)) return false;
+  if (a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase()) return true;
+  return !!tel9(a.telephone) && tel9(a.telephone) === tel9(b.telephone);
+}
+// La réponse la plus récente l'emporte ; on garde l'identité de la première (lien de carte, place à table, pointage)
+function mergeInto(old, neu) {
+  const m = Object.assign({}, old, neu, { id: old.id, passToken: old.passToken || neu.passToken, createdAt: old.createdAt });
+  for (const k of ["email", "telephone", "allergies", "arrivedAt", "emailedAt", "source"]) if (!neu[k] && old[k]) m[k] = old[k];
+  // les deux mots pour Marjorie et Christophe sont gardés s'ils diffèrent
+  if (old.message && neu.message && old.message !== neu.message) m.message = old.message + "\n\n" + neu.message;
+  else m.message = neu.message || old.message || "";
+  m.updatedAt = new Date().toISOString();
+  m.updates = (old.updates || 0) + 1;
+  return m;
+}
+// Regroupe les inscriptions d'une même personne, de la plus ancienne à la plus récente
+function groupDuplicates(all) {
+  const groups = [];
+  all.slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))).forEach((e) => {
+    const g = groups.find((grp) => grp.some((x) => samePerson(x, e)));
+    if (g) g.push(e); else groups.push([e]);
+  });
+  return groups;
+}
+// Fusionne un groupe dans sa première inscription, supprime les autres et garde la place à table
+async function mergeGroup(group, extra) {
+  const items = extra ? group.concat([extra]) : group;
+  const kept = items.slice(1).reduce(mergeInto, items[0]);
+  const assign = group.length > 1 ? await T.getAssignFull() : {};
+  for (const d of group.slice(1)) {
+    if (!assign[kept.id] && assign[d.id]) { await T.setAssign(kept.id, assign[d.id].t, "fusion"); assign[kept.id] = assign[d.id]; }
+    await T.setAssign(d.id, null);
+    await L.redis(["HDEL", L.K.rsvps, d.id]);
+  }
+  await L.redis(["HSET", L.K.rsvps, kept.id, JSON.stringify(kept)]);
+  return kept;
 }
 
 // Ce que les invités écrivent pour Marjorie et Christophe reste une surprise pour eux
@@ -83,6 +133,14 @@ module.exports = L.handler(async (req, res) => {
       if (b.action === "mail-test") await N.sendTest(req, L.str(b.to, 120));
       return L.send(res, 200, Object.assign(await N.adminView(), { site: N.siteUrl(req) }));
     }
+    if (b.action === "dedupe") {
+      await L.requireUser(req);
+      let merged = 0;
+      for (const g of groupDuplicates(Object.values(await L.hgetallJson(L.K.rsvps)))) {
+        if (g.length > 1) { await mergeGroup(g); merged += g.length - 1; }
+      }
+      return L.send(res, 200, { ok: true, merged });
+    }
     if (b.action === "send") {
       await L.requireUser(req);
       const cfg = await N.getConfig();
@@ -134,14 +192,22 @@ module.exports = L.handler(async (req, res) => {
       message: L.str(b.message, 1500),
       createdAt: new Date().toISOString(),
     };
-    await L.redis(["HSET", L.K.rsvps, entry.id, JSON.stringify(entry)]);
+    // déjà inscrit·e ? on met à jour sa réponse plutôt que d'en créer une deuxième
+    const same = groupDuplicates(Object.values(await L.hgetallJson(L.K.rsvps)).filter((e) => samePerson(e, entry)))
+      .reduce((acc, g) => acc.concat(g), [])
+      .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const updated = same.length > 0;
+    let saved = entry;
+    if (updated) saved = await mergeGroup(same, entry);
+    else await L.redis(["HSET", L.K.rsvps, entry.id, JSON.stringify(entry)]);
+    Object.assign(entry, saved);
     // carte d'embarquement envoyée tout de suite par e-mail, si l'envoi est configuré
     let emailed = false;
     if (entry.email && (await N.status()).email) {
       try { await N.sendEmail(req, entry); entry.emailedAt = new Date().toISOString(); emailed = true; await L.redis(["HSET", L.K.rsvps, entry.id, JSON.stringify(entry)]); }
       catch (e) { console.error("e-mail non envoyé", e.message); }
     }
-    return L.send(res, 201, { ok: true, id: entry.id, pass: entry.passToken, emailed });
+    return L.send(res, updated ? 200 : 201, { ok: true, id: entry.id, pass: entry.passToken, emailed, updated });
   }
 
   const me = await L.requireUser(req);
@@ -159,7 +225,8 @@ module.exports = L.handler(async (req, res) => {
     }
     let rsvps = Object.values(await L.hgetallJson(L.K.rsvps)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     if (L.isHost(me)) rsvps = rsvps.map(hideSurprise); // pas les mots laissés aux fêtés
-    return L.send(res, 200, { rsvps, surprisesHidden: L.isHost(me) });
+    const doublons = groupDuplicates(rsvps).reduce((n, g) => n + g.length - 1, 0);
+    return L.send(res, 200, { rsvps, surprisesHidden: L.isHost(me), doublons });
   }
 
   if (req.method === "PATCH") {

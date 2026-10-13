@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261012" />
-  <link rel="stylesheet" href="css/style.css?v=20261012" />
-  <link rel="stylesheet" href="css/admin.css?v=20261012" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261013" />
+  <link rel="stylesheet" href="css/style.css?v=20261013" />
+  <link rel="stylesheet" href="css/admin.css?v=20261013" />
 </head>
 <body class="admin">
 
@@ -111,6 +111,7 @@
           <option value="arrives">Arrivés</option>
         </select>
         <span class="toolbar__grow"></span>
+        <button class="btn btn--small btn--line btn--danger" id="m-dedupe" hidden>Fusionner les doublons</button>
         <button class="btn btn--small btn--line" id="m-add">+ Ajouter un passager</button>
         <button class="btn btn--small btn--gold" id="m-export">Exporter (Excel)</button>
         <a class="btn btn--small btn--line" id="m-backup" data-nospoil href="/api/backup" download title="Réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe) dans un fichier">Sauvegarde complète</a>
@@ -457,8 +458,8 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261012"></script>
+  <script src="js/graph.js?v=20261013"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261012"></script>
+  <script src="js/admin.js?v=20261013"></script>
 </body>
 </html>
