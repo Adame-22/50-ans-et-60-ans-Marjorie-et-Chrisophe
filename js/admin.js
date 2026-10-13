@@ -376,7 +376,7 @@
         "<td>" + esc(r.allergies || "") + "</td>" +
         '<td class="msg">' + esc(r.message || "") + "</td>" +
         "<td>" + fmtDate(r.createdAt) + "</td>" +
-        '<td class="actions">' + sendLinks(r) + '<button class="btn btn--small btn--line btn--danger" data-del="' + esc(r.id) + '">Supprimer</button></td>' +
+        '<td class="actions">' + sendLinks(r) + '<button class="btn btn--small btn--line" data-edit="' + esc(r.id) + '">Modifier</button><button class="btn btn--small btn--line btn--danger" data-del="' + esc(r.id) + '">Supprimer</button></td>' +
         "</tr>";
     }).join("");
     $("#m-empty").hidden = rows.length > 0;
@@ -408,23 +408,52 @@
   });
 
   $("#a-repas").innerHTML = REPAS.map(function (m) { return "<option>" + m + "</option>"; }).join("");
-  $("#m-add").addEventListener("click", function () {
+  // Le même formulaire sert à ajouter une réponse et à corriger une réponse existante
+  function paxForm(r) {
     var f = $("#add-pax");
-    f.hidden = !f.hidden;
-    if (!f.hidden) f.nom.focus();
+    f.reset();
+    f.id.value = r ? r.id : "";
+    $("#a-title").textContent = r ? "Modifier la réponse de " + r.nom : "Ajouter une réponse reçue hors site";
+    $("#a-submit").textContent = r ? "Enregistrer" : "Ajouter";
+    if (r) {
+      f.nom.value = r.nom || "";
+      f.presence.value = r.presence === "oui" ? "oui" : "non";
+      var nb = String(Math.max(1, r.passagers || 1));
+      if (![].some.call(f.passagers.options, function (o) { return o.value === nb; })) f.passagers.insertAdjacentHTML("beforeend", "<option>" + nb + "</option>");
+      f.passagers.value = nb;
+      f.repas.value = r.repas || "Standard";
+      f.allergies.value = r.allergies || "";
+      f.creneau.value = r.creneau || "journee";
+      f.same.checked = !(r.creneauxAcc || []).some(function (c) { return c && c !== r.creneau; });
+    }
+    f.hidden = false;
+    f.scrollIntoView({ behavior: "smooth", block: "center" });
+    f.nom.focus();
+  }
+  $("#m-add").addEventListener("click", function () { var f = $("#add-pax"); if (!f.hidden && !f.id.value) f.hidden = true; else paxForm(null); });
+  document.addEventListener("click", function (e) {
+    var id = e.target.getAttribute && e.target.getAttribute("data-edit");
+    if (!id) return;
+    var r = state.rsvps.find(function (x) { return x.id === id; });
+    if (r) paxForm(r);
   });
   $("#add-pax [data-close]").addEventListener("click", function () { $("#add-pax").hidden = true; });
   $("#add-pax").addEventListener("submit", function (e) {
     e.preventDefault();
     var f = e.target;
     formError(f, "");
-    api("/api/rsvp", { method: "POST", body: {
-      nom: f.nom.value, presence: f.presence.value, passagers: f.passagers.value, repas: f.repas.value, allergies: f.allergies.value,
-      creneau: "journee", source: "equipage"
-    } }).then(function () {
+    var editing = f.id.value;
+    var req = editing
+      ? api("/api/rsvp", { method: "PATCH", body: { id: editing, edit: {
+          nom: f.nom.value, presence: f.presence.value, passagers: f.passagers.value, creneau: f.creneau.value,
+          accompagnantsMemeBillet: f.same.checked, repas: f.repas.value, allergies: f.allergies.value } } })
+      : api("/api/rsvp", { method: "POST", body: {
+          nom: f.nom.value, presence: f.presence.value, passagers: f.passagers.value, repas: f.repas.value, allergies: f.allergies.value,
+          creneau: f.creneau.value, source: "equipage" } });
+    req.then(function () {
       f.reset();
       f.hidden = true;
-      toast("Passager ajouté au manifeste.");
+      toast(editing ? "Réponse modifiée." : "Passager ajouté au manifeste.");
       loadRsvps();
     }).catch(function (err) { formError(f, err.message); });
   });

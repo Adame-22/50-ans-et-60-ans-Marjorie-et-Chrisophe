@@ -3,12 +3,13 @@
  *   POST   (public)  { nom, presence, creneau (midi | soir | journee), passagers, accompagnants, repas, allergies, email, message }
  *   GET    (équipage) → toutes les réponses
  *   PATCH  (équipage) { id, arrived }  → pointage à l'arrivée
+ *   PATCH  (équipage) { id, edit: { nom, presence, passagers, creneau, accompagnantsMemeBillet, repas, allergies } } → corrige une réponse
  *   DELETE (équipage) ?id=…
  *   GET    ?pass=<jeton>   (public)   → carte d'embarquement d'une réponse (lien personnel)
  *   GET    ?view=notify    (équipage) → envoi automatique par e-mail configuré ?
  *   POST   { action: "dedupe" } (équipage) → fusionne les inscriptions en double déjà enregistrées
  *   Une personne qui remplit le formulaire une deuxième fois met à jour sa réponse (pas de doublon).
- *   GET    ?view=report    (en-tête Authorization: Bearer <REPORT_TOKEN>) → point des réponses en lecture seule, sans coordonnées
+ *   GET    ?view=report    (en-tête Authorization: Bearer <REPORT_TOKEN>, ou ?key=<REPORT_TOKEN>) → point des réponses en lecture seule, sans coordonnées
  *   POST   { action: "send", ids } (équipage) → envoie les cartes par e-mail
  *   POST   { action: "mail-config", provider, key, from, fromName } (admin) → réglages d'envoi
  *   POST   { action: "mail-test", to } (admin) → e-mail d'essai ; { action: "mail-off" } → efface les réglages
@@ -106,7 +107,7 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "GET" && q.get("view") === "report") {
     await L.rateLimit(req, "report", 60, 600);
     const key = process.env.REPORT_TOKEN || "";
-    const given = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const given = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "") || String(q.get("key") || "");
     const ok = key.length >= 24 && given.length === key.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(key));
     if (!ok) throw new L.HttpError(401, "Clé de lecture absente ou invalide.");
     return L.send(res, 200, report(Object.values(await L.hgetallJson(L.K.rsvps))));
@@ -234,7 +235,27 @@ module.exports = L.handler(async (req, res) => {
     const raw = await L.redis(["HGET", L.K.rsvps, L.str(b.id, 64)]);
     if (!raw) throw new L.HttpError(404, "Réponse introuvable.");
     const entry = JSON.parse(raw);
-    entry.arrivedAt = b.arrived ? new Date().toISOString() : null;
+    if (b.edit && typeof b.edit === "object") {
+      // correction depuis l'admin (statut, billet, nombre, repas, allergies)
+      const x = b.edit, FARES = ["midi", "soir", "journee"];
+      const nom = L.str(x.nom, 80);
+      if (nom && nom !== entry.nom) { entry.nom = nom; entry.prenom = nom.split(" ")[0]; entry.nomFamille = nom.split(" ").slice(1).join(" "); }
+      const oui = x.presence === "oui";
+      entry.presence = oui ? "oui" : "non";
+      entry.passagers = oui ? Math.min(12, Math.max(1, parseInt(x.passagers, 10) || entry.passagers || 1)) : 0;
+      if (oui) {
+        entry.creneau = FARES.includes(x.creneau) ? x.creneau : entry.creneau || "journee";
+        entry.accompagnants = (entry.accompagnants || []).slice(0, entry.passagers - 1);
+        const acc = entry.creneauxAcc || [];
+        entry.creneauxAcc = Array.from({ length: entry.passagers - 1 }, (_, i) => (x.accompagnantsMemeBillet || !acc[i] ? entry.creneau : acc[i]));
+        if (REPAS.includes(x.repas)) entry.repas = x.repas;
+        if (x.allergies !== undefined) entry.allergies = L.str(x.allergies, 300);
+      }
+      entry.editedAt = new Date().toISOString();
+      entry.editedBy = me.username;
+    } else {
+      entry.arrivedAt = b.arrived ? new Date().toISOString() : null;
+    }
     await L.redis(["HSET", L.K.rsvps, entry.id, JSON.stringify(entry)]);
     return L.send(res, 200, { rsvp: L.isHost(me) ? hideSurprise(entry) : entry });
   }

@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261013" />
-  <link rel="stylesheet" href="css/style.css?v=20261013" />
-  <link rel="stylesheet" href="css/admin.css?v=20261013" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261013b" />
+  <link rel="stylesheet" href="css/style.css?v=20261013b" />
+  <link rel="stylesheet" href="css/admin.css?v=20261013b" />
 </head>
 <body class="admin">
 
@@ -170,7 +170,8 @@
       </div>
 
       <form class="card add-pax" id="add-pax" hidden novalidate>
-        <h3>Ajouter une réponse reçue hors site</h3>
+        <h3 id="a-title">Ajouter une réponse reçue hors site</h3>
+        <input type="hidden" name="id" />
         <div class="grid-4">
           <div class="field"><label for="a-nom">Nom</label><input id="a-nom" name="nom" required /></div>
           <div class="field"><label for="a-pres">Présence</label>
@@ -180,11 +181,16 @@
           <div class="field"><label for="a-repas">Repas spécial</label>
             <select id="a-repas" name="repas"></select></div>
         </div>
+        <div class="grid-4">
+          <div class="field"><label for="a-fare">Billet</label>
+            <select id="a-fare" name="creneau"><option value="journee">Midi &amp; soir</option><option value="midi">Midi</option><option value="soir">Soir</option></select></div>
+          <label class="check" id="a-same-wrap"><input type="checkbox" name="same" checked /> Même billet pour ses accompagnants</label>
+        </div>
         <div class="field"><label for="a-all">Allergies / précisions</label><input id="a-all" name="allergies" /></div>
         <p class="form-error" role="alert" hidden></p>
         <div class="row-end">
           <button type="button" class="btn btn--small btn--line" data-close>Annuler</button>
-          <button type="submit" class="btn btn--small btn--gold">Ajouter</button>
+          <button type="submit" class="btn btn--small btn--gold" id="a-submit">Ajouter</button>
         </div>
       </form>
 
@@ -458,8 +464,8 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261013"></script>
+  <script src="js/graph.js?v=20261013b"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261013"></script>
+  <script src="js/admin.js?v=20261013b"></script>
 </body>
 </html>
