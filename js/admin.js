@@ -171,7 +171,8 @@
     $all("[data-tab]").forEach(function (b) { b.setAttribute("aria-selected", String(b === tab)); });
     $all(".panel").forEach(function (p) { p.hidden = p.id !== "tab-" + name; });
     history.replaceState(null, "", "#" + name);
-    if (name === "manifeste") { loadRsvps(); loadNotify(); loadAnnounce(); }
+    if (name === "manifeste") { loadRsvps(); loadNotify(); }
+    if (name === "envois") { loadRsvps(); loadNotify(); loadAnnounce(); }
     if (name === "cabine") startCabin(); else stopCabin();
     if (name === "comptes") loadUsers();
     if (name === "constellation") loadGraph(); else destroyGraph();
@@ -186,23 +187,11 @@
   });
 
   /* ───────── Manifeste ───────── */
-  /* Téléphone : chaque cellule du manifeste porte le nom de sa colonne (affichage en cartes) */
-  (function labelCells() {
-    var table = document.getElementById("m-table");
-    if (!table || !("MutationObserver" in window)) return;
-    var heads = Array.prototype.map.call(table.querySelectorAll("thead th"), function (th) { return th.textContent.trim(); });
-    new MutationObserver(function () {
-      table.querySelectorAll("tbody tr").forEach(function (tr) {
-        Array.prototype.forEach.call(tr.children, function (td, i) { if (heads[i]) td.setAttribute("data-label", heads[i]); });
-      });
-    }).observe(table.querySelector("tbody"), { childList: true });
-  })();
-
   function loadRsvps() {
     return api("/api/rsvp").then(function (d) {
       state.rsvps = d.rsvps;
-      var dd = $("#m-dedupe");
-      if (dd) { dd.hidden = !d.doublons; dd.textContent = "Fusionner " + d.doublons + " doublon" + (d.doublons > 1 ? "s" : ""); }
+      $("#m-dup").hidden = !d.doublons;
+      $("#m-dup-n").textContent = d.doublons + " doublon" + (d.doublons > 1 ? "s" : "") + " à fusionner.";
       renderRsvps();
     }).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
   }
@@ -333,129 +322,239 @@
       .then(function () { btn.disabled = false; });
   });
 
+  /* ───────── Liste des invités (fiches) ───────── */
+  var filter = "";
+  function peopleOf(r) {
+    var fs = fares(r), names = [r.nom].concat(r.accompagnants || []);
+    var n = r.presence === "oui" ? Math.max(1, r.passagers || 1) : 1;
+    var out = [];
+    for (var i = 0; i < n; i++) out.push({ nom: names[i] || "Passager " + (i + 1), creneau: fs[i] || fs[0] || "journee" });
+    return out;
+  }
+  var FARE_SHORT = { midi: "Midi", soir: "Soir", journee: "Midi + soir" };
+  function dupKey(r) { return String(r.nom || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]+/g, " ").trim(); }
+
   function renderRsvps() {
     var list = state.rsvps;
     var yes = list.filter(function (r) { return r.presence === "oui"; });
-    $("#s-total").textContent = list.length;
-    $("#s-pax").textContent = yes.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
-    $("#s-no").textContent = list.length - yes.length;
-    $("#s-meal").textContent = list.filter(isSpecial).length;
-    var paxIn = yes.filter(function (r) { return r.arrivedAt; }).reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
-    $("#s-arrived").textContent = paxIn + " / " + yes.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
+    var pax = yes.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
     var all = [];
     yes.forEach(function (r) { all = all.concat(fares(r)); });
     var cnt = function (t) { return all.filter(t).length; };
-    $("#s-fares").textContent = cnt(function (x) { return x !== "soir"; }) + " · " + cnt(function (x) { return x !== "midi"; });
-    $("#s-fares-d").textContent = cnt(function (x) { return x === "midi"; }) + " midi seul · " + cnt(function (x) { return x === "soir"; }) + " soir seul · " + cnt(function (x) { return x === "journee"; }) + " les deux";
+    $("#s-pax").textContent = pax;
+    $("#s-pax-d").textContent = list.filter(isSpecial).length + " régime(s) ou allergie(s)";
+    $("#s-midi").textContent = cnt(function (x) { return x !== "soir"; });
+    $("#s-soir").textContent = cnt(function (x) { return x !== "midi"; });
+    $("#s-total").textContent = list.length;
+    $("#s-total-d").textContent = yes.length + " à bord · " + (list.length - yes.length) + " au sol";
+    var paxIn = yes.filter(function (r) { return r.arrivedAt; }).reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
+    $("#s-arrived").textContent = paxIn + " / " + pax;
+    $("#s-arrived-box").hidden = !paxIn;
 
+    var seen = {};
+    list.forEach(function (r) { var k = dupKey(r); seen[k] = (seen[k] || 0) + 1; });
     var q = $("#m-search").value.trim().toLowerCase();
-    var f = $("#m-filter").value;
     var rows = list.filter(function (r) {
-      if (q && (r.nom + " " + r.email + " " + r.message + " " + r.allergies).toLowerCase().indexOf(q) === -1) return false;
-      if (f === "oui" || f === "non") return r.presence === f;
-      if (f === "special") return isSpecial(r);
-      if (["midi-tous", "soir-tous", "midi", "soir", "journee"].indexOf(f) >= 0) return hasFare(r, f);
-      if (f === "attendus") return r.presence === "oui" && !r.arrivedAt;
-      if (f === "arrives") return !!r.arrivedAt;
+      if (q && (r.nom + " " + (r.accompagnants || []).join(" ") + " " + (r.email || "") + " " + (r.telephone || "") + " " + (r.allergies || "")).toLowerCase().indexOf(q) === -1) return false;
+      if (filter === "oui" || filter === "non") return r.presence === filter;
+      if (filter === "special") return isSpecial(r);
+      if (filter === "midi-tous" || filter === "soir-tous") return r.presence === "oui" && hasFare(r, filter);
+      if (filter === "nomail") return !r.email;
+      if (filter === "attendus") return r.presence === "oui" && !r.arrivedAt;
       return true;
     });
+    $("#m-count").textContent = rows.length + " fiche" + (rows.length > 1 ? "s" : "") + (rows.length !== list.length ? " sur " + list.length : "");
 
-    $("#m-table tbody").innerHTML = rows.map(function (r) {
-      var yesR = r.presence === "oui";
-      return "<tr>" +
-        "<td>" + (yesR ? '<button class="checkin-btn' + (r.arrivedAt ? " is-in" : "") + '" data-checkin="' + esc(r.id) + '" title="' + (r.arrivedAt ? "Arrivé à " + fmtDate(r.arrivedAt) : "Pointer l'arrivée") + '" aria-label="Pointer l\'arrivée de ' + esc(r.nom) + '">✓</button>' : "") + "</td>" +
-        "<td><b>" + esc(r.nom) + "</b>" + (r.source === "sur place" ? ' <span class="tag tag--gold" title="Ajouté·e depuis la page À table !, le jour J">sur place</span>' : "") +
-        (r.updates ? ' <span class="tag" title="A rempli le formulaire ' + (r.updates + 1) + " fois ; dernière réponse le " + fmtDate(r.updatedAt) + '">modifiée</span>' : "") +
-        companionsHtml(r) +
-        (r.email ? "<small>" + esc(r.email) + (r.emailedAt ? " ✓" : "") + "</small>" : "") +
-        (r.telephone ? "<small>" + esc(r.telephone) + (r.smsAt ? " ✓" : "") + "</small>" : "") + "</td>" +
-        "<td>" + (yesR ? '<span class="tag tag--ok">À bord</span>' : '<span class="tag tag--no">Au sol</span>') + "</td>" +
-        "<td>" + (yesR ? fareTags(r) : "—") + "</td>" +
-        "<td>" + (yesR ? r.passagers : "—") + "</td>" +
-        "<td>" + (yesR ? (r.repas && r.repas !== "Standard" ? '<span class="tag tag--gold">' + esc(r.repas) + "</span>" : "Standard") : "—") + "</td>" +
-        "<td>" + esc(r.allergies || "") + "</td>" +
-        '<td class="msg">' + esc(r.message || "") + "</td>" +
-        "<td>" + fmtDate(r.createdAt) + "</td>" +
-        '<td class="actions">' + sendLinks(r) + '<button class="btn btn--small btn--line" data-edit="' + esc(r.id) + '">Modifier</button><button class="btn btn--small btn--line btn--danger" data-del="' + esc(r.id) + '">Supprimer</button></td>' +
-        "</tr>";
+    $("#m-list").innerHTML = rows.map(function (r) {
+      var on = r.presence === "oui";
+      var ppl = on ? peopleOf(r) : [];
+      var tags = "";
+      if (seen[dupKey(r)] > 1) tags += '<span class="tag tag--warn">en double</span>';
+      if (r.updates) tags += '<span class="tag" title="A rempli le formulaire ' + (r.updates + 1) + ' fois">réinscrit·e</span>';
+      if (r.editedAt) tags += '<span class="tag" title="Corrigée par ' + esc(r.editedBy || "l\'équipage") + " le " + fmtDate(r.editedAt) + '">corrigée</span>';
+      if (r.source === "sur place") tags += '<span class="tag tag--gold">sur place</span>';
+      if (r.source === "equipage") tags += '<span class="tag">ajoutée à la main</span>';
+      if (on && r.repas && r.repas !== "Standard") tags += '<span class="tag tag--gold">' + esc(r.repas) + "</span>";
+      if (on && r.allergies) tags += '<span class="tag tag--gold" title="' + esc(r.allergies) + '">allergie</span>';
+      var contact = (r.email ? '<span title="' + esc(r.email) + '">✉ ' + (r.emailedAt ? "carte envoyée" : "carte pas encore envoyée") + "</span>" : '<span class="muted-warn">pas d\'e-mail</span>') +
+        (r.telephone ? "<span>☏ " + esc(r.telephone) + "</span>" : "");
+      return '<article class="guest' + (on ? "" : " guest--off") + (r.arrivedAt ? " guest--in" : "") + '" data-open="' + esc(r.id) + '" tabindex="0" role="button" aria-label="Ouvrir la fiche de ' + esc(r.nom) + '">' +
+        '<div class="guest__main">' +
+          '<div class="guest__name"><b>' + esc(r.nom) + "</b>" + tags + "</div>" +
+          (on
+            ? '<ul class="guest__pax">' + ppl.map(function (p) { return '<li><span>' + esc(p.nom) + '</span><em class="fare fare--' + p.creneau + '">' + FARE_SHORT[p.creneau] + "</em></li>"; }).join("") + "</ul>"
+            : '<p class="guest__off">Ne vient pas</p>') +
+          '<p class="guest__contact">' + contact + "</p>" +
+        "</div>" +
+        '<div class="guest__side">' +
+          (on ? '<span class="pill pill--on">À bord · ' + (r.passagers || 1) + "</span>" : '<span class="pill pill--off">Au sol</span>') +
+          (r.arrivedAt ? '<span class="pill pill--in">Arrivé·e ✓</span>' : "") +
+          '<span class="guest__open">Ouvrir ›</span>' +
+        "</div>" +
+      "</article>";
     }).join("");
     $("#m-empty").hidden = rows.length > 0;
     updateSendButtons();
   }
 
   $("#m-search").addEventListener("input", renderRsvps);
-  $("#m-filter").addEventListener("change", renderRsvps);
+  $("#m-chips").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-f]");
+    if (!b) return;
+    filter = b.getAttribute("data-f");
+    $all("#m-chips [data-f]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    renderRsvps();
+  });
+  $("#m-list").addEventListener("click", function (e) {
+    var card = e.target.closest("[data-open]");
+    if (card) openGuest(state.rsvps.find(function (x) { return x.id === card.getAttribute("data-open"); }));
+  });
+  $("#m-list").addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-open]")) { e.preventDefault(); e.target.click(); }
+  });
+  $("#m-add").addEventListener("click", function () { openGuest(null); });
 
-  $("#m-table").addEventListener("click", function (e) {
-    var ci = e.target.getAttribute("data-checkin");
-    if (ci) {
-      var entry = state.rsvps.find(function (x) { return x.id === ci; });
-      var arrived = !entry.arrivedAt;
-      entry.arrivedAt = arrived ? new Date().toISOString() : null; // affichage immédiat
-      renderRsvps();
-      api("/api/rsvp", { method: "PATCH", body: { id: ci, arrived: arrived } })
-        .then(function (d) { entry.arrivedAt = d.rsvp.arrivedAt; })
-        .catch(function (err) { entry.arrivedAt = arrived ? null : new Date().toISOString(); renderRsvps(); toast(err.message, true); });
-      return;
+  /* ───────── Fiche invité : ajouter ou corriger ───────── */
+  var sheet = $("#guest-sheet"), gform = $("#guest-form"), current = null;
+  $("#g-repas").innerHTML = REPAS.map(function (m) { return "<option>" + m + "</option>"; }).join("");
+
+  function personRow(p, i) {
+    var name = "g-f-" + Math.random().toString(36).slice(2, 8);
+    return '<div class="person">' +
+      '<input class="person__name" value="' + esc(p.nom || "") + '" placeholder="' + (i ? "Prénom et nom" : "Nom du passager principal") + '" aria-label="Nom" maxlength="80" />' +
+      '<div class="fare-pick" role="radiogroup" aria-label="Billet">' +
+        ["midi", "soir", "journee"].map(function (f) {
+          return '<label><input type="radio" name="' + name + '" value="' + f + '"' + (p.creneau === f ? " checked" : "") + " /><span>" + FARE_SHORT[f] + "</span></label>";
+        }).join("") +
+      "</div>" +
+      (i ? '<button type="button" class="person__del" aria-label="Retirer cette personne" title="Retirer">×</button>' : '<span class="person__main">principal</span>') +
+    "</div>";
+  }
+  function renderPeople(list) { $("#g-people").innerHTML = list.map(personRow).join(""); }
+  function readPeople() {
+    return $all("#g-people .person").map(function (row) {
+      var c = row.querySelector("input[type=radio]:checked");
+      return { nom: row.querySelector(".person__name").value.trim(), creneau: c ? c.value : "journee" };
+    });
+  }
+  function syncPresence() {
+    var on = gform.presence.value === "oui";
+    $all("#guest-sheet [data-if-oui]").forEach(function (el) { el.hidden = !on; });
+  }
+  $all('#guest-form input[name="presence"]').forEach(function (r) { r.addEventListener("change", syncPresence); });
+  $("#g-add-person").addEventListener("click", function () {
+    var list = readPeople();
+    list.push({ nom: "", creneau: (list[0] && list[0].creneau) || "journee" });
+    renderPeople(list);
+    var rows = $all("#g-people .person__name");
+    rows[rows.length - 1].focus();
+  });
+  $("#g-people").addEventListener("click", function (e) {
+    if (!e.target.classList.contains("person__del")) return;
+    e.target.closest(".person").remove();
+  });
+
+  function openGuest(r) {
+    current = r || null;
+    formError(gform, "");
+    gform.reset();
+    $("#g-title").textContent = r ? r.nom : "Nouvelle réponse";
+    $("#g-kicker").textContent = r ? "Fiche invité · reçue le " + fmtDate(r.createdAt) : "Réponse reçue par téléphone, de vive voix…";
+    $("#g-save").textContent = r ? "Enregistrer les corrections" : "Ajouter";
+    gform.presence.value = r && r.presence !== "oui" ? "non" : "oui";
+    renderPeople(r ? peopleOf(r) : [{ nom: "", creneau: "journee" }]);
+    $("#g-repas").value = (r && r.repas) || "Standard";
+    $("#g-all").value = (r && r.allergies) || "";
+    $("#g-email").value = (r && r.email) || "";
+    $("#g-tel").value = (r && r.telephone) || "";
+    $("#g-msg").value = (r && r.message) || "";
+    $("#g-actions").hidden = !r;
+    if (r) {
+      var hasPass = r.presence === "oui" && r.passToken;
+      $("#g-open").hidden = !hasPass;
+      if (hasPass) $("#g-open").href = passLink(r);
+      $("#g-copy").hidden = !hasPass;
+      $("#g-send").hidden = !hasPass || !r.email;
+      $("#g-send-d").textContent = notify.email ? "à " + r.email + (r.emailedAt ? " · déjà envoyée le " + fmtDate(r.emailedAt) : "") : "ouvre votre messagerie, prête à envoyer";
+      $("#g-arrive").hidden = r.presence !== "oui";
+      $("#g-arrive").querySelector("b").textContent = r.arrivedAt ? "Annuler l'arrivée" : "Pointer l'arrivée";
+      $("#g-arrive").querySelector("small").textContent = r.arrivedAt ? "arrivé·e à " + fmtDate(r.arrivedAt) : "le jour J";
+      var tid = state.plan && state.plan.assign && state.plan.assign[r.id];
+      var tObj = tid && state.plan.tables && state.plan.tables.find(function (t) { return t.id === tid; });
+      var table = tObj ? tObj.name : tid;
+      $("#g-meta").textContent = [
+        r.updates ? "A rempli le formulaire " + (r.updates + 1) + " fois" : "",
+        r.editedAt ? "Corrigée par " + (r.editedBy || "l'équipage") + " le " + fmtDate(r.editedAt) : "",
+        table ? "Table : " + table : "",
+      ].filter(Boolean).join(" · ");
     }
-    var id = e.target.getAttribute("data-del");
-    if (!id) return;
-    var r = state.rsvps.find(function (x) { return x.id === id; });
-    if (!r || !confirm("Supprimer la réponse de « " + r.nom + " » ?")) return;
-    api("/api/rsvp?id=" + encodeURIComponent(id), { method: "DELETE" })
-      .then(function () { toast("Réponse supprimée."); loadRsvps(); })
+    syncPresence();
+    if (sheet.showModal) sheet.showModal(); else sheet.setAttribute("open", "");
+    setTimeout(function () { var n = $("#g-people .person__name"); if (!r && n) n.focus(); }, 50);
+  }
+  function closeGuest() { if (sheet.close) sheet.close(); else sheet.removeAttribute("open"); current = null; }
+  $all("[data-sheet-close]").forEach(function (b) { b.addEventListener("click", closeGuest); });
+  sheet.addEventListener("click", function (e) { if (e.target === sheet) closeGuest(); });
+
+  gform.addEventListener("submit", function (e) {
+    e.preventDefault();
+    formError(gform, "");
+    var people = readPeople().filter(function (p, i) { return i === 0 || p.nom; });
+    if (!people[0].nom) return formError(gform, "Indiquez au moins le nom du passager principal.");
+    var on = gform.presence.value === "oui";
+    var body = {
+      presence: gform.presence.value, people: people, repas: $("#g-repas").value, allergies: $("#g-all").value,
+      email: $("#g-email").value.trim(), telephone: $("#g-tel").value.trim(),
+    };
+    if (!document.body.classList.contains("is-host")) body.message = $("#g-msg").value;
+    var btn = $("#g-save"); btn.disabled = true;
+    var req = current
+      ? api("/api/rsvp", { method: "PATCH", body: { id: current.id, edit: body } })
+      : api("/api/rsvp", { method: "POST", body: {
+          source: "equipage", nom: people[0].nom, presence: body.presence, passagers: on ? people.length : 0,
+          creneau: people[0].creneau, accompagnants: people.slice(1).map(function (p) { return p.nom; }),
+          creneauxAcc: people.slice(1).map(function (p) { return p.creneau; }),
+          repas: body.repas, allergies: body.allergies, email: body.email, telephone: body.telephone, message: body.message || "",
+        } });
+    req.then(function () {
+      toast(current ? "Fiche corrigée." : "Réponse ajoutée.");
+      closeGuest();
+      loadRsvps();
+    }).catch(function (err) { formError(gform, err.message); })
+      .then(function () { btn.disabled = false; });
+  });
+
+  $("#g-send").addEventListener("click", function () {
+    var r = current;
+    if (!r) return;
+    if (!notify.email) { location.href = "mailto:" + encodeURIComponent(r.email) + "?subject=" + encodeURIComponent("✈ Votre carte d'embarquement · Vol MC 5060") + "&body=" + encodeURIComponent(passText(r)); return; }
+    if (!confirm("Renvoyer la carte d'embarquement à " + r.email + " ?")) return;
+    var b = this; b.disabled = true;
+    api("/api/rsvp", { method: "POST", body: { action: "send", channel: "email", ids: [r.id] } })
+      .then(function (d) {
+        if (d.errors && d.errors.length) toast(d.errors[0], true); else toast("Carte renvoyée à " + r.email + ".");
+        closeGuest(); loadRsvps();
+      }).catch(function (err) { toast(err.message, true); })
+      .then(function () { b.disabled = false; });
+  });
+  $("#g-copy").addEventListener("click", function () {
+    var r = current, text = passText(r);
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+      .then(function () { toast("Message et lien copiés : collez-les dans WhatsApp ou un SMS."); })
+      .catch(function () { prompt("Copiez ce message :", text); });
+  });
+  $("#g-arrive").addEventListener("click", function () {
+    var r = current, arrived = !r.arrivedAt;
+    api("/api/rsvp", { method: "PATCH", body: { id: r.id, arrived: arrived } })
+      .then(function () { toast(arrived ? r.nom + " est arrivé·e." : "Arrivée annulée."); closeGuest(); loadRsvps(); })
       .catch(function (err) { toast(err.message, true); });
   });
-
-  $("#a-repas").innerHTML = REPAS.map(function (m) { return "<option>" + m + "</option>"; }).join("");
-  // Le même formulaire sert à ajouter une réponse et à corriger une réponse existante
-  function paxForm(r) {
-    var f = $("#add-pax");
-    f.reset();
-    f.id.value = r ? r.id : "";
-    $("#a-title").textContent = r ? "Modifier la réponse de " + r.nom : "Ajouter une réponse reçue hors site";
-    $("#a-submit").textContent = r ? "Enregistrer" : "Ajouter";
-    if (r) {
-      f.nom.value = r.nom || "";
-      f.presence.value = r.presence === "oui" ? "oui" : "non";
-      var nb = String(Math.max(1, r.passagers || 1));
-      if (![].some.call(f.passagers.options, function (o) { return o.value === nb; })) f.passagers.insertAdjacentHTML("beforeend", "<option>" + nb + "</option>");
-      f.passagers.value = nb;
-      f.repas.value = r.repas || "Standard";
-      f.allergies.value = r.allergies || "";
-      f.creneau.value = r.creneau || "journee";
-      f.same.checked = !(r.creneauxAcc || []).some(function (c) { return c && c !== r.creneau; });
-    }
-    f.hidden = false;
-    f.scrollIntoView({ behavior: "smooth", block: "center" });
-    f.nom.focus();
-  }
-  $("#m-add").addEventListener("click", function () { var f = $("#add-pax"); if (!f.hidden && !f.id.value) f.hidden = true; else paxForm(null); });
-  document.addEventListener("click", function (e) {
-    var id = e.target.getAttribute && e.target.getAttribute("data-edit");
-    if (!id) return;
-    var r = state.rsvps.find(function (x) { return x.id === id; });
-    if (r) paxForm(r);
-  });
-  $("#add-pax [data-close]").addEventListener("click", function () { $("#add-pax").hidden = true; });
-  $("#add-pax").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var f = e.target;
-    formError(f, "");
-    var editing = f.id.value;
-    var req = editing
-      ? api("/api/rsvp", { method: "PATCH", body: { id: editing, edit: {
-          nom: f.nom.value, presence: f.presence.value, passagers: f.passagers.value, creneau: f.creneau.value,
-          accompagnantsMemeBillet: f.same.checked, repas: f.repas.value, allergies: f.allergies.value } } })
-      : api("/api/rsvp", { method: "POST", body: {
-          nom: f.nom.value, presence: f.presence.value, passagers: f.passagers.value, repas: f.repas.value, allergies: f.allergies.value,
-          creneau: f.creneau.value, source: "equipage" } });
-    req.then(function () {
-      f.reset();
-      f.hidden = true;
-      toast(editing ? "Réponse modifiée." : "Passager ajouté au manifeste.");
-      loadRsvps();
-    }).catch(function (err) { formError(f, err.message); });
+  $("#g-delete").addEventListener("click", function () {
+    var r = current;
+    if (!r || !confirm("Supprimer définitivement la réponse de « " + r.nom + " » ?")) return;
+    api("/api/rsvp?id=" + encodeURIComponent(r.id), { method: "DELETE" })
+      .then(function () { toast("Réponse supprimée."); closeGuest(); loadRsvps(); })
+      .catch(function (err) { toast(err.message, true); });
   });
 
   function csvCell(v) {

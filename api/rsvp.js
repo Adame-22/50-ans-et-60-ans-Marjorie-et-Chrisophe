@@ -3,7 +3,7 @@
  *   POST   (public)  { nom, presence, creneau (midi | soir | journee), passagers, accompagnants, repas, allergies, email, message }
  *   GET    (équipage) → toutes les réponses
  *   PATCH  (équipage) { id, arrived }  → pointage à l'arrivée
- *   PATCH  (équipage) { id, edit: { nom, presence, passagers, creneau, accompagnantsMemeBillet, repas, allergies } } → corrige une réponse
+ *   PATCH  (équipage) { id, edit: { presence, people: [{ nom, creneau }], repas, allergies, email, telephone, message } } → corrige une réponse
  *   DELETE (équipage) ?id=…
  *   GET    ?pass=<jeton>   (public)   → carte d'embarquement d'une réponse (lien personnel)
  *   GET    ?view=notify    (équipage) → envoi automatique par e-mail configuré ?
@@ -67,9 +67,16 @@ function groupDuplicates(all) {
   return groups;
 }
 // Fusionne un groupe dans sa première inscription, supprime les autres et garde la place à table
+// Ordre de fusion : l'identité vient de la plus ancienne inscription, les valeurs de la plus récemment
+// touchée (correction de l'équipage, réinscription…), pour qu'une correction ne soit jamais écrasée.
+const touched = (e) => String(e.editedAt || e.updatedAt || e.createdAt || "");
 async function mergeGroup(group, extra) {
-  const items = extra ? group.concat([extra]) : group;
-  const kept = items.slice(1).reduce(mergeInto, items[0]);
+  const first = group[0];
+  const rest = group.slice(1).concat(extra ? [extra] : []);
+  const ordered = [first].concat(rest).sort((a, b) => touched(a).localeCompare(touched(b)));
+  const base = Object.assign({}, ordered[0], { id: first.id, passToken: first.passToken, createdAt: first.createdAt });
+  const kept = ordered.slice(1).reduce(mergeInto, base);
+  kept.id = first.id; kept.passToken = first.passToken || kept.passToken; kept.createdAt = first.createdAt;
   const assign = group.length > 1 ? await T.getAssignFull() : {};
   for (const d of group.slice(1)) {
     if (!assign[kept.id] && assign[d.id]) { await T.setAssign(kept.id, assign[d.id].t, "fusion"); assign[kept.id] = assign[d.id]; }
@@ -236,23 +243,37 @@ module.exports = L.handler(async (req, res) => {
     if (!raw) throw new L.HttpError(404, "Réponse introuvable.");
     const entry = JSON.parse(raw);
     if (b.edit && typeof b.edit === "object") {
-      // correction depuis l'admin (statut, billet, nombre, repas, allergies)
+      // correction complète depuis l'admin : statut, chaque passager et son billet, repas, contact, message
       const x = b.edit, FARES = ["midi", "soir", "journee"];
-      const nom = L.str(x.nom, 80);
-      if (nom && nom !== entry.nom) { entry.nom = nom; entry.prenom = nom.split(" ")[0]; entry.nomFamille = nom.split(" ").slice(1).join(" "); }
+      const people = (Array.isArray(x.people) ? x.people : []).slice(0, 12)
+        .map((p) => ({ nom: L.str(p && p.nom, 80), creneau: FARES.includes(p && p.creneau) ? p.creneau : "journee" }));
+      const nom = (people[0] && people[0].nom) || L.str(x.nom, 80);
+      if (!nom) throw new L.HttpError(400, "Indiquez le nom du passager principal.");
+      if (nom !== entry.nom) { entry.nom = nom; entry.prenom = nom.split(" ")[0]; entry.nomFamille = nom.split(" ").slice(1).join(" "); }
       const oui = x.presence === "oui";
       entry.presence = oui ? "oui" : "non";
-      entry.passagers = oui ? Math.min(12, Math.max(1, parseInt(x.passagers, 10) || entry.passagers || 1)) : 0;
       if (oui) {
-        entry.creneau = FARES.includes(x.creneau) ? x.creneau : entry.creneau || "journee";
-        entry.accompagnants = (entry.accompagnants || []).slice(0, entry.passagers - 1);
-        const acc = entry.creneauxAcc || [];
-        entry.creneauxAcc = Array.from({ length: entry.passagers - 1 }, (_, i) => (x.accompagnantsMemeBillet || !acc[i] ? entry.creneau : acc[i]));
+        const list = people.length ? people : [{ nom, creneau: entry.creneau || "journee" }];
+        entry.passagers = list.length;
+        entry.creneau = list[0].creneau;
+        entry.accompagnants = list.slice(1).map((p, i) => p.nom || "Passager " + (i + 2));
+        entry.creneauxAcc = list.slice(1).map((p) => p.creneau);
         if (REPAS.includes(x.repas)) entry.repas = x.repas;
         if (x.allergies !== undefined) entry.allergies = L.str(x.allergies, 300);
+      } else {
+        entry.passagers = 0;
       }
+      if (x.email !== undefined) {
+        const email = L.str(x.email, 120);
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new L.HttpError(400, "L'adresse e-mail semble incorrecte.");
+        if (email !== entry.email) delete entry.emailedAt; // nouvelle adresse : la carte pourra être renvoyée
+        entry.email = email;
+      }
+      if (x.telephone !== undefined) entry.telephone = L.str(x.telephone, 20).replace(/[^\d+ .()-]/g, "");
+      // les fêtés ne voient pas les messages : ils ne peuvent pas non plus les modifier
+      if (x.message !== undefined && !L.isHost(me)) entry.message = L.str(x.message, 1500);
       entry.editedAt = new Date().toISOString();
-      entry.editedBy = me.username;
+      entry.editedBy = me.name || me.username;
     } else {
       entry.arrivedAt = b.arrived ? new Date().toISOString() : null;
     }

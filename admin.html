@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261013b" />
-  <link rel="stylesheet" href="css/style.css?v=20261013b" />
-  <link rel="stylesheet" href="css/admin.css?v=20261013b" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261015" />
+  <link rel="stylesheet" href="css/style.css?v=20261015" />
+  <link rel="stylesheet" href="css/admin.css?v=20261015" />
 </head>
 <body class="admin">
 
@@ -72,51 +72,69 @@
     </header>
 
     <nav class="tabs" role="tablist" aria-label="Sections">
-      <button role="tab" data-tab="manifeste" aria-selected="true">Manifeste</button>
+      <button role="tab" data-tab="manifeste" aria-selected="true">Invités</button>
+      <button role="tab" data-tab="cabine">Tables</button>
+      <button role="tab" data-tab="envois">Envois &amp; annonces</button>
       <button role="tab" data-tab="partager">Partager le site</button>
-      <button role="tab" data-tab="cabine">Plan de cabine</button>
-      <button role="tab" data-tab="constellation">Constellation</button>
       <button role="tab" data-tab="equipes">Équipes</button>
       <button role="tab" data-tab="quiz" data-nospoil>Quiz</button>
       <button role="tab" data-tab="boite" data-nospoil>Boîte noire</button>
       <button role="tab" data-tab="radio">Radio</button>
+      <button role="tab" data-tab="constellation">Vue d'ensemble</button>
       <button role="tab" data-tab="comptes" data-admin-only>Comptes</button>
       <button role="tab" data-tab="moi">Mon compte</button>
     </nav>
 
     <!-- Manifeste -->
     <section class="panel" id="tab-manifeste" role="tabpanel">
-      <div class="stats">
-        <div class="stat"><span>Réponses</span><strong id="s-total">–</strong></div>
-        <div class="stat"><span>Passagers à bord</span><strong id="s-pax">–</strong></div>
-        <div class="stat"><span>Restent au sol</span><strong id="s-no">–</strong></div>
-        <div class="stat"><span>Repas spéciaux</span><strong id="s-meal">–</strong></div>
-        <div class="stat"><span>Arrivés</span><strong id="s-arrived">–</strong></div>
-        <div class="stat stat--fares"><span>Midi · Soir</span><strong id="s-fares">–</strong><small id="s-fares-d"></small></div>
+      <div class="panel__intro">
+        <h2>Les invités</h2>
+        <p>Toutes les réponses reçues. <b>Touchez une fiche</b> pour la corriger, renvoyer la carte d'embarquement ou pointer l'arrivée.</p>
       </div>
 
-      <div class="toolbar">
-        <input type="search" id="m-search" placeholder="Rechercher un passager…" aria-label="Rechercher" />
-        <select id="m-filter" aria-label="Filtrer">
-          <option value="">Tous</option>
-          <option value="oui">À bord</option>
-          <option value="non">Au sol</option>
-          <option value="special">Repas spéciaux</option>
-          <option value="midi-tous">Présents le midi</option>
-          <option value="soir-tous">Présents le soir</option>
-          <option value="midi">Midi seulement</option>
-          <option value="soir">Soir seulement</option>
-          <option value="journee">Midi et soir</option>
-          <option value="attendus">Pas encore arrivés</option>
-          <option value="arrives">Arrivés</option>
-        </select>
-        <span class="toolbar__grow"></span>
-        <button class="btn btn--small btn--line btn--danger" id="m-dedupe" hidden>Fusionner les doublons</button>
-        <button class="btn btn--small btn--line" id="m-add">+ Ajouter un passager</button>
-        <button class="btn btn--small btn--gold" id="m-export">Exporter (Excel)</button>
-        <a class="btn btn--small btn--line" id="m-backup" data-nospoil href="/api/backup" download title="Réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe) dans un fichier">Sauvegarde complète</a>
+      <div class="kpis">
+        <div class="kpi kpi--main"><span>Personnes attendues</span><strong id="s-pax">–</strong><small id="s-pax-d"></small></div>
+        <div class="kpi"><span>Au déjeuner</span><strong id="s-midi">–</strong><small>midi</small></div>
+        <div class="kpi"><span>Au dîner</span><strong id="s-soir">–</strong><small>soir</small></div>
+        <div class="kpi"><span>Réponses</span><strong id="s-total">–</strong><small id="s-total-d"></small></div>
+        <div class="kpi kpi--day" id="s-arrived-box" hidden><span>Arrivés</span><strong id="s-arrived">–</strong><small>aujourd'hui</small></div>
       </div>
 
+      <div class="alert" id="m-dup" hidden>
+        <p><b id="m-dup-n"></b> Certaines personnes se sont inscrites plusieurs fois. La fusion garde une seule fiche par personne (la réponse la plus récente, ses messages et sa place à table).</p>
+        <button class="btn btn--small btn--gold" id="m-dedupe" type="button">Fusionner les doublons</button>
+      </div>
+
+      <div class="guest-tools">
+        <input type="search" id="m-search" placeholder="Rechercher un nom, un e-mail…" aria-label="Rechercher un invité" />
+        <div class="guest-tools__actions">
+          <button class="btn btn--small btn--gold" id="m-add" type="button">+ Ajouter une réponse</button>
+          <button class="btn btn--small btn--line" id="m-export" type="button">Exporter (Excel)</button>
+          <a class="btn btn--small btn--line" id="m-backup" data-nospoil href="/api/backup" download title="Réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe) dans un fichier">Sauvegarde</a>
+        </div>
+      </div>
+      <div class="chips" id="m-chips" role="group" aria-label="Filtrer les invités">
+        <button type="button" data-f="" aria-pressed="true">Tous</button>
+        <button type="button" data-f="oui">À bord</button>
+        <button type="button" data-f="non">Au sol</button>
+        <button type="button" data-f="midi-tous">Le midi</button>
+        <button type="button" data-f="soir-tous">Le soir</button>
+        <button type="button" data-f="special">Régimes &amp; allergies</button>
+        <button type="button" data-f="nomail">Sans e-mail</button>
+        <button type="button" data-f="attendus">Pas encore arrivés</button>
+      </div>
+
+      <p class="list-count" id="m-count"></p>
+      <div class="guest-list" id="m-list"></div>
+      <p class="empty" id="m-empty" hidden>Aucune réponse ne correspond. Les enregistrements du site apparaissent ici en direct.</p>
+    </section>
+
+    <!-- Envois & annonces -->
+    <section class="panel" id="tab-envois" role="tabpanel" hidden>
+      <div class="panel__intro">
+        <h2>Envois &amp; annonces</h2>
+        <p>Les cartes d'embarquement partent toutes seules par e-mail à chaque inscription. Ici, vous pouvez envoyer celles qui manquent, et prévenir tous les invités d'un coup (« le quiz commence ! »). Pour renvoyer la carte d'une seule personne, ouvrez sa fiche dans <b>Invités</b>.</p>
+      </div>
       <div class="ops">
       <div class="card send-box" id="send-box">
         <div>
@@ -169,40 +187,6 @@
       </form>
       </div>
 
-      <form class="card add-pax" id="add-pax" hidden novalidate>
-        <h3 id="a-title">Ajouter une réponse reçue hors site</h3>
-        <input type="hidden" name="id" />
-        <div class="grid-4">
-          <div class="field"><label for="a-nom">Nom</label><input id="a-nom" name="nom" required /></div>
-          <div class="field"><label for="a-pres">Présence</label>
-            <select id="a-pres" name="presence"><option value="oui">À bord</option><option value="non">Au sol</option></select></div>
-          <div class="field"><label for="a-nb">Passagers</label>
-            <select id="a-nb" name="passagers"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
-          <div class="field"><label for="a-repas">Repas spécial</label>
-            <select id="a-repas" name="repas"></select></div>
-        </div>
-        <div class="grid-4">
-          <div class="field"><label for="a-fare">Billet</label>
-            <select id="a-fare" name="creneau"><option value="journee">Midi &amp; soir</option><option value="midi">Midi</option><option value="soir">Soir</option></select></div>
-          <label class="check" id="a-same-wrap"><input type="checkbox" name="same" checked /> Même billet pour ses accompagnants</label>
-        </div>
-        <div class="field"><label for="a-all">Allergies / précisions</label><input id="a-all" name="allergies" /></div>
-        <p class="form-error" role="alert" hidden></p>
-        <div class="row-end">
-          <button type="button" class="btn btn--small btn--line" data-close>Annuler</button>
-          <button type="submit" class="btn btn--small btn--gold" id="a-submit">Ajouter</button>
-        </div>
-      </form>
-
-      <div class="card table-wrap">
-        <table class="table" id="m-table">
-          <thead>
-            <tr><th>Arrivé</th><th>Passager</th><th>Statut</th><th>Billet</th><th>Nb</th><th>Repas spécial</th><th>Allergies</th><th class="msg">Message</th><th>Reçu le</th><th></th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <p class="empty" id="m-empty" hidden>Aucune réponse pour l'instant. Les enregistrements du site apparaîtront ici en direct.</p>
-      </div>
     </section>
 
     <!-- Plan de cabine -->
@@ -446,6 +430,66 @@
   </div>
 
   <!-- Code provisoire à transmettre -->
+  <!-- Fiche invité : ajout et correction -->
+  <dialog class="sheet" id="guest-sheet" aria-labelledby="g-title">
+    <form id="guest-form" method="dialog" novalidate>
+      <header class="sheet__head">
+        <div>
+          <p class="sheet__kicker" id="g-kicker">Fiche invité</p>
+          <h3 id="g-title">Nouvelle réponse</h3>
+        </div>
+        <button type="button" class="sheet__close" data-sheet-close aria-label="Fermer">×</button>
+      </header>
+      <div class="sheet__body">
+        <div class="sheet__sec">
+          <p class="sheet__label">Présence</p>
+          <div class="seg-pick" role="radiogroup" aria-label="Présence">
+            <label><input type="radio" name="presence" value="oui" checked /><span>✈ À bord</span></label>
+            <label><input type="radio" name="presence" value="non" /><span>Au sol</span></label>
+          </div>
+        </div>
+
+        <div class="sheet__sec" data-if-oui>
+          <p class="sheet__label">Passagers et billets</p>
+          <p class="sheet__hint">Une ligne par personne. Le premier est celui qui a répondu.</p>
+          <div class="people" id="g-people"></div>
+          <button type="button" class="btn btn--small btn--line" id="g-add-person">+ Ajouter une personne</button>
+        </div>
+
+        <div class="sheet__sec sheet__grid" data-if-oui>
+          <div class="field"><label for="g-repas">Repas</label><select id="g-repas" name="repas"></select></div>
+          <div class="field"><label for="g-all">Allergies, précisions</label><input id="g-all" name="allergies" maxlength="300" /></div>
+        </div>
+
+        <div class="sheet__sec sheet__grid">
+          <div class="field"><label for="g-email">E-mail</label><input id="g-email" name="email" type="email" autocomplete="off" /></div>
+          <div class="field"><label for="g-tel">Portable</label><input id="g-tel" name="telephone" type="tel" autocomplete="off" /></div>
+        </div>
+
+        <div class="sheet__sec msg" data-nospoil>
+          <div class="field"><label for="g-msg">Mot pour Marjorie et Christophe</label><textarea id="g-msg" name="message" rows="3" maxlength="1500"></textarea></div>
+        </div>
+
+        <div class="sheet__sec" id="g-actions" hidden>
+          <p class="sheet__label">Actions</p>
+          <div class="sheet__acts">
+            <button type="button" class="act" id="g-send"><b>✉ Renvoyer la carte</b><small id="g-send-d">par e-mail</small></button>
+            <a class="act" id="g-open" target="_blank" rel="noopener"><b>Voir sa carte</b><small>ouvre la carte d'embarquement</small></a>
+            <button type="button" class="act" id="g-copy"><b>Copier le lien</b><small>à envoyer par WhatsApp ou SMS</small></button>
+            <button type="button" class="act" id="g-arrive"><b>Pointer l'arrivée</b><small>le jour J</small></button>
+          </div>
+          <p class="sheet__meta" id="g-meta"></p>
+          <button type="button" class="linklike sheet__delete" id="g-delete">Supprimer cette réponse</button>
+        </div>
+        <p class="form-error" role="alert" hidden></p>
+      </div>
+      <footer class="sheet__foot">
+        <button type="button" class="btn btn--small btn--line" data-sheet-close>Annuler</button>
+        <button type="submit" class="btn btn--gold" id="g-save">Enregistrer</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog class="modal" id="code-modal">
     <p class="eyebrow">Code provisoire</p>
     <h3 id="code-title"></h3>
@@ -464,8 +508,8 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261013b"></script>
+  <script src="js/graph.js?v=20261015"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261013b"></script>
+  <script src="js/admin.js?v=20261015"></script>
 </body>
 </html>
