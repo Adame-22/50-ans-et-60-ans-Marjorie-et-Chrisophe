@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Consignes de sécurité · Vol MC 5060</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261018" />
+  <style>
+    /* Parodie de la carte « Safety on board » glissée dans la poche du siège.
+       Recto + verso au format A4 : imprimer en recto verso (bord long), graphiques d'arrière-plan activés,
+       puis plastifier pour l'effet « vraie carte de bord ». */
+    :root {
+      --red: #e2412b; --ink: #1d2160; --navy: #000033; --green: #1f8a5b; --blue: #1d4fb8; --lilac: #dfe1f2;
+      --orange: #ef7d2e; --yellow: #f4b52a; --skin: #f2d0b4; --hair: #2b1d16; --gold: #a67046;
+    }
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #e9e4de; }
+    body { font-family: "Manrope", "Helvetica Neue", Arial, sans-serif; color: var(--ink); font-variant-numeric: lining-nums; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sheet { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; padding: 9mm 9mm 7mm; display: grid; grid-template-rows: auto 1fr auto; gap: 4mm; page-break-after: always; break-after: page; box-shadow: 0 20px 50px -30px rgba(0, 0, 51, .5); }
+    .sheet:last-of-type { page-break-after: auto; break-after: auto; }
+    @media print { html, body { background: #fff; } .sheet { margin: 0; box-shadow: none; } .screen-only { display: none !important; } }
+
+    /* bandeau du haut, comme la vraie carte */
+    .top { display: grid; grid-template-columns: 1fr auto; gap: 2mm; }
+    .top h1 { margin: 0; background: var(--red); color: #fff; font-size: 10.5mm; font-weight: 600; letter-spacing: -.2mm; padding: 1.2mm 4mm 1.6mm; line-height: 1.05; }
+    .top b { display: grid; place-items: center; background: #111; color: #fff; font-size: 10mm; font-weight: 700; padding: 0 4mm; letter-spacing: .2mm; }
+
+    .body { display: grid; gap: 2.4mm; align-content: start; min-height: 0; }
+    .row { display: grid; gap: 2.4mm; }
+    .r3 { grid-template-columns: repeat(3, 1fr); width: 76%; margin: 0 auto; }
+    .r4 { grid-template-columns: repeat(4, 1fr); }
+    .p { margin: 0; position: relative; background: var(--lilac); border-radius: 2.2mm; overflow: hidden; display: grid; grid-template-rows: 1fr auto; }
+    .p svg { display: block; width: 100%; height: auto; }
+    .p figcaption { padding: 1.2mm 2mm 1.6mm; background: #fff; font-size: 2.65mm; line-height: 1.25; font-weight: 700; color: var(--ink); text-align: center; }
+    .p .n { position: absolute; top: 1.2mm; left: 1.6mm; font-size: 3.4mm; font-weight: 800; color: var(--ink); }
+    .big { margin: 0; border-radius: 2.5mm; overflow: hidden; position: relative; }
+    .big svg { display: block; width: 100%; height: auto; }
+    .big .inset { position: absolute; top: 0; left: 0; width: 20mm; height: 15mm; background: #c9d6ea; border-right: .5mm solid #fff; border-bottom: .5mm solid #fff; }
+    .big .legend { position: absolute; right: 3mm; top: 2.5mm; background: #fff; color: var(--ink); font-weight: 800; font-size: 3.2mm; padding: 1.2mm 2.4mm; border-radius: 1.4mm; }
+
+    .foot { display: flex; justify-content: space-between; align-items: flex-end; }
+    .foot p { margin: 0; font-size: 3mm; font-weight: 700; }
+    .brand { text-align: right; color: #1b3d8f; line-height: 1; }
+    .brand strong { display: block; font-size: 6.6mm; font-weight: 800; letter-spacing: -.1mm; }
+    .brand strong i { color: var(--gold); font-style: italic; font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; }
+    .brand em { font-size: 3mm; font-weight: 800; font-style: italic; letter-spacing: .4mm; color: #1d6fd1; }
+
+    /* bandeau d'écran */
+    .screen-only { max-width: 210mm; margin: 16px auto 0; border-radius: 16px; overflow: hidden; background: var(--navy); color: rgba(255, 251, 254, .78); box-shadow: 0 20px 50px -30px rgba(0, 0, 51, .6); }
+    .intro__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 18px 22px; border-bottom: 3px solid #ffb100; }
+    .intro__top h2 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 28px; color: #fffbfe; }
+    .intro__top button { font: 700 15px "Manrope", sans-serif; color: var(--navy); background: #ffb100; border: 0; border-radius: 999px; padding: 12px 22px; cursor: pointer; }
+    .intro p { margin: 0; padding: 14px 22px 18px; font-size: 14px; line-height: 1.6; }
+    .intro b { color: #fffbfe; }
+  </style>
+</head>
+<body>
+  <div class="screen-only intro">
+    <div class="intro__top"><h2>Consignes de sécurité · Vol MC 5060</h2><button type="button" onclick="window.print()">Imprimer</button></div>
+    <p>Parodie de la carte de sécurité glissée dans la poche des sièges. Imprimez en <b>A4, recto verso (bord long), sans marges, avec les couleurs d'arrière-plan</b>, puis plastifiez : une carte par table, posée contre le centre de table.</p>
+  </div>
+
+  <!-- Pictogrammes réutilisés -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <!-- interdit -->
+      <symbol id="no" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16.5" fill="none" stroke="#e2412b" stroke-width="4"/><path d="M8.5 31.5 31.5 8.5" stroke="#e2412b" stroke-width="4"/></symbol>
+      <!-- passager assis, de profil, tourné vers la droite -->
+      <symbol id="sit" viewBox="0 0 60 80">
+        <path d="M6 18q0-6 6-6h6q5 0 5 6v40H6z" fill="#2c3488"/>
+        <rect x="4" y="54" width="40" height="8" rx="3" fill="#2c3488"/>
+        <path d="M20 34q0-9 9-9h3q8 0 9 9l2 22H20z" fill="#3b3f9a"/>
+        <path d="M24 56h20q5 0 5 5v15h-7V63H24z" fill="#262a6b"/>
+        <circle cx="34" cy="17" r="8" fill="#f2d0b4"/>
+        <path d="M26 16q1-10 10-9 7 1 7 8-4-4-10-3-4 1-7 4z" fill="#2b1d16"/>
+        <path d="M36 34q8 3 13 12" stroke="#3b3f9a" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle cx="50" cy="47" r="3" fill="#f2d0b4"/>
+      </symbol>
+      <!-- coupe de champagne -->
+      <symbol id="coupe" viewBox="0 0 30 40"><path d="M4 4h22q-1 13-11 14Q5 17 4 4z" fill="#f4b52a" stroke="#1d2160" stroke-width="1.6"/><path d="M15 18v14M8 34h14" stroke="#1d2160" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="9" r="1.2" fill="#fff"/><circle cx="17" cy="12" r="1" fill="#fff"/></symbol>
+      <!-- gâteau 50/60 -->
+      <symbol id="cake" viewBox="0 0 60 50"><rect x="8" y="24" width="44" height="20" rx="3" fill="#fff" stroke="#1d2160" stroke-width="1.8"/><path d="M8 31q5 4 11 0t11 0 11 0 11 0" stroke="#e2412b" stroke-width="2.2" fill="none"/><rect x="18" y="10" width="4" height="14" fill="#ef7d2e"/><rect x="38" y="10" width="4" height="14" fill="#1d4fb8"/><path d="M20 3q3 4 0 6-3-2 0-6zM40 3q3 4 0 6-3-2 0-6z" fill="#f4b52a"/><rect x="4" y="44" width="52" height="3" rx="1.5" fill="#1d2160"/></symbol>
+      <!-- note de musique -->
+      <symbol id="note" viewBox="0 0 20 24"><path d="M7 19V5l11-3v14" stroke="#1d2160" stroke-width="2" fill="none"/><ellipse cx="5" cy="19" rx="4" ry="3" fill="#1d2160"/><ellipse cx="16" cy="16" rx="4" ry="3" fill="#1d2160"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- ═════════════ RECTO ═════════════ -->
+  <section class="sheet">
+    <header class="top"><h1>Consignes de sécurité</h1><b>A 50·60</b></header>
+    <div class="body">
+      <!-- grand panneau : évacuation vers la piste de danse -->
+      <div class="big">
+        <svg viewBox="0 0 400 220" role="img" aria-label="Évacuation de l'avion par les toboggans vers la piste de danse, le buffet et le bar">
+          <rect width="400" height="220" fill="#1f8a5b"/>
+          <!-- piste de danse en damier -->
+          <g transform="translate(286 150) skewX(-28)">
+            <rect width="92" height="56" fill="#13633f"/>
+            <g fill="#f4b52a" opacity=".9"><rect x="0" y="0" width="23" height="14"/><rect x="46" y="0" width="23" height="14"/><rect x="23" y="14" width="23" height="14"/><rect x="69" y="14" width="23" height="14"/><rect x="0" y="28" width="23" height="14"/><rect x="46" y="28" width="23" height="14"/><rect x="23" y="42" width="23" height="14"/><rect x="69" y="42" width="23" height="14"/></g>
+          </g>
+          <!-- boule à facettes -->
+          <line x1="350" y1="0" x2="350" y2="28" stroke="#fff" stroke-width="1.2"/>
+          <circle cx="350" cy="40" r="12" fill="#e6e8f5" stroke="#1d2160" stroke-width="1.5"/>
+          <path d="M338 40h24M350 28v24M341 32q9 8 18 0M341 48q9-8 18 0" stroke="#1d2160" stroke-width=".8" fill="none"/>
+          <g stroke="#fff" stroke-width="1.4" stroke-linecap="round"><path d="M332 30l-6-4M368 30l6-4M330 46l-7 2M370 46l7 2"/></g>
+          <!-- avion vu de dessus, en diagonale -->
+          <g transform="translate(34 178) rotate(-22) scale(.74)">
+            <path d="M0 -9 Q -14 0 0 9 L 300 9 Q 316 0 300 -9 Z" fill="#fff" stroke="#1d2160" stroke-width="2"/>
+            <path d="M120 -9 L 175 -96 L 192 -96 L 160 -9 Z M120 9 L 175 96 L 192 96 L 160 9 Z" fill="#fff" stroke="#1d2160" stroke-width="2"/>
+            <path d="M268 -9 L 292 -46 L 302 -46 L 290 -9 Z M268 9 L 292 46 L 302 46 L 290 9 Z" fill="#fff" stroke="#1d2160" stroke-width="2"/>
+            <ellipse cx="150" cy="-46" rx="13" ry="6" fill="#fff" stroke="#1d2160" stroke-width="1.6"/>
+            <ellipse cx="150" cy="46" rx="13" ry="6" fill="#fff" stroke="#1d2160" stroke-width="1.6"/>
+            <rect x="14" y="-5" width="270" height="10" rx="2" fill="#dfe1f2"/>
+            <path d="M14 -5h270M14 5h270" stroke="#e2412b" stroke-width="1.6"/>
+            <path d="M22 0h258" stroke="#8a90c4" stroke-width="1.2" stroke-dasharray="5 4"/>
+            <path d="M60 -5v10M140 -5v10M236 -5v10" stroke="#e2412b" stroke-width="1.6"/>
+            <path d="M-3 -4q4-3 8 0" stroke="#1d2160" stroke-width="1.4" fill="none"/>
+            <!-- toboggans orange -->
+            <g fill="#ef7d2e" stroke="#9c3f10" stroke-width="1">
+              <path d="M58 9 L 52 46 L 70 46 L 66 9 Z"/><path d="M138 9 L 136 50 L 154 50 L 146 9 Z"/><path d="M234 9 L 236 46 L 254 46 L 242 9 Z"/>
+              <path d="M58 -9 L 52 -44 L 70 -44 L 66 -9 Z"/><path d="M234 -9 L 236 -44 L 254 -44 L 242 -9 Z"/>
+            </g>
+            <g fill="#9c3f10"><path d="M55 18h12M55 26h12M55 34h12M139 20h12M139 30h12M139 40h12M237 18h12M237 26h12M237 34h12" stroke="#ffd2b0" stroke-width="1"/></g>
+          </g>
+          <!-- flèches de sortie -->
+          <g fill="#e2412b"><path d="M120 196l8-5v3h10v4h-10v3z"/><path d="M206 162l8-5v3h10v4h-10v3z"/><path d="M262 120l8-5v3h10v4h-10v3z" transform="rotate(14 270 120)"/><path d="M96 124l-8-5v3H78v4h10v3z"/></g>
+          <!-- destinations -->
+          <g font-family="Manrope, Arial, sans-serif" font-weight="800" font-size="11" fill="#1d2160">
+            <g transform="translate(140 186)"><rect width="56" height="18" rx="4" fill="#fff"/><text x="28" y="12.5" text-anchor="middle">BUFFET</text></g>
+            <g transform="translate(226 150)"><rect width="38" height="18" rx="4" fill="#fff"/><text x="19" y="12.5" text-anchor="middle">BAR</text></g>
+            <g transform="translate(300 118)"><rect width="88" height="18" rx="4" fill="#fff"/><text x="44" y="12.5" text-anchor="middle">PISTE DE DANSE</text></g>
+            <g transform="translate(18 112)"><rect width="74" height="18" rx="4" fill="#fff"/><text x="37" y="12.5" text-anchor="middle">PHOTOBOOTH</text></g>
+          </g>
+          <use href="#coupe" x="268" y="149" width="14" height="19"/>
+          <use href="#note" x="372" y="78" width="12" height="15"/><use href="#note" x="300" y="92" width="10" height="13"/>
+        </svg>
+        <div class="legend">Sorties de secours : toutes mènent à la piste de danse.</div>
+      </div>
+
+      <!-- trois étapes, comme la porte et le toboggan -->
+      <div class="row r3">
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="26" y="8" width="48" height="66" rx="8" fill="#fff" stroke="#1d2160" stroke-width="2.5"/>
+            <rect x="34" y="16" width="32" height="20" rx="4" fill="#cdd3ef" stroke="#1d2160" stroke-width="1.5"/>
+            <text x="50" y="30" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="8" fill="#1d2160">BAR</text>
+            <path d="M58 46h10" stroke="#1d2160" stroke-width="3" stroke-linecap="round"/>
+            <path d="M66 52q12 2 12 14" stroke="#e2412b" stroke-width="3" fill="none"/><path d="M73 62l5 6 4-7z" fill="#e2412b"/></svg>
+          <figcaption>Levez la poignée : le bar est ouvert</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="30" y="8" width="40" height="66" rx="6" fill="#1f8a5b" stroke="#1d2160" stroke-width="2.5"/>
+            <g fill="#ef7d2e" stroke="#1d2160" stroke-width="1"><ellipse cx="44" cy="26" rx="7" ry="9"/><ellipse cx="57" cy="34" rx="7" ry="9" fill="#f4b52a"/><ellipse cx="46" cy="46" rx="7" ry="9" fill="#e2412b"/></g>
+            <path d="M44 35q-2 10 2 16M57 43q2 8-4 14M46 55q0 8 4 12" stroke="#1d2160" stroke-width="1" fill="none"/>
+            <path d="M82 40H66" stroke="#e2412b" stroke-width="3"/><path d="M68 34l-7 6 7 6z" fill="#e2412b"/></svg>
+          <figcaption>Les ballons se gonflent automatiquement</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#1f8a5b"/>
+            <rect x="0" y="0" width="100" height="20" fill="#fff"/><g fill="#1d2160"><rect x="6" y="7" width="5" height="6" rx="1"/><rect x="14" y="7" width="5" height="6" rx="1"/><rect x="22" y="7" width="5" height="6" rx="1"/><rect x="62" y="7" width="5" height="6" rx="1"/><rect x="70" y="7" width="5" height="6" rx="1"/><rect x="78" y="7" width="5" height="6" rx="1"/><rect x="86" y="7" width="5" height="6" rx="1"/></g>
+            <rect x="42" y="2" width="14" height="18" fill="#1d4fb8"/>
+            <path d="M40 20 L 26 76 L 72 76 L 58 20 Z" fill="#ef7d2e" stroke="#9c3f10" stroke-width="1"/>
+            <path d="M37 32h24M34 44h30M31 56h36M28 68h42" stroke="#ffd2b0" stroke-width="1"/>
+            <g fill="#fff" stroke="#1d2160" stroke-width="1"><circle cx="46" cy="34" r="3"/><circle cx="54" cy="52" r="3"/></g>
+            <path d="M44 37l-4 7M52 55l-5 8" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+            <path d="M40 41l-6-2M50 61l-7 1" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="16" cy="58" r="3" fill="#fff"/><path d="M16 61v8M16 64l-5 4M16 64l5-5M16 69l-4 7M16 69l4 7" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+          <figcaption>Glissez sans chaussures… jusqu'à la piste</figcaption>
+        </figure>
+      </div>
+
+      <!-- position de sécurité, fumée -->
+      <div class="row r4">
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <circle cx="50" cy="40" r="20" fill="#f2d0b4"/><path d="M31 34q4-18 20-17 16 1 18 15-8-8-19-7-11 1-19 9z" fill="#2b1d16"/>
+            <path d="M39 37l7 2M61 37l-7 2" stroke="#1d2160" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M42 52q8-6 16 0" stroke="#1d2160" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            <path d="M28 64q22-8 44 0v16H28z" fill="#3b3f9a"/>
+            <use href="#no" x="20" y="8" width="60" height="60"/></svg>
+          <figcaption>Interdit de bouder pendant tout le vol</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M14 10q-6 0-6 8v46h10V18q0-8-4-8z" fill="#2c3488"/>
+            <rect x="8" y="58" width="44" height="8" rx="3" fill="#2c3488"/>
+            <path d="M18 56 Q 26 26 52 34 L 58 44 Q 40 44 34 58 Z" fill="#3b3f9a"/>
+            <circle cx="60" cy="40" r="8" fill="#f2d0b4"/><path d="M53 36q4-8 12-4" stroke="#2b1d16" stroke-width="5" fill="none"/>
+            <ellipse cx="74" cy="56" rx="16" ry="4" fill="#fff" stroke="#1d2160" stroke-width="1.6"/>
+            <path d="M64 53q6-7 14-1" fill="#ef7d2e"/><path d="M84 30v20M88 30v8q0 4-4 4" stroke="#8a90c4" stroke-width="2" fill="none"/>
+            <path d="M34 58v14h18" stroke="#262a6b" stroke-width="7" fill="none"/></svg>
+          <figcaption>Position de dégustation : penché vers l'assiette</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M30 76V48q0-10 10-10h18q10 0 10 10v28z" fill="#3b3f9a"/>
+            <circle cx="49" cy="27" r="9" fill="#f2d0b4"/><path d="M40 25q2-12 12-10 7 2 6 9-6-5-18 1z" fill="#2b1d16"/>
+            <path d="M36 44Q22 30 26 10M62 44Q76 30 72 10" stroke="#3b3f9a" stroke-width="7" stroke-linecap="round" fill="none"/>
+            <circle cx="26" cy="9" r="4" fill="#f2d0b4"/><circle cx="72" cy="9" r="4" fill="#f2d0b4"/>
+            <use href="#note" x="6" y="30" width="12" height="15"/><use href="#note" x="82" y="40" width="12" height="15"/></svg>
+          <figcaption>« Dancing Queen » : mains en l'air obligatoires</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#3a3f8f"/>
+            <g fill="#c9cbe6" opacity=".85"><circle cx="20" cy="58" r="16"/><circle cx="40" cy="64" r="14"/><circle cx="60" cy="60" r="16"/><circle cx="82" cy="66" r="14"/><circle cx="30" cy="44" r="12"/><circle cx="70" cy="46" r="12"/></g>
+            <g stroke="#ffb100" stroke-width="2.5" stroke-linecap="round" opacity=".9"><path d="M50 2L30 40M50 2L70 40"/></g>
+            <circle cx="50" cy="8" r="6" fill="#e6e8f5"/>
+            <path d="M44 30q6 -6 12 0" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+          <figcaption>Fumée en cabine : c'est la machine de la piste, dansez</figcaption>
+        </figure>
+      </div>
+
+      <!-- masques → coupes de champagne -->
+      <div class="row r4">
+        <figure class="p"><span class="n">1</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="16" y="6" width="48" height="10" fill="#fff" stroke="#1d2160" stroke-width="1.4"/>
+            <path d="M18 16v10M32 16v14M46 16v10" stroke="#1d2160" stroke-width="1"/>
+            <use href="#coupe" x="11" y="25" width="14" height="19"/><use href="#coupe" x="25" y="29" width="14" height="19"/><use href="#coupe" x="39" y="25" width="14" height="19"/>
+            <path d="M56 28v14" stroke="#e2412b" stroke-width="3"/><path d="M51 40l5 7 5-7z" fill="#e2412b"/>
+            <use href="#sit" x="44" y="18" width="52" height="66"/></svg>
+          <figcaption>En cas de baisse d'ambiance, des coupes tombent</figcaption>
+        </figure>
+        <figure class="p"><span class="n">2</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="16" y="6" width="48" height="10" fill="#fff" stroke="#1d2160" stroke-width="1.4"/>
+            <path d="M60 16 Q 66 30 60 40" stroke="#1d2160" stroke-width="1" fill="none"/>
+            <use href="#coupe" x="52" y="34" width="16" height="21"/>
+            <path d="M70 30q10-6 18 2" stroke="#e2412b" stroke-width="3" fill="none"/><path d="M86 27l4 8-8 0z" fill="#e2412b"/>
+            <use href="#sit" x="8" y="18" width="52" height="66"/></svg>
+          <figcaption>Tirez fermement la coupe vers vous</figcaption>
+        </figure>
+        <figure class="p"><span class="n">3</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M8 76V44q0-12 12-12h30q12 0 12 12v32z" fill="#3b3f9a"/>
+            <circle cx="40" cy="22" r="11" fill="#f2d0b4"/><path d="M29 20q2-14 14-12 9 2 8 11-7-6-22 1z" fill="#2b1d16"/>
+            <use href="#coupe" x="46" y="16" width="18" height="24" transform="rotate(-25 55 28)"/>
+            <path d="M58 44q-6-4-10-14" stroke="#3b3f9a" stroke-width="7" stroke-linecap="round" fill="none"/>
+            <text x="82" y="62" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="10" fill="#e2412b">SANTÉ !</text></svg>
+          <figcaption>Portez-la à la bouche et respirez normalement</figcaption>
+        </figure>
+        <figure class="p"><span class="n">4</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#1d4fb8"/>
+            <path d="M6 76V46q0-10 10-10h22q10 0 10 10v30z" fill="#3b3f9a"/>
+            <circle cx="28" cy="25" r="10" fill="#f2d0b4"/><path d="M18 23q2-12 12-11 8 2 7 10-6-5-19 1z" fill="#2b1d16"/>
+            <use href="#coupe" x="18" y="34" width="12" height="16"/>
+            <path d="M56 76V52q0-8 8-8h16q8 0 8 8v24z" fill="#ef7d2e"/>
+            <circle cx="72" cy="34" r="9" fill="#f2d0b4"/><path d="M64 31q2-10 10-9 6 2 6 8-5-4-16 1z" fill="#6b3a1e"/>
+            <path d="M46 52q8-10 16-4" stroke="#3b3f9a" stroke-width="6" stroke-linecap="round" fill="none"/>
+            <use href="#coupe" x="58" y="38" width="12" height="16"/></svg>
+          <figcaption>Servez-vous avant de servir votre voisin</figcaption>
+        </figure>
+      </div>
+    </div>
+    <footer class="foot">
+      <p>Merci de laisser cette carte à bord… ou de la garder en souvenir.</p>
+      <div class="brand"><strong>M<i>&amp;</i>C AIRLINES</strong><em>VOL MC 5060</em></div>
+    </footer>
+  </section>
+
+  <!-- ═════════════ VERSO ═════════════ -->
+  <section class="sheet">
+    <header class="top"><h1>Consignes de sécurité</h1><b>A 50·60</b></header>
+    <div class="body">
+      <div class="row r4">
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <g stroke="#1d2160" stroke-width="2"><path d="M8 18h26M38 18h26M68 18h26"/></g>
+            <path d="M10 14l6-4h10l4 4M42 16l20-2M72 14l18 6" stroke="#1d2160" stroke-width="3" fill="none"/>
+            <rect x="28" y="38" width="44" height="30" rx="4" fill="#fff" stroke="#1d2160" stroke-width="2"/>
+            <text x="50" y="57" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="8.5" fill="#1d2160">RÉGIME</text>
+            <use href="#no" x="26" y="26" width="48" height="48"/></svg>
+          <figcaption>Régime suspendu pendant toute la durée du vol</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M0 34h34M66 34h34" stroke="#1d2160" stroke-width="8"/>
+            <rect x="30" y="27" width="18" height="14" rx="3" fill="#fff" stroke="#1d2160" stroke-width="2"/>
+            <rect x="50" y="29" width="18" height="10" rx="2" fill="#d6d8e8" stroke="#1d2160" stroke-width="2"/>
+            <path d="M22 50h16M78 50H62" stroke="#e2412b" stroke-width="3"/><path d="M36 45l7 5-7 5zM64 45l-7 5 7 5z" fill="#e2412b"/>
+            <path d="M14 22q6-10 18-6M86 22q-6-10-18-6" stroke="#f2d0b4" stroke-width="7" stroke-linecap="round" fill="none"/></svg>
+          <figcaption>Attachez votre ceinture avant le buffet…</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M0 34h28M72 34h28" stroke="#1d2160" stroke-width="8"/>
+            <rect x="26" y="27" width="18" height="14" rx="3" fill="#fff" stroke="#1d2160" stroke-width="2"/>
+            <rect x="56" y="29" width="18" height="10" rx="2" fill="#d6d8e8" stroke="#1d2160" stroke-width="2"/>
+            <path d="M40 22q8-14 18-6" stroke="#e2412b" stroke-width="3" fill="none"/><path d="M56 12l6 6-8 2z" fill="#e2412b"/>
+            <path d="M44 52H22M56 52h22" stroke="#e2412b" stroke-width="3"/><path d="M24 47l-7 5 7 5zM76 47l7 5-7 5z" fill="#e2412b"/>
+            <text x="50" y="72" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="10" fill="#1d2160">+1 CRAN</text></svg>
+          <figcaption>… et desserrez-la d'un cran après le dessert</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M30 8q-8 0-8 10v44h14V20q0-12-6-12z" fill="#2c3488"/>
+            <path d="M22 62h40v8H22z" fill="#2c3488"/>
+            <path d="M36 14l6-6" stroke="#e2412b" stroke-width="3"/><path d="M40 4l6 0-2 6z" fill="#e2412b"/>
+            <rect x="56" y="12" width="38" height="26" rx="2" fill="#1d2160"/><rect x="59" y="15" width="32" height="20" fill="#2f5bd0"/>
+            <text x="75" y="29" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="7" fill="#fff">QUIZ</text>
+            <path d="M48 44l12-6" stroke="#e2412b" stroke-width="3"/><path d="M58 34l6 3-6 4z" fill="#e2412b"/></svg>
+          <figcaption>Redressez votre dossier : le quiz commence sur l'écran géant</figcaption>
+        </figure>
+      </div>
+
+      <div class="row r4">
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="10" y="18" width="80" height="50" fill="#c4c8e4"/><rect x="14" y="22" width="34" height="42" fill="#3b3f9a"/><rect x="52" y="22" width="34" height="42" fill="#3b3f9a"/>
+            <rect x="22" y="38" width="22" height="18" rx="3" fill="#1f8a5b"/><rect x="58" y="34" width="16" height="22" rx="3" fill="#1d2160"/>
+            <circle cx="72" cy="30" r="5" fill="#f2d0b4"/>
+            <use href="#no" x="22" y="12" width="56" height="56"/></svg>
+          <figcaption>Votre sac à main n'a pas besoin de sa propre chaise</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="6" y="20" width="88" height="8" rx="2" fill="#a67046"/><path d="M14 28v40M86 28v40" stroke="#a67046" stroke-width="5"/>
+            <ellipse cx="50" cy="60" rx="24" ry="7" fill="#1f8a5b"/><circle cx="30" cy="56" r="6" fill="#f2d0b4"/>
+            <text x="66" y="48" font-family="Manrope,Arial" font-weight="800" font-size="10" fill="#1d2160">zZz</text>
+            <use href="#no" x="22" y="16" width="56" height="56"/></svg>
+          <figcaption>Pas de sieste sous la table, même après le fromage</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="36" y="6" width="34" height="72" fill="#fff" stroke="#1d2160" stroke-width="2"/>
+            <circle cx="48" cy="18" r="3" fill="#1d2160"/><path d="M48 22v10M44 26h8" stroke="#1d2160" stroke-width="2.5"/>
+            <circle cx="60" cy="18" r="3" fill="#1d2160"/><path d="M60 22l-4 10h8z" fill="#1d2160"/>
+            <rect x="16" y="44" width="22" height="18" fill="#e2412b"/><path d="M27 44v18M16 53h22" stroke="#f4b52a" stroke-width="3"/>
+            <use href="#no" x="28" y="26" width="50" height="50"/></svg>
+          <figcaption>Interdit de cacher les cadeaux dans les toilettes</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="34" y="10" width="32" height="56" rx="5" fill="#1d2160"/><rect x="37" y="16" width="26" height="42" fill="#2f5bd0"/>
+            <circle cx="50" cy="62" r="2" fill="#fff"/>
+            <path d="M42 36l6 6 12-12" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+            <g stroke="#1f8a5b" stroke-width="2" fill="none"><path d="M72 22q6 6 0 12M78 18q10 10 0 20"/></g>
+            <text x="50" y="76" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="8" fill="#1f8a5b">AUTORISÉ</text></svg>
+          <figcaption>Téléphones autorisés : quiz, photos et Boîte noire</figcaption>
+        </figure>
+      </div>
+
+      <!-- grand panneau bleu : amerrissage dans le punch -->
+      <div class="big">
+        <svg viewBox="0 0 400 128" role="img" aria-label="Amerrissage dans le bol de punch, avec bouées et canots">
+          <rect width="400" height="128" fill="#1d4fb8"/>
+          <path d="M0 30q20-8 40 0t40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0v6H0z" fill="#2f62cc" opacity=".5"/>
+          <path d="M0 118 Q 200 100 400 118 V128 H0z" fill="#a67046"/>
+          <!-- avion posé sur le punch -->
+          <g transform="translate(70 104) rotate(-9) scale(.6)">
+            <path d="M0 -8 Q -13 0 0 8 L 290 8 Q 304 0 290 -8 Z" fill="#fff" stroke="#1d2160" stroke-width="2.4"/>
+            <path d="M115 -8 L 165 -86 L 180 -86 L 152 -8 Z M115 8 L 165 86 L 180 86 L 152 8 Z" fill="#fff" stroke="#1d2160" stroke-width="2.4"/>
+            <path d="M258 -8 L 280 -42 L 290 -42 L 280 -8 Z M258 8 L 280 42 L 290 42 L 280 8 Z" fill="#fff" stroke="#1d2160" stroke-width="2.4"/>
+            <rect x="14" y="-4.5" width="262" height="9" rx="2" fill="#dfe1f2"/>
+            <path d="M14 -4.5h262M14 4.5h262" stroke="#e2412b" stroke-width="1.8"/>
+            <path d="M22 0h248" stroke="#8a90c4" stroke-width="1.3" stroke-dasharray="5 4"/>
+          </g>
+          <!-- rondelles d'orange, glaçons -->
+          <g><circle cx="34" cy="98" r="8" fill="#ef7d2e"/><circle cx="34" cy="98" r="5.5" fill="#ffb366"/><path d="M34 92.5v11M28.5 98h11" stroke="#ef7d2e" stroke-width=".8"/></g>
+          <g><circle cx="300" cy="104" r="8" fill="#ef7d2e"/><circle cx="300" cy="104" r="5.5" fill="#ffb366"/><path d="M300 98.5v11M294.5 104h11" stroke="#ef7d2e" stroke-width=".8"/></g>
+          <rect x="250" y="56" width="11" height="11" rx="2" fill="#dff1ff" opacity=".85" transform="rotate(-10 255 61)"/>
+          <rect x="44" y="40" width="11" height="11" rx="2" fill="#dff1ff" opacity=".85" transform="rotate(12 50 46)"/>
+          <!-- canots avec passagers -->
+          <g fill="#f4b52a" stroke="#9c6a00" stroke-width="1.2"><ellipse cx="92" cy="58" rx="20" ry="7"/><ellipse cx="300" cy="72" rx="20" ry="7"/><ellipse cx="350" cy="104" rx="18" ry="6"/><ellipse cx="226" cy="98" rx="18" ry="6"/></g>
+          <g fill="#f2d0b4"><circle cx="84" cy="52" r="3"/><circle cx="92" cy="51" r="3"/><circle cx="100" cy="52" r="3"/><circle cx="294" cy="66" r="3"/><circle cx="304" cy="65" r="3"/><circle cx="344" cy="98" r="3"/><circle cx="354" cy="98" r="3"/><circle cx="222" cy="92" r="3"/><circle cx="231" cy="92" r="3"/></g>
+          <use href="#coupe" x="88" y="34" width="10" height="14"/><use href="#coupe" x="296" y="48" width="10" height="14"/><use href="#coupe" x="346" y="80" width="10" height="14"/>
+          <!-- pas de talons sur le toboggan -->
+          <use href="#no" x="352" y="40" width="34" height="34"/>
+          <path d="M359 62q7-8 15-7l5 5-3 2-5-2-4 5z" fill="#1d2160"/>
+        </svg>
+        <div class="legend">En cas d'amerrissage dans le punch, gardez votre verre au-dessus de l'eau.</div>
+      </div>
+
+      <!-- gilet de sauvetage → gilet de costume -->
+      <div class="row r4">
+        <figure class="p"><span class="n">1a</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <use href="#sit" x="14" y="4" width="56" height="72"/>
+            <rect x="58" y="62" width="22" height="10" rx="2" fill="#f4b52a" stroke="#1d2160" stroke-width="1.2"/>
+            <path d="M70 50v8" stroke="#e2412b" stroke-width="3"/><path d="M65 56l5 6 5-6z" fill="#e2412b"/>
+            <text x="50" y="78" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="6" fill="#1d2160">CLASSE BUSINESS · MIDI</text></svg>
+          <figcaption>Votre gilet est sous votre siège…</figcaption>
+        </figure>
+        <figure class="p"><span class="n">1b</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <use href="#sit" x="14" y="4" width="56" height="72"/>
+            <rect x="58" y="62" width="22" height="10" rx="2" fill="#2c3488" stroke="#1d2160" stroke-width="1.2"/>
+            <path d="M62 66h14" stroke="#ffb100" stroke-width="1.5"/>
+            <text x="50" y="78" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="6" fill="#1d2160">CLASSE PREMIUM · SOIR</text></svg>
+          <figcaption>… le soir, c'est une veste de costume</figcaption>
+        </figure>
+        <figure class="p"><span class="n">2</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M24 76V50q0-12 14-14h24q14 2 14 14v26z" fill="#3b3f9a"/>
+            <path d="M34 38 L 50 66 L 66 38 L 74 42 L 74 76 L 26 76 L 26 42 Z" fill="#f4b52a" stroke="#9c6a00" stroke-width="1.2"/>
+            <circle cx="50" cy="26" r="11" fill="#f2d0b4"/><path d="M39 24q2-14 14-12 9 2 8 11-7-6-22 1z" fill="#2b1d16"/>
+            <path d="M36 40q-6-16 4-22M64 40q6-16-4-22" stroke="#3b3f9a" stroke-width="6" stroke-linecap="round" fill="none"/></svg>
+          <figcaption>Enfilez-le par la tête, sourire compris</figcaption>
+        </figure>
+        <figure class="p"><span class="n">3</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M24 76V50q0-12 14-14h24q14 2 14 14v26z" fill="#3b3f9a"/>
+            <path d="M30 40 L 50 70 L 70 40 L 76 44 L 76 76 L 24 76 L 24 44 Z" fill="#f4b52a" stroke="#9c6a00" stroke-width="1.2"/>
+            <circle cx="50" cy="26" r="11" fill="#f2d0b4"/><path d="M39 24q2-14 14-12 9 2 8 11-7-6-22 1z" fill="#2b1d16"/>
+            <rect x="34" y="66" width="32" height="5" fill="#1d2160"/><rect x="47" y="64" width="6" height="9" rx="1" fill="#e2412b"/>
+            <path d="M28 76h-8M72 76h8" stroke="#e2412b" stroke-width="3"/><path d="M22 72l-6 4 6 4zM78 72l6 4-6 4z" fill="#e2412b"/></svg>
+          <figcaption>Serrez la sangle… pas trop après le buffet</figcaption>
+        </figure>
+      </div>
+      <div class="row r4">
+        <figure class="p"><span class="n">4</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <path d="M18 76V48q0-12 14-14h36q14 2 14 14v28z" fill="#3b3f9a"/>
+            <path d="M22 38 L 50 70 L 78 38 L 86 44 L 86 76 L 14 76 L 14 44 Z" fill="#f4b52a" stroke="#9c6a00" stroke-width="1.4"/>
+            <circle cx="50" cy="24" r="11" fill="#f2d0b4"/><path d="M39 22q2-14 14-12 9 2 8 11-7-6-22 1z" fill="#2b1d16"/>
+            <path d="M44 28q6 4 12 0" stroke="#1d2160" stroke-width="1.5" fill="none"/>
+            <g stroke="#e2412b" stroke-width="2.5" stroke-linecap="round"><path d="M8 40l6 4M92 40l-6 4M10 56h6M90 56h-6"/></g></svg>
+          <figcaption>Le gilet se gonfle… de fierté</figcaption>
+        </figure>
+        <figure class="p"><span class="n">4a</span>
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <circle cx="30" cy="34" r="12" fill="#f2d0b4"/><path d="M18 32q2-15 15-13 10 2 9 12-8-7-24 1z" fill="#2b1d16"/>
+            <path d="M14 76V58q0-10 12-10h10q12 0 12 10v18z" fill="#3b3f9a"/>
+            <path d="M42 36q6 0 10-2" stroke="#8a90c4" stroke-width="2" stroke-dasharray="3 3"/>
+            <use href="#cake" x="48" y="30" width="48" height="40"/></svg>
+          <figcaption>Soufflez dans le tube… ou dans les bougies</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#dfe1f2"/>
+            <rect x="4" y="4" width="92" height="72" rx="4" fill="none" stroke="#1d4fb8" stroke-width="2"/>
+            <circle cx="50" cy="30" r="10" fill="#f2d0b4"/><path d="M40 27q3-12 13-10 8 2 7 10-7-6-20 0z" fill="#e8c47a"/>
+            <path d="M34 72V52q0-10 10-10h12q10 0 10 10v20z" fill="#ef7d2e"/>
+            <rect x="26" y="58" width="48" height="14" rx="3" fill="#fff" stroke="#1d4fb8" stroke-width="1.5"/>
+            <text x="50" y="69" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="9" fill="#1d4fb8">ENFANT</text></svg>
+          <figcaption>Les enfants passent en premier… au buffet de desserts</figcaption>
+        </figure>
+        <figure class="p">
+          <svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#1d2160"/>
+            <circle cx="50" cy="35" r="28" fill="none" stroke="#ffb100" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <text x="50" y="30" text-anchor="middle" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="16" fill="#ffb100">50 + 60</text>
+            <text x="50" y="46" text-anchor="middle" font-family="Manrope,Arial" font-weight="800" font-size="9" fill="#fff">= 110 ANS</text>
+            <text x="50" y="70" text-anchor="middle" font-family="Manrope,Arial" font-weight="700" font-size="7" fill="#c9cbe6">DE VOL SANS INCIDENT</text></svg>
+          <figcaption>Vos commandants de bord : Marjorie &amp; Christophe</figcaption>
+        </figure>
+      </div>
+    </div>
+    <footer class="foot">
+      <p>Merci de laisser cette carte à bord… ou de la garder en souvenir.</p>
+      <div class="brand"><strong>M<i>&amp;</i>C AIRLINES</strong><em>VOL MC 5060</em></div>
+    </footer>
+  </section>
+</body>
+</html>
