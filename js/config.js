@@ -12,7 +12,12 @@ window.EVENT = {
   dateLabel: "Samedi 7 novembre 2026",
   heure: "12h30",
   lieu: "Salle des fêtes de Champrosay",
-  adresse: "1 allée des Alouettes, 91270 Draveil",
+  adresse: "Rue du Bas de Champrosay, 91210 Draveil",
+  repere: "À côté du stade de Champrosay et du centre aéré",
+  // Lien Google Maps exact de la salle (le GPS se trompe avec une adresse seule)
+  mapsUrl: "https://maps.app.goo.gl/hPMCvkp1w56v3Ffo6",
+  // Recherche utilisée pour Waze et Plans
+  navQuery: "Stade de Champrosay, Rue du Bas de Champrosay, 91210 Draveil",
   ville: "Draveil",
   porte: "A50", // la « porte d'embarquement » affichée sur le tableau
   dressCode: "Simple et chic",

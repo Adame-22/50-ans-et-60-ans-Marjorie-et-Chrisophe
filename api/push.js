@@ -62,7 +62,7 @@ async function ics(req) {
     "SEQUENCE:" + (last ? last.seq : 0),
     "DTSTART:20261107T113000Z", "DTEND:20261107T225900Z",
     fold("SUMMARY:" + icsText("Vol MC 5060 · 50 ans de Marjorie & 60 ans de Christophe")),
-    fold("LOCATION:" + icsText("Salle des fêtes de Champrosay, 1 allée des Alouettes, 91270 Draveil")),
+    fold("LOCATION:" + icsText("Salle des fêtes de Champrosay, Rue du Bas de Champrosay, 91210 Draveil (à côté du stade de Champrosay)")),
     fold("DESCRIPTION:" + icsText(desc)),
     "URL:" + base + "/",
     "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Demain : Vol MC 5060 ✈", "TRIGGER:-P1D", "END:VALARM",

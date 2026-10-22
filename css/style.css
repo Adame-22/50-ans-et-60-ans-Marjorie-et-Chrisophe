@@ -1510,3 +1510,7 @@ h3 { font-size: 1.6rem; }
   .done__cal .big-btn small { font-size: .78rem; }
   .done__foot .btn { flex: 1 1 100%; }
 }
+
+/* Repère pour trouver la salle (le GPS se trompe avec l'adresse seule) */
+.info__hint { font-style: normal; font-size: .88rem; color: #8f5c38; }
+.route-card__hint { margin: .2rem 0 .9rem; font-size: .95rem; color: var(--gold-light); }

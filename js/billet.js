@@ -15,7 +15,7 @@
     var q = window.qrcode(0, "M"); q.addData(text); q.make();
     return q.createSvgTag({ cellSize: 3, margin: 0, scalable: true }).replace(/fill="black"|fill="#000000"/g, 'fill="#000033"');
   }
-  var dest = encodeURIComponent([CFG.lieu, CFG.adresse].filter(Boolean).join(", "));
+  var dest = encodeURIComponent(CFG.navQuery || [CFG.lieu, CFG.adresse].filter(Boolean).join(", "));
 
   if (!token) { app.innerHTML = '<p class="billet__loading">Lien incomplet. Ouvrez le lien reçu par e-mail ou SMS.</p>'; return; }
   fetch("/api/rsvp?pass=" + encodeURIComponent(token)).then(function (r) {
@@ -60,7 +60,7 @@
     html += '<section class="billet__prep"><h2>Préparer le voyage</h2><div class="billet__actions">' +
       act("/agenda.ics", "M5 5h14v15H5zM5 10h14M9 3v4M15 3v4", "Agenda", "Rappel la veille", ' download="vol-mc5060.ics"') +
       act("webcal://" + location.host + "/agenda.ics", "M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M9 15l2 2 4-4", "S'abonner", "Mises à jour auto") +
-      act("https://www.google.com/maps/search/?api=1&query=" + dest, "M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5", "Itinéraire", "Google Maps", ' target="_blank" rel="noopener"') +
+      act(CFG.mapsUrl || "https://www.google.com/maps/search/?api=1&query=" + dest, "M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5", "Itinéraire", "Google Maps", ' target="_blank" rel="noopener"') +
       act("https://waze.com/ul?navigate=yes&q=" + dest, "M12 3.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15M9.5 10v.1M14.5 10v.1M9 13.5c1.6 1.3 4.4 1.3 6 0", "Waze", "En voiture", ' target="_blank" rel="noopener"') +
       "</div></section>" +
       '<div class="push-slot" id="push-slot" data-push></div>' +
