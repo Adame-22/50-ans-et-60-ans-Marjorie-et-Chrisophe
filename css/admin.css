@@ -664,3 +664,11 @@ body.admin { font-variant-numeric: lining-nums; }
   .guest-tools__actions { display: grid; grid-template-columns: 1fr 1fr; }
   .guest-tools__actions #m-add { grid-column: 1 / -1; }
 }
+
+/* Rappel J-5 */
+.remind { border-left: 4px solid var(--gold, #ffb100); }
+.remind__when { display: inline-block; margin-left: .4rem; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--bronze, #a67046); vertical-align: middle; }
+.remind__nomail { grid-column: 1 / -1; }
+.remind__nomail summary { cursor: pointer; font-weight: 600; }
+.remind__list { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; gap: .4rem; }
+.remind__list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem .8rem; padding: .45rem .7rem; border: 1px solid rgba(0,0,51,.12); border-radius: 10px; }

@@ -182,6 +182,75 @@ async function sendEmail(req, entry, cfg, linkUrl) {
   await logSend(true, entry.email, entry.nom);
 }
 
+/* ───────── Rappel J-5 : tout le récapitulatif, envoyé depuis l'admin ───────── */
+const MAPS = "https://maps.app.goo.gl/hPMCvkp1w56v3Ffo6";
+const PROGRAMME = [
+  ["12h30", "Enregistrement : accueil des passagers"],
+  ["13h00", "Embarquement : apéritif et champagne"],
+  ["14h00", "Service à bord : le buffet"],
+  ["16h30", "Altitude de croisière : discours, surprises et gâteau"],
+  ["17h30", "Zone de turbulences : la piste de danse est ouverte"],
+  ["Tard", "Atterrissage en douceur"],
+];
+function peopleOf(e) {
+  const fares = [e.creneau || "journee"].concat(e.creneauxAcc || []);
+  const names = [e.nom].concat(e.accompagnants || []);
+  return Array.from({ length: Math.max(1, e.passagers || 1) }, (_, i) => ({ nom: names[i] || "Passager " + (i + 1), creneau: fares[i] || fares[0] }));
+}
+const FARE_LONG = { midi: "le déjeuner (midi)", soir: "la soirée", journee: "midi et soir" };
+
+function reminderHtml(entry, url) {
+  const first = esc(entry.prenom || String(entry.nom || "").split(" ")[0]);
+  const ppl = peopleOf(entry);
+  const row = (k, v) => `<tr><td style="padding:6px 0;color:#7a7d7d;font-size:14px;width:118px;vertical-align:top">${k}</td><td style="padding:6px 0;font-size:15px;font-weight:bold">${v}</td></tr>`;
+  return `<!doctype html><html lang="fr"><body style="margin:0;background:#f7f1ed;font-family:Helvetica,Arial,sans-serif;color:#000033">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f1ed;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fffbfe;border-radius:18px;overflow:hidden;border:1px solid #e8e1dc">
+<tr><td style="background:#000033;padding:26px 28px 22px;text-align:center;border-bottom:4px solid #ffb100">
+<div style="font-size:12px;letter-spacing:3px;color:#ffb100;font-weight:bold">VOL MC 5060 · DÉCOLLAGE À J-5</div>
+<div style="font-family:Georgia,serif;font-size:30px;color:#fffbfe;margin-top:10px">Marjorie &amp; Christophe</div>
+<div style="font-size:13px;color:#a67046;margin-top:6px">50 ans · 60 ans</div></td></tr>
+<tr><td style="padding:26px 28px 8px">
+<p style="font-size:18px;margin:0 0 10px">Bonjour ${first},</p>
+<p style="font-size:16px;line-height:1.55;margin:0 0 18px">Le décollage approche ! Voici le récapitulatif de votre vol, avec <b>la bonne adresse de la salle</b> (elle a été précisée depuis votre inscription).</p>
+<table role="presentation" width="100%" style="border:1px dashed #a67046;border-radius:12px;margin:0 0 18px"><tr><td style="padding:14px 18px">
+<table role="presentation" width="100%">
+${row("Quand", "Samedi 7 novembre 2026")}
+${row("Embarquement", "12h30")}
+${row("Où", "Salle des fêtes de Champrosay<br><span style=\"font-weight:normal\">Rue du Bas de Champrosay, 91210 Draveil<br>À côté du stade de Champrosay et du centre aéré</span>")}
+${row("Dress code", "Simple et chic")}
+${row("Parking", "Sur place")}
+</table></td></tr></table>
+<p style="text-align:center;margin:0 0 22px"><a href="${MAPS}" style="display:inline-block;background:#000033;color:#ffb100;text-decoration:none;font-weight:bold;font-size:15px;padding:13px 22px;border-radius:999px">📍 Itinéraire Google Maps</a></p>
+<p style="font-size:13px;letter-spacing:2px;color:#a67046;font-weight:bold;margin:0 0 6px">VOS PASSAGERS</p>
+<table role="presentation" width="100%" style="margin:0 0 18px">${ppl.map((p) => `<tr><td style="padding:5px 0;font-size:15px">${esc(p.nom)}</td><td style="padding:5px 0;font-size:14px;text-align:right;color:#000033"><b>${FARE_LONG[p.creneau] || FARE_LONG.journee}</b></td></tr>`).join("")}</table>
+${entry.repas && entry.repas !== "Standard" || entry.allergies ? `<p style="font-size:14px;line-height:1.5;margin:0 0 18px;color:#5d6061">Régime ou allergies notés : <b style="color:#000033">${esc([entry.repas !== "Standard" ? entry.repas : "", entry.allergies].filter(Boolean).join(" · "))}</b></p>` : ""}
+<p style="font-size:13px;letter-spacing:2px;color:#a67046;font-weight:bold;margin:0 0 6px">PLAN DE VOL</p>
+<table role="presentation" width="100%" style="margin:0 0 20px">${PROGRAMME.map((p) => `<tr><td style="padding:4px 0;font-size:14px;color:#a67046;font-weight:bold;width:62px">${p[0]}</td><td style="padding:4px 0;font-size:14px">${p[1]}</td></tr>`).join("")}</table>
+<p style="text-align:center;margin:0 0 12px"><a href="${url}" style="display:inline-block;background:#a67046;color:#000033;text-decoration:none;font-weight:bold;font-size:17px;padding:16px 28px;border-radius:999px">Voir ma carte d'embarquement</a></p>
+<p style="font-size:14px;line-height:1.5;color:#5d6061;text-align:center;margin:0 0 6px">Un changement de dernière minute (nombre de personnes, midi ou soir) ? Répondez simplement à cet e-mail.</p>
+<p style="font-size:13px;color:#7a7d7d;margin:18px 0 22px;text-align:center">À samedi ! · Vol MC 5060</p>
+</td></tr></table></td></tr></table></body></html>`;
+}
+function reminderText(entry, url) {
+  const first = entry.prenom || String(entry.nom || "").split(" ")[0];
+  return "Bonjour " + first + ",\n\nLe décollage approche ! Voici le récapitulatif de votre vol.\n\n" +
+    "Quand : samedi 7 novembre 2026, embarquement 12h30\nOù : Salle des fêtes de Champrosay, rue du Bas de Champrosay, 91210 Draveil (à côté du stade de Champrosay et du centre aéré)\nItinéraire : " + MAPS + "\nDress code : simple et chic · Parking sur place\n\n" +
+    "Vos passagers :\n" + peopleOf(entry).map((p) => "- " + p.nom + " : " + (FARE_LONG[p.creneau] || FARE_LONG.journee)).join("\n") + "\n\n" +
+    "Plan de vol :\n" + PROGRAMME.map((p) => p[0] + " · " + p[1]).join("\n") + "\n\n" +
+    "Votre carte d'embarquement : " + url + "\n\nUn changement de dernière minute ? Répondez simplement à cet e-mail.\n\nÀ samedi ! · Vol MC 5060";
+}
+async function sendReminder(req, entry, cfg, linkUrl) {
+  const c = cfg || (await getConfig());
+  if (!ready(c)) throw new Error("Envoi d'e-mails non configuré.");
+  if (!entry.email) throw new Error("Pas d'e-mail.");
+  const url = linkUrl || passUrl(req, entry);
+  try {
+    await deliver(c, { to: entry.email, toName: entry.nom, subject: "✈ J-5 · Tout pour votre vol MC 5060 (samedi 7 novembre)", html: reminderHtml(entry, url), text: reminderText(entry, url) });
+  } catch (e) { await logSend(false, entry.email, "rappel J-5 · " + e.message); throw e; }
+  await logSend(true, entry.email, "rappel J-5 · " + entry.nom);
+}
+
 /* E-mail d'essai, envoyé depuis l'admin */
 async function sendTest(req, to) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to || "")) throw new L.HttpError(400, "Adresse de test incorrecte.");
@@ -192,4 +261,4 @@ async function sendTest(req, to) {
   catch (e) { throw new L.HttpError(502, e.message); }
 }
 
-module.exports = { status, adminView, saveConfig, clearConfig, getConfig, siteUrl, passUrl, ensureToken, phoneE164, sendEmail, sendTest, emailHtml, FARE };
+module.exports = { status, adminView, saveConfig, clearConfig, getConfig, siteUrl, passUrl, ensureToken, phoneE164, sendEmail, sendTest, emailHtml, FARE, sendReminder, reminderHtml };

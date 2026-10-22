@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261022" />
-  <link rel="stylesheet" href="css/style.css?v=20261022" />
-  <link rel="stylesheet" href="css/admin.css?v=20261022" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261023" />
+  <link rel="stylesheet" href="css/style.css?v=20261023" />
+  <link rel="stylesheet" href="css/admin.css?v=20261023" />
 </head>
 <body class="admin">
 
@@ -166,6 +166,23 @@
             <button class="btn btn--small btn--line" type="submit">Envoyer l'essai</button>
           </form>
           <ul class="mail-log" id="mail-log"></ul>
+        </details>
+      </div>
+
+      <div class="card send-box remind" id="remind-box">
+        <div>
+          <h3>Rappel J-5 <small class="remind__when">à envoyer le lundi 2 novembre</small></h3>
+          <p class="hint">Un e-mail récapitulatif complet à tous ceux qui viennent : date, heure, <b>bonne adresse</b> avec itinéraire, billet de chaque passager, dress code, plan de vol et lien vers la carte. Chacun ne le reçoit qu'une fois.</p>
+          <p class="hint" id="remind-status">…</p>
+        </div>
+        <div class="send-box__actions">
+          <a class="btn btn--small btn--line" href="/api/rsvp?view=reminder-preview" target="_blank" rel="noopener">Voir l'e-mail</a>
+          <button class="btn btn--small btn--gold" id="remind-send" type="button" disabled>Envoyer le rappel</button>
+        </div>
+        <details class="remind__nomail" id="remind-nomail" hidden>
+          <summary id="remind-nomail-sum"></summary>
+          <p class="hint hint--tiny">Pas d'e-mail pour eux : copiez le message et envoyez-le par WhatsApp ou SMS.</p>
+          <ul class="remind__list" id="remind-list"></ul>
         </details>
       </div>
 
@@ -508,8 +525,8 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261022"></script>
+  <script src="js/graph.js?v=20261023"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261022"></script>
+  <script src="js/admin.js?v=20261023"></script>
 </body>
 </html>

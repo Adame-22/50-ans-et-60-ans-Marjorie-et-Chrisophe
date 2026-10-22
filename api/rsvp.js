@@ -149,6 +149,33 @@ module.exports = L.handler(async (req, res) => {
       }
       return L.send(res, 200, { ok: true, merged });
     }
+    // Rappel J-5 : récapitulatif complet à ceux qui viennent (ids donnés, sinon tous ceux qui ne l'ont pas reçu)
+    if (b.action === "remind") {
+      await L.requireUser(req);
+      const cfg = await N.getConfig();
+      if (!(await N.status()).email) throw new L.HttpError(400, "L'envoi automatique n'est pas encore réglé.");
+      if (b.test) {
+        const to = L.str(b.test, 120);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new L.HttpError(400, "Adresse de test incorrecte.");
+        const demo = { nom: "Passager test", prenom: "Passager test", presence: "oui", passagers: 2, creneau: "journee", creneauxAcc: ["soir"], accompagnants: ["Accompagnant test"], email: to };
+        try { await N.sendReminder(req, demo, cfg, N.siteUrl(req) + "/billet?p=demo"); } catch (e) { throw new L.HttpError(502, e.message); }
+        return L.send(res, 200, { ok: true, test: true });
+      }
+      const all = Object.values(await L.hgetallJson(L.K.rsvps));
+      const want = Array.isArray(b.ids) ? b.ids.map((x) => L.str(x, 64)) : null;
+      const list = all.filter((e) => e.presence === "oui" && e.email && (want ? want.includes(e.id) : !e.remindedAt)).slice(0, 300);
+      const out = { sent: 0, errors: [] };
+      for (const e of list) {
+        try {
+          N.ensureToken(e);
+          await N.sendReminder(req, e, cfg);
+          e.remindedAt = new Date().toISOString();
+          await L.redis(["HSET", L.K.rsvps, e.id, JSON.stringify(e)]);
+          out.sent++;
+        } catch (err) { out.errors.push(e.nom + " : " + err.message); }
+      }
+      return L.send(res, 200, out);
+    }
     if (b.action === "send") {
       await L.requireUser(req);
       const cfg = await N.getConfig();
@@ -219,6 +246,13 @@ module.exports = L.handler(async (req, res) => {
   }
 
   const me = await L.requireUser(req);
+
+  if (req.method === "GET" && q.get("view") === "reminder-preview") {
+    const demo = { nom: "Jeanne Martin", prenom: "Jeanne", presence: "oui", passagers: 3, creneau: "journee", creneauxAcc: ["soir", "midi"], accompagnants: ["Paul Martin", "Léo Martin"], repas: "Végétarien" };
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.end(N.reminderHtml(demo, N.siteUrl(req) + "/billet?p=demo"));
+  }
 
   if (req.method === "GET" && q.get("view") === "notify") {
     const view = L.isAdmin(me) ? Object.assign(await N.adminView(), { admin: true }) : await N.status();

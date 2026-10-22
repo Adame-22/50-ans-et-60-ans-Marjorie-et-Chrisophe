@@ -284,6 +284,7 @@
     var e = pending("email");
     $("#send-email").disabled = !notify.email || !e.length;
     $("#send-email").textContent = "Envoyer par e-mail (" + e.length + ")";
+    renderRemind();
   }
   ["email"].forEach(function (ch) {
     $("#send-" + ch).addEventListener("click", function () {
@@ -298,6 +299,46 @@
           loadNotify();
         }).catch(function (e) { toast(e.message, true); updateSendButtons(); });
     });
+  });
+
+  /* Rappel J-5 : récapitulatif complet, une seule fois par réponse */
+  function remindText(r) {
+    var first = r.prenom || String(r.nom || "").split(" ")[0];
+    return "Bonjour " + first + " ! J-5 avant le vol MC 5060 ✈ Rendez-vous samedi 7 novembre à 12h30, salle des fêtes de Champrosay, rue du Bas de Champrosay à Draveil (à côté du stade de Champrosay et du centre aéré). Itinéraire : https://maps.app.goo.gl/hPMCvkp1w56v3Ffo6 · Dress code simple et chic, parking sur place." +
+      (r.passToken ? " Votre carte d'embarquement : " + passLink(r) : "") + " À samedi !";
+  }
+  function renderRemind() {
+    if (!$("#remind-box")) return;
+    var going = state.rsvps.filter(function (r) { return r.presence === "oui"; });
+    var todo = going.filter(function (r) { return r.email && !r.remindedAt; });
+    var done = going.filter(function (r) { return r.remindedAt; }).length;
+    var nomail = going.filter(function (r) { return !r.email; });
+    $("#remind-status").textContent = !notify.email ? "L'envoi automatique d'e-mails n'est pas réglé."
+      : todo.length ? todo.length + " réponse(s) à prévenir" + (done ? " · " + done + " déjà prévenue(s)" : "") + "."
+      : done ? "✓ Tout le monde avec un e-mail a reçu le rappel (" + done + ")." : "Aucune réponse avec e-mail pour l'instant.";
+    $("#remind-send").disabled = !notify.email || !todo.length;
+    $("#remind-send").textContent = "Envoyer le rappel (" + todo.length + ")";
+    $("#remind-nomail").hidden = !nomail.length;
+    $("#remind-nomail-sum").textContent = nomail.length + " invité(s) sans e-mail : à prévenir à la main";
+    $("#remind-list").innerHTML = nomail.map(function (r, i) {
+      return "<li><span>" + esc(r.nom) + (r.telephone ? " · " + esc(r.telephone) : "") + '</span><button class="btn btn--small btn--line" type="button" data-remind-copy="' + i + '">Copier le message</button></li>';
+    }).join("");
+    $all("[data-remind-copy]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var t = remindText(nomail[+b.getAttribute("data-remind-copy")]);
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast("Message copié : collez-le dans WhatsApp."); }, function () { prompt("Copiez le message :", t); });
+      });
+    });
+  }
+  $("#remind-send").addEventListener("click", function () {
+    var n = state.rsvps.filter(function (r) { return r.presence === "oui" && r.email && !r.remindedAt; }).length;
+    if (!n || !confirm("Envoyer le rappel J-5 à " + n + " réponse(s) ?\n\nConseil : cliquez d'abord sur « Voir l'e-mail » pour le relire.")) return;
+    var btn = this; btn.disabled = true; btn.textContent = "Envoi…";
+    api("/api/rsvp", { method: "POST", body: { action: "remind" } })
+      .then(function (d) {
+        toast(d.sent + " rappel(s) envoyé(s)" + (d.errors.length ? ", " + d.errors.length + " erreur(s) — " + d.errors[0] : "") + ".", !!d.errors.length);
+        loadRsvps(); loadNotify();
+      }).catch(function (e) { toast(e.message, true); renderRemind(); });
   });
 
   /* Annonces push aux invités */
