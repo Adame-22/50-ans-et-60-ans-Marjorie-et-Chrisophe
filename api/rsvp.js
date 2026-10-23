@@ -108,6 +108,8 @@ function report(all) {
   return { totaux: Object.assign(t, { auDejeuner: t.midi + t.journee, auDiner: t.soir + t.journee }), reponses: list, genereLe: new Date().toISOString() };
 }
 
+const K_LISTE = "mc:liste";
+
 module.exports = L.handler(async (req, res) => {
   const q = L.query(req);
   // Lecture seule avec la clé REPORT_TOKEN (variable d'environnement Vercel), demandée par l'organisateur
@@ -148,6 +150,23 @@ module.exports = L.handler(async (req, res) => {
         if (g.length > 1) { await mergeGroup(g); merged += g.length - 1; }
       }
       return L.send(res, 200, { ok: true, merged });
+    }
+    // Liste prévue (fichier Excel des familles invitées), croisée avec les inscriptions dans l'admin
+    if (b.action === "liste-save") {
+      const me = await L.requireUser(req);
+      const n = (v) => Math.max(0, Math.min(99, parseInt(v, 10) || 0));
+      const opt = (v) => (v === null || v === undefined || v === "" ? null : n(v));
+      const rows = (Array.isArray(b.rows) ? b.rows : []).slice(0, 300).map((r, i) => ({
+        id: L.str(r.id, 16) || "l" + i,
+        famille: L.str(r.famille, 80),
+        enfants: n(r.enfants), adultes: n(r.adultes),
+        midi: opt(r.midi), soir: opt(r.soir),
+        envoi: !!r.envoi,
+        links: Array.isArray(r.links) ? r.links.slice(0, 20).map((x) => L.str(x, 64)).filter(Boolean) : null,
+      })).filter((r) => r.famille);
+      const liste = { rows, file: L.str(b.file, 120), updatedAt: new Date().toISOString(), by: me.name };
+      await L.redis(["SET", K_LISTE, JSON.stringify(liste)]);
+      return L.send(res, 200, liste);
     }
     // Rappel J-5 : récapitulatif complet à ceux qui viennent (ids donnés, sinon tous ceux qui ne l'ont pas reçu)
     if (b.action === "remind") {
@@ -246,6 +265,11 @@ module.exports = L.handler(async (req, res) => {
   }
 
   const me = await L.requireUser(req);
+
+  if (req.method === "GET" && q.get("view") === "liste") {
+    const raw = await L.redis(["GET", K_LISTE]);
+    return L.send(res, 200, raw ? JSON.parse(raw) : { rows: [] });
+  }
 
   if (req.method === "GET" && q.get("view") === "reminder-preview") {
     const demo = { nom: "Jeanne Martin", prenom: "Jeanne", presence: "oui", passagers: 3, creneau: "journee", creneauxAcc: ["soir", "midi"], accompagnants: ["Paul Martin", "Léo Martin"], repas: "Végétarien" };

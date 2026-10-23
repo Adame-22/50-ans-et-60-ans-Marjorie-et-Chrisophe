@@ -672,3 +672,37 @@ body.admin { font-variant-numeric: lining-nums; }
 .remind__nomail summary { cursor: pointer; font-weight: 600; }
 .remind__list { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; gap: .4rem; }
 .remind__list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem .8rem; padding: .45rem .7rem; border: 1px solid rgba(0,0,51,.12); border-radius: 10px; }
+
+/* Liste prévue (fichier Excel des familles) */
+.liste-import { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-bottom: 14px; }
+.liste-import h3 { font-size: 1.3rem; margin-bottom: .2rem; }
+.liste-import .hint { max-width: 640px; margin: 0; }
+.liste-import label.btn { cursor: pointer; }
+.liste-paste { flex-basis: 100%; display: grid; gap: 8px; }
+.liste-paste textarea { width: 100%; padding: .7rem .9rem; border-radius: 12px; border: 1.5px solid #e2d6c6; font: .9rem/1.4 var(--mono, monospace); background: #fff; }
+.liste-row--ok { border-left: 4px solid #3ccf7a; }
+.liste-row--manque { border-left: 4px solid #f0a23b; }
+.liste-row--non { border-left: 4px solid #b9bcbc; background: #faf8f6; }
+.liste-row--ecart { border-left-color: #d9534f; }
+.liste-row__plan { margin: .35rem 0 0; font-size: .9rem; color: #3a3d48; }
+.liste-row__plan b { display: inline-block; min-width: 4.6em; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
+.liste-row__note { margin: .4rem 0 0; font-size: .8rem; color: #8a5a00; }
+.liste-row__note::before { content: "⚠ "; }
+.l-pill { display: inline-block; padding: .12rem .55rem; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.l-pill--ok { background: #dff7e9; color: #146c3c; }
+.l-pill--manque { background: #fff1d9; color: #8a5a00; }
+.l-pill--non { background: #eeeeee; color: #5d6061; }
+.l-pill--ecart { background: #fde4e3; color: #a3412f; }
+.l-pill--envoi { background: var(--navy); color: var(--gold-light); }
+.liste-extra { margin-top: 22px; padding: 16px; border-radius: 16px; background: #fff; border: 1px dashed #e2d6c6; }
+.liste-extra h3 { margin: 0 0 .2rem; font-size: 1.15rem; }
+.liste-extra__list { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; gap: 6px; font-size: .92rem; }
+.ls-plan { margin: 0; font-size: .95rem; color: var(--navy); }
+.ls-search { width: 100%; min-height: 42px; padding: .55rem .8rem; border-radius: 10px; border: 1.5px solid #e2d6c6; font: inherit; }
+.ls-checks { display: grid; gap: 6px; max-height: 46vh; overflow-y: auto; }
+.ls-check { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 10px; background: #faf6f0; cursor: pointer; font-size: .92rem; }
+.ls-check[hidden] { display: none; }
+.ls-check input { margin-top: .2rem; width: 18px; height: 18px; flex: none; accent-color: var(--navy); }
+.ls-check small { color: #8a5a00; }
+.ls-envoi { display: flex; gap: 10px; align-items: center; font-weight: 600; color: var(--navy); cursor: pointer; }
+.ls-envoi input { width: 20px; height: 20px; accent-color: var(--navy); }

@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261023" />
-  <link rel="stylesheet" href="css/style.css?v=20261023" />
-  <link rel="stylesheet" href="css/admin.css?v=20261023" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261024" />
+  <link rel="stylesheet" href="css/style.css?v=20261024" />
+  <link rel="stylesheet" href="css/admin.css?v=20261024" />
 </head>
 <body class="admin">
 
@@ -73,6 +73,7 @@
 
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" data-tab="manifeste" aria-selected="true">Invités</button>
+      <button role="tab" data-tab="liste">Liste prévue</button>
       <button role="tab" data-tab="cabine">Tables</button>
       <button role="tab" data-tab="envois">Envois &amp; annonces</button>
       <button role="tab" data-tab="partager">Partager le site</button>
@@ -127,6 +128,55 @@
       <p class="list-count" id="m-count"></p>
       <div class="guest-list" id="m-list"></div>
       <p class="empty" id="m-empty" hidden>Aucune réponse ne correspond. Les enregistrements du site apparaissent ici en direct.</p>
+    </section>
+
+    <!-- Liste prévue : le fichier Excel des familles, croisé avec les inscriptions -->
+    <section class="panel" id="tab-liste" role="tabpanel" hidden>
+      <div class="panel__intro">
+        <h2>Liste prévue</h2>
+        <p>La liste des familles invitées (le fichier Excel), comparée aux inscriptions du site : qui s'est inscrit, qui manque encore, qui n'a jamais reçu le lien, et où les nombres ne collent pas. <b>Les inscriptions sont reconnues automatiquement</b> ; si une famille est mal reconnue, ouvrez-la pour corriger.</p>
+      </div>
+
+      <div class="liste-import card" id="l-import">
+        <div>
+          <h3 id="l-import-title">Importer la liste</h3>
+          <p class="hint" id="l-import-hint">Choisissez le fichier Excel (.xlsx) ou collez les lignes copiées depuis Excel. Colonnes reconnues : Familles, Enfants, Adultes, Envoi site, Midi, Soir.</p>
+        </div>
+        <div class="send-box__actions">
+          <label class="btn btn--small btn--gold" for="l-file">Choisir le fichier Excel</label>
+          <input id="l-file" type="file" accept=".xlsx,.csv,.txt" hidden />
+          <button class="btn btn--small btn--line" id="l-paste-btn" type="button">Coller depuis Excel</button>
+          <button class="btn btn--small btn--line" id="l-export" type="button" hidden>Télécharger la liste à jour</button>
+        </div>
+        <form class="liste-paste" id="l-paste" hidden novalidate>
+          <textarea id="l-paste-text" rows="6" placeholder="Dans Excel : sélectionnez le tableau (avec la ligne des titres), Copier, puis Coller ici."></textarea>
+          <p class="form-error" role="alert" hidden></p>
+          <div class="row-end"><button class="btn btn--small btn--gold" type="submit">Importer</button></div>
+        </form>
+      </div>
+
+      <div id="l-body" hidden>
+        <div class="kpis">
+          <div class="kpi kpi--main"><span>Familles inscrites</span><strong id="l-k-fam">–</strong><small id="l-k-fam-d"></small></div>
+          <div class="kpi"><span>Midi</span><strong id="l-k-midi">–</strong><small id="l-k-midi-d"></small></div>
+          <div class="kpi"><span>Soir</span><strong id="l-k-soir">–</strong><small id="l-k-soir-d"></small></div>
+          <div class="kpi"><span>Lien à envoyer</span><strong id="l-k-envoi">–</strong><small>familles</small></div>
+        </div>
+        <div class="chips" id="l-chips" role="group" aria-label="Filtrer la liste">
+          <button type="button" data-f="" aria-pressed="true">Toutes</button>
+          <button type="button" data-f="manque">Pas encore inscrites</button>
+          <button type="button" data-f="envoi">Lien jamais envoyé</button>
+          <button type="button" data-f="ecart">Nombres différents</button>
+          <button type="button" data-f="ok">Inscrites</button>
+        </div>
+        <p class="list-count" id="l-count"></p>
+        <div class="guest-list" id="l-list"></div>
+        <div class="liste-extra" id="l-extra" hidden>
+          <h3>Inscrits qui ne sont pas sur la liste</h3>
+          <p class="hint">Oubliés du fichier, ou pas reconnus : ouvrez la bonne famille ci-dessus pour les rattacher.</p>
+          <ul class="liste-extra__list" id="l-extra-list"></ul>
+        </div>
+      </div>
     </section>
 
     <!-- Envois & annonces -->
@@ -507,6 +557,41 @@
     </form>
   </dialog>
 
+  <dialog class="sheet" id="liste-sheet" aria-labelledby="ls-title">
+    <form id="ls-form" method="dialog" novalidate>
+      <header class="sheet__head">
+        <div>
+          <p class="sheet__kicker">Liste prévue</p>
+          <h3 id="ls-title">Famille</h3>
+        </div>
+        <button type="button" class="sheet__close" data-ls-close aria-label="Fermer">×</button>
+      </header>
+      <div class="sheet__body">
+        <div class="sheet__sec">
+          <p class="sheet__label">Prévu dans le fichier</p>
+          <p class="ls-plan" id="ls-plan"></p>
+        </div>
+        <div class="sheet__sec">
+          <p class="sheet__label">Inscriptions de cette famille</p>
+          <p class="sheet__hint">Cochez les inscriptions du site qui correspondent à cette famille (il peut y en avoir plusieurs).</p>
+          <input type="search" class="ls-search" id="ls-search" placeholder="Filtrer les inscriptions…" aria-label="Filtrer les inscriptions" />
+          <div class="ls-checks" id="ls-checks"></div>
+        </div>
+        <div class="sheet__sec">
+          <label class="ls-envoi"><input type="checkbox" id="ls-envoi" /> Le lien du site leur a été envoyé</label>
+          <div class="sheet__acts">
+            <button type="button" class="act" id="ls-copy"><b>Copier l'invitation</b><small>message avec le lien, pour WhatsApp ou SMS</small></button>
+            <button type="button" class="act" id="ls-auto"><b>Reconnaissance auto</b><small>laisser le site trouver tout seul</small></button>
+          </div>
+        </div>
+      </div>
+      <footer class="sheet__foot">
+        <button type="button" class="btn btn--small btn--line" data-ls-close>Annuler</button>
+        <button type="submit" class="btn btn--gold">Enregistrer</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog class="modal" id="code-modal">
     <p class="eyebrow">Code provisoire</p>
     <h3 id="code-title"></h3>
@@ -525,8 +610,8 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261023"></script>
+  <script src="js/graph.js?v=20261024"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261023"></script>
+  <script src="js/admin.js?v=20261024"></script>
 </body>
 </html>

@@ -32,6 +32,7 @@ module.exports = L.handler(async (req, res) => {
   const [questions, state, players] = await Promise.all([
     getJson("mc:quiz:questions"), getJson("mc:quiz:state"), L.hgetallJson("mc:quiz:players"),
   ]);
+  const listePrevue = await getJson("mc:liste");
 
   const now = new Date();
   const data = {
@@ -40,6 +41,7 @@ module.exports = L.handler(async (req, res) => {
     exportedBy: me.name,
     note: "Photos de la Boîte noire non incluses : utilisez « Télécharger toutes les photos (ZIP) » dans l'onglet Boîte noire.",
     rsvps: Object.values(rsvps).sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
+    listePrevue,
     tables: plan.tables,
     placements: assign,
     teams,

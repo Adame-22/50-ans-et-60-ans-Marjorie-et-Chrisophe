@@ -173,6 +173,7 @@
     history.replaceState(null, "", "#" + name);
     if (name === "manifeste") { loadRsvps(); loadNotify(); }
     if (name === "envois") { loadRsvps(); loadNotify(); loadAnnounce(); }
+    if (name === "liste") { loadListe(); loadNotify(); }
     if (name === "cabine") startCabin(); else stopCabin();
     if (name === "comptes") loadUsers();
     if (name === "constellation") loadGraph(); else destroyGraph();
@@ -636,6 +637,362 @@
     a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
+
+  /* ───────── Liste prévue ─────────
+     Le fichier Excel des familles invitées, croisé avec les inscriptions du site.
+     Chaque famille est reconnue par ses prénoms / noms ; « links » fixe la correspondance à la main. */
+  var liste = { rows: [] }, listeFilter = "", listeMatch = null, lsIndex = -1;
+
+  function loadListe() {
+    return Promise.all([api("/api/rsvp?view=liste"), api("/api/rsvp")]).then(function (res) {
+      liste = res[0];
+      state.rsvps = res[1].rsvps;
+      renderListe();
+    }).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
+  }
+  function saveListe(msg) {
+    return api("/api/rsvp", { method: "POST", body: { action: "liste-save", rows: liste.rows, file: liste.file || "" } })
+      .then(function (d) { liste = d; renderListe(); if (msg) toast(msg); })
+      .catch(function (e) { toast(e.message, true); });
+  }
+
+  /* Lecture d'un .xlsx sans bibliothèque : c'est un zip de fichiers XML */
+  function inflateRaw(data) {
+    if (typeof DecompressionStream === "undefined") return Promise.reject(new Error("Navigateur trop ancien pour lire le fichier : utilisez « Coller depuis Excel »."));
+    return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer()
+      .then(function (b) { return new Uint8Array(b); });
+  }
+  function unzip(buf) {
+    var dv = new DataView(buf), u8 = new Uint8Array(buf), eocd = -1, files = {}, jobs = [];
+    for (var i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) return Promise.reject(new Error("Ce fichier n'est pas un fichier Excel (.xlsx)."));
+    var off = dv.getUint32(eocd + 16, true);
+    for (var k = dv.getUint16(eocd + 10, true); k > 0; k--) {
+      var method = dv.getUint16(off + 10, true), size = dv.getUint32(off + 20, true);
+      var nlen = dv.getUint16(off + 28, true), skip = dv.getUint16(off + 30, true) + dv.getUint16(off + 32, true);
+      var loc = dv.getUint32(off + 42, true), name = new TextDecoder().decode(u8.subarray(off + 46, off + 46 + nlen));
+      if (/^xl\/(sharedStrings|worksheets\/sheet\d+)\.xml$/.test(name)) {
+        var start = loc + 30 + dv.getUint16(loc + 26, true) + dv.getUint16(loc + 28, true), data = u8.subarray(start, start + size);
+        jobs.push((method === 0 ? Promise.resolve(data) : inflateRaw(data)).then(function (n) { return function (out) { files[n] = new TextDecoder().decode(out); }; }(name)));
+      }
+      off += 46 + nlen + skip;
+    }
+    return Promise.all(jobs).then(function () { return files; });
+  }
+  function xlsxGrid(files) {
+    var xml = function (s) { return new DOMParser().parseFromString(s, "application/xml"); };
+    var text = function (el) { return Array.prototype.map.call(el.getElementsByTagName("t"), function (t) { return t.textContent; }).join(""); };
+    var shared = files["xl/sharedStrings.xml"] ? Array.prototype.map.call(xml(files["xl/sharedStrings.xml"]).getElementsByTagName("si"), text) : [];
+    var sheet = Object.keys(files).filter(function (n) { return n.indexOf("worksheets/") > 0; }).sort()[0];
+    if (!sheet) throw new Error("Aucune feuille trouvée dans le fichier.");
+    return Array.prototype.map.call(xml(files[sheet]).getElementsByTagName("row"), function (row) {
+      var out = [];
+      Array.prototype.forEach.call(row.getElementsByTagName("c"), function (c) {
+        var col = 0, letters = (c.getAttribute("r") || "").replace(/\d+/g, "");
+        for (var i = 0; i < letters.length; i++) col = col * 26 + letters.charCodeAt(i) - 64;
+        var t = c.getAttribute("t"), v = c.getElementsByTagName("v")[0], val = v ? v.textContent : "";
+        if (t === "s") val = shared[+val] || "";
+        else if (t === "inlineStr") val = text(c);
+        out[(col || out.length + 1) - 1] = val;
+      });
+      return out;
+    });
+  }
+  function textGrid(s) {
+    var lines = String(s).replace(/\r/g, "").split("\n").filter(function (l) { return l.trim(); });
+    var sep = lines.some(function (l) { return l.indexOf("\t") >= 0; }) ? "\t" : lines.some(function (l) { return l.indexOf(";") >= 0; }) ? ";" : ",";
+    return lines.map(function (l) { return l.split(sep).map(function (c) { return c.replace(/^"|"$/g, "").trim(); }); });
+  }
+  // Repère les colonnes grâce à la ligne des titres (sinon : Familles, Enfants, Adultes, Envoi, Midi, Soir)
+  function gridToRows(grid) {
+    var COLS = { famille: /famil|^noms?$|invit/, enfants: /enfant/, adultes: /adulte/, envoi: /envoi|site|lien/, midi: /midi|dej/, soir: /soir|din/ };
+    var at = { famille: 0, enfants: 1, adultes: 2, envoi: 3, midi: 4, soir: 5 }, head = -1;
+    for (var i = 0; i < Math.min(grid.length, 10) && head < 0; i++) {
+      var cells = (grid[i] || []).map(function (c) { return lnorm(c); });
+      if (cells.some(function (c) { return COLS.famille.test(c); })) {
+        head = i;
+        Object.keys(COLS).forEach(function (k) {
+          var j = cells.findIndex(function (c) { return COLS[k].test(c); });
+          at[k] = j;
+        });
+      }
+    }
+    var num = function (v) { var n = parseInt(v, 10); return isNaN(n) ? null : n; };
+    var cell = function (r, k) { return at[k] >= 0 && r[at[k]] != null ? String(r[at[k]]).trim() : ""; };
+    var known = {};
+    (liste.rows || []).forEach(function (r) { known[lnorm(r.famille)] = r; });
+    return grid.slice(head + 1).map(function (r, i) {
+      var fam = cell(r, "famille"), before = known[lnorm(fam)] || {};
+      var envoi = cell(r, "envoi");
+      return {
+        id: before.id || "l" + Date.now().toString(36) + i,
+        famille: fam,
+        enfants: num(cell(r, "enfants")) || 0,
+        adultes: num(cell(r, "adultes")) || 0,
+        midi: num(cell(r, "midi")),
+        soir: num(cell(r, "soir")),
+        envoi: (!!envoi && !/^(non|n|0|-)$/i.test(envoi)) || !!before.envoi,
+        links: before.links || null,
+      };
+    }).filter(function (r) { return r.famille && !/^total/.test(lnorm(r.famille)); });
+  }
+  function importGrid(grid, file) {
+    var rows = gridToRows(grid);
+    if (!rows.length) { toast("Aucune famille trouvée : vérifiez que la colonne « Familles » est bien là.", true); return; }
+    var replacing = liste.rows.length;
+    if (replacing && !confirm("Remplacer la liste actuelle (" + replacing + " familles) par celle-ci (" + rows.length + " familles) ?\n\nLes corrections faites à la main sont gardées pour les familles qui ont le même nom.")) return;
+    liste.rows = rows;
+    liste.file = file || "";
+    saveListe(rows.length + " familles importées.");
+    $("#l-paste").hidden = true;
+  }
+  $("#l-file").addEventListener("change", function () {
+    var f = this.files[0];
+    this.value = "";
+    if (!f) return;
+    var read = /\.xlsx$/i.test(f.name)
+      ? f.arrayBuffer().then(unzip).then(xlsxGrid)
+      : f.text().then(textGrid);
+    read.then(function (g) { importGrid(g, f.name); }).catch(function (e) { toast(e.message || "Fichier illisible.", true); });
+  });
+  $("#l-paste-btn").addEventListener("click", function () { $("#l-paste").hidden = !$("#l-paste").hidden; if (!$("#l-paste").hidden) $("#l-paste-text").focus(); });
+  $("#l-paste").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var t = $("#l-paste-text").value;
+    if (!t.trim()) { formError(this, "Collez d'abord les lignes copiées depuis Excel."); return; }
+    formError(this, "");
+    importGrid(textGrid(t), "collé depuis Excel");
+  });
+
+  /* Reconnaissance : prénoms et noms de la ligne (« Nadette/Jacquot », « Rivières ») contre ceux des inscriptions */
+  function lnorm(s) {
+    return String(s == null ? "" : s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  var LSTOP = { et: 1, moi: 1, mme: 1, mr: 1, de: 1, du: 1, la: 1, le: 1, les: 1, famille: 1, fam: 1, chez: 1 };
+  // « Jean-Jacques » reste un seul prénom
+  function nameWords(s) { return lnorm(String(s == null ? "" : s).replace(/(\w)-(?=\w)/g, "$1")).split(" ").filter(function (t) { return t.length > 1; }); }
+  function rowTokens(f) { return nameWords(f).filter(function (t) { return !LSTOP[t]; }); }
+  function rsvpWords(r) {
+    var w = nameWords([r.nom, r.prenom, r.nomFamille].concat(r.accompagnants || []).join(" "));
+    return w.concat(w.slice(1).map(function (x, i) { return w[i] + x; })); // « Jean Jacques » écrit sans tiret
+  }
+  function oneEdit(a, b) { // une seule faute de frappe (« Chistine »)
+    if (Math.abs(a.length - b.length) > 1) return false;
+    var i = 0, j = 0, d = 0;
+    while (i < a.length && j < b.length) {
+      if (a[i] === b[j]) { i++; j++; continue; }
+      if (++d > 1) return false;
+      if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
+    }
+    return d + (a.length - i) + (b.length - j) <= 1;
+  }
+  // Paul / Pauline, Jean / Jeanne, Pascal / Pascale : deux personnes différentes
+  function genderPair(a, b) {
+    var s = a.length < b.length ? a : b, l = a.length < b.length ? b : a;
+    return l.indexOf(s) === 0 && /^(e|ne|le|ine|ette|a)$/.test(l.slice(s.length));
+  }
+  function tokMatch(t, w) {
+    if (t === w) return true;
+    if (t.length < 4 || w.length < 4 || genderPair(t, w)) return false;
+    var s = t.length < w.length ? t : w, l = t.length < w.length ? w : t;
+    // diminutif au début ou à la fin (Nadette / Bernadette, Fred / Frédéric), pas un prénom composé (Jean / Jean-Jacques)
+    var extra = l.length - s.length;
+    if ((extra <= 4 && l.indexOf(s) === 0) || (extra <= 3 && l.slice(-s.length) === s)) return true;
+    if (Math.min(t.length, w.length) >= 6 && oneEdit(t, w)) return true;
+    var p = 0;
+    while (p < t.length && t[p] === w[p]) p++;
+    return p >= 5 && /ot$/.test(t); // Jacquot / Jacques, Pierrot / Pierre
+  }
+  function matchListe() {
+    var byId = {}, owner = {}, pairs = [];
+    state.rsvps.forEach(function (r) { byId[r.id] = r; });
+    var rows = liste.rows.map(function (row) {
+      var links = Array.isArray(row.links) ? row.links.filter(function (id) { return byId[id] && !owner[id]; }) : null;
+      if (links) links.forEach(function (id) { owner[id] = row.id; });
+      return { row: row, manual: !!links, ids: links || [] };
+    });
+    rows.forEach(function (m, i) {
+      if (m.manual) return;
+      var toks = rowTokens(m.row.famille);
+      m.covered = {};
+      state.rsvps.forEach(function (r) {
+        if (owner[r.id]) return;
+        var words = rsvpWords(r), first = lnorm(r.prenom || r.nom).split(" ")[0];
+        var hit = toks.filter(function (t) { return words.some(function (w) { return tokMatch(t, w); }); });
+        // l'inscrit lui-même compte plus que ses accompagnants
+        var own = toks.some(function (t) { return tokMatch(t, first); }) ? 0.5 : 0;
+        if (hit.length) pairs.push({ i: i, id: r.id, hit: hit, score: hit.length + own, share: hit.length / toks.length });
+      });
+    });
+    pairs.sort(function (a, b) { return b.score - a.score || b.share - a.share; });
+    // une inscription n'est rattachée que si elle apporte quelqu'un de la famille pas encore trouvé
+    pairs.forEach(function (p) {
+      var m = rows[p.i];
+      if (owner[p.id] || !p.hit.some(function (t) { return !m.covered[t]; })) return;
+      p.hit.forEach(function (t) { m.covered[t] = 1; });
+      owner[p.id] = m.row.id;
+      m.ids.push(p.id);
+    });
+    rows.forEach(function (m) {
+      var row = m.row, regs = m.ids.map(function (id) { return byId[id]; });
+      var yes = regs.filter(function (r) { return r.presence === "oui"; }), all = [];
+      yes.forEach(function (r) { all = all.concat(fares(r)); });
+      m.regs = regs;
+      m.real = { pax: all.length, midi: all.filter(function (f) { return f !== "soir"; }).length, soir: all.filter(function (f) { return f !== "midi"; }).length };
+      m.pax = (row.adultes || 0) + (row.enfants || 0);
+      m.status = !regs.length ? "manque" : yes.length ? "ok" : "non";
+      var planned = row.midi != null || row.soir != null;
+      m.ecart = m.status === "ok" && (planned ? (m.real.midi !== (row.midi || 0) || m.real.soir !== (row.soir || 0)) : m.pax > 0 && m.real.pax !== m.pax);
+      m.notes = [];
+      if (!m.pax && planned) m.notes.push("nombre de personnes vide dans le fichier");
+      else if (m.pax && Math.max(row.midi || 0, row.soir || 0) > m.pax) m.notes.push("fichier : " + Math.max(row.midi || 0, row.soir || 0) + " au repas pour " + m.pax + " personne" + (m.pax > 1 ? "s" : ""));
+      if (!planned) m.notes.push("midi / soir pas indiqués dans le fichier");
+    });
+    var extra = state.rsvps.filter(function (r) { return !owner[r.id]; });
+    return { rows: rows, extra: extra };
+  }
+
+  function planText(row) {
+    var bits = [];
+    if (!row.adultes && !row.enfants) bits.push("nombre de personnes ?");
+    else bits.push(row.adultes + " adulte" + (row.adultes > 1 ? "s" : ""));
+    if (row.enfants) bits.push(row.enfants + " enfant" + (row.enfants > 1 ? "s" : ""));
+    bits.push(row.midi != null ? row.midi + " le midi" : "midi ?");
+    bits.push(row.soir != null ? row.soir + " le soir" : "soir ?");
+    return bits.join(" · ");
+  }
+  var LSTATUS = { ok: ["✓ Inscrite", "ok"], manque: ["Pas encore inscrite", "manque"], non: ["A répondu non", "non"] };
+  function renderListe() {
+    var has = liste.rows.length;
+    $("#l-body").hidden = !has;
+    $("#l-export").hidden = !has;
+    $("#l-import-title").textContent = has ? "Liste importée" : "Importer la liste";
+    $("#l-import-hint").textContent = has
+      ? liste.rows.length + " familles" + (liste.file ? " · " + liste.file : "") + (liste.updatedAt ? " · mise à jour " + fmtDate(liste.updatedAt) + (liste.by ? " par " + liste.by : "") : "") + ". Pour la remplacer, importez une nouvelle version du fichier."
+      : "Choisissez le fichier Excel (.xlsx) ou collez les lignes copiées depuis Excel. Colonnes reconnues : Familles, Enfants, Adultes, Envoi site, Midi, Soir.";
+    if (!has) return;
+    listeMatch = matchListe();
+    var ms = listeMatch.rows, sum = function (f) { return ms.reduce(function (n, m) { return n + f(m); }, 0); };
+    var answered = ms.filter(function (m) { return m.status !== "manque"; }).length;
+    $("#l-k-fam").textContent = answered + " / " + ms.length;
+    $("#l-k-fam-d").textContent = (ms.length - answered) + " pas encore inscrite" + (ms.length - answered > 1 ? "s" : "");
+    $("#l-k-midi").textContent = sum(function (m) { return m.real.midi; });
+    $("#l-k-midi-d").textContent = "inscrits · " + sum(function (m) { return m.row.midi || 0; }) + " prévus";
+    $("#l-k-soir").textContent = sum(function (m) { return m.real.soir; });
+    $("#l-k-soir-d").textContent = "inscrits · " + sum(function (m) { return m.row.soir || 0; }) + " prévus";
+    $("#l-k-envoi").textContent = ms.filter(function (m) { return !m.row.envoi && m.status === "manque"; }).length;
+
+    var show = ms.map(function (m, i) { m.i = i; return m; }).filter(function (m) {
+      return !listeFilter || (listeFilter === "manque" ? m.status === "manque" : listeFilter === "envoi" ? !m.row.envoi && m.status === "manque" : listeFilter === "ecart" ? m.ecart : m.status !== "manque");
+    });
+    $("#l-count").textContent = show.length + " famille" + (show.length > 1 ? "s" : "");
+    $("#l-list").innerHTML = show.map(function (m) {
+      var row = m.row, st = LSTATUS[m.status];
+      var regs = m.regs.map(function (r) {
+        return "<li><span>" + esc(r.nom) + (r.passagers > 1 ? " +" + (r.passagers - 1) : "") + "</span> " + (r.presence === "oui" ? fareTags(r) : '<em class="fare">au sol</em>') + "</li>";
+      }).join("");
+      return '<div class="guest liste-row liste-row--' + st[1] + (m.ecart ? " liste-row--ecart" : "") + '" tabindex="0" role="button" data-li="' + m.i + '">' +
+        '<div class="guest__main"><div class="guest__name"><b>' + esc(row.famille) + "</b>" +
+        '<span class="l-pill l-pill--' + st[1] + '">' + st[0] + "</span>" +
+        (m.ecart ? '<span class="l-pill l-pill--ecart">⚠ Nombres différents</span>' : "") +
+        (!row.envoi && m.status === "manque" ? '<span class="l-pill l-pill--envoi">Lien jamais envoyé</span>' : "") + "</div>" +
+        '<p class="liste-row__plan"><b>Prévu</b> ' + esc(planText(row)) + "</p>" +
+        (m.status === "ok" ? '<p class="liste-row__plan"><b>Inscrits</b> ' + m.real.pax + " personne" + (m.real.pax > 1 ? "s" : "") + " · " + m.real.midi + " le midi · " + m.real.soir + " le soir</p>" : "") +
+        (regs ? '<ul class="guest__pax">' + regs + "</ul>" : "") +
+        (m.notes.length ? '<p class="liste-row__note">' + esc(m.notes.join(" · ")) + "</p>" : "") +
+        "</div>" +
+        '<div class="guest__side"><span class="guest__open">' + (m.manual ? "corrigé à la main" : m.regs.length ? "reconnu auto" : "") + " ›</span></div></div>";
+    }).join("") || '<p class="empty">Aucune famille dans ce filtre.</p>';
+    $all("[data-li]").forEach(function (el) {
+      var open = function () { openListeSheet(+el.getAttribute("data-li")); };
+      el.addEventListener("click", open);
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    });
+    var extra = listeMatch.extra;
+    $("#l-extra").hidden = !extra.length;
+    $("#l-extra-list").innerHTML = extra.map(function (r) {
+      return "<li><b>" + esc(r.nom) + "</b>" + ((r.accompagnants || []).length ? " avec " + esc(r.accompagnants.join(", ")) : "") + " " + (r.presence === "oui" ? fareTags(r) : '<em class="fare">au sol</em>') + "</li>";
+    }).join("");
+  }
+  $all("#l-chips button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      listeFilter = b.getAttribute("data-f");
+      $all("#l-chips button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      renderListe();
+    });
+  });
+
+  /* Fiche d'une famille : corriger les inscriptions rattachées, noter l'envoi du lien */
+  function openListeSheet(i) {
+    lsIndex = i;
+    var m = listeMatch.rows[i], row = m.row, ownerName = {};
+    listeMatch.rows.forEach(function (o) { o.ids.forEach(function (id) { ownerName[id] = o.row.famille; }); });
+    $("#ls-title").textContent = row.famille;
+    $("#ls-plan").textContent = planText(row) + (m.notes.length ? " · ⚠ " + m.notes.join(" · ") : "");
+    var mine = state.rsvps.filter(function (r) { return m.ids.indexOf(r.id) >= 0; });
+    var others = state.rsvps.filter(function (r) { return m.ids.indexOf(r.id) < 0; }).sort(function (a, b) { return a.nom.localeCompare(b.nom, "fr"); });
+    $("#ls-checks").innerHTML = mine.concat(others).map(function (r) {
+      var where = ownerName[r.id] && ownerName[r.id] !== row.famille ? " · <small>déjà avec « " + esc(ownerName[r.id]) + " »</small>" : "";
+      return '<label class="ls-check" data-s="' + esc(lnorm(rsvpWords(r).join(" "))) + '"><input type="checkbox" value="' + esc(r.id) + '"' + (m.ids.indexOf(r.id) >= 0 ? " checked" : "") + " /><span><b>" + esc(r.nom) + "</b>" +
+        ((r.accompagnants || []).length ? " avec " + esc(r.accompagnants.join(", ")) : "") + " · " + (r.presence === "oui" ? r.passagers + " pers." : "au sol") + where + "</span></label>";
+    }).join("") || '<p class="hint">Aucune inscription sur le site pour l\'instant.</p>';
+    $("#ls-search").value = "";
+    $("#ls-envoi").checked = !!row.envoi;
+    $("#ls-auto").hidden = !m.manual;
+    $("#liste-sheet").showModal();
+  }
+  $("#ls-search").addEventListener("input", function () {
+    var q = lnorm(this.value);
+    $all("#ls-checks .ls-check").forEach(function (l) { l.hidden = !!q && l.getAttribute("data-s").indexOf(q) < 0; });
+  });
+  $all("[data-ls-close]").forEach(function (b) { b.addEventListener("click", function () { $("#liste-sheet").close(); }); });
+  $("#ls-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var row = liste.rows[lsIndex];
+    var ids = $all("#ls-checks input:checked").map(function (c) { return c.value; });
+    // une inscription n'appartient qu'à une famille : on fige les autres familles concernées
+    listeMatch.rows.forEach(function (o) {
+      if (o.row === row || !ids.some(function (id) { return o.ids.indexOf(id) >= 0; })) return;
+      o.row.links = o.ids.filter(function (id) { return ids.indexOf(id) < 0; });
+    });
+    row.links = ids;
+    row.envoi = $("#ls-envoi").checked;
+    $("#liste-sheet").close();
+    saveListe("« " + row.famille + " » enregistrée.");
+  });
+  $("#ls-auto").addEventListener("click", function () {
+    var row = liste.rows[lsIndex];
+    row.links = null;
+    row.envoi = $("#ls-envoi").checked;
+    $("#liste-sheet").close();
+    saveListe("Reconnaissance automatique rétablie pour « " + row.famille + " ».");
+  });
+  $("#ls-copy").addEventListener("click", function () {
+    var t = "Bonjour ! Marjorie et Christophe fêtent leurs 50 et 60 ans le samedi 7 novembre à 12h30 à Draveil ✈ Toutes les infos et l'enregistrement des passagers (merci de le faire au plus vite) : " + (notify.site || location.origin);
+    var done = function () { $("#ls-envoi").checked = true; toast("Invitation copiée : collez-la dans WhatsApp, puis Enregistrer."); };
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(done, function () { prompt("Copiez le message :", t); done(); });
+  });
+
+  // La liste à jour, à renvoyer dans Excel
+  $("#l-export").addEventListener("click", function () {
+    var m = listeMatch || matchListe();
+    var head = ["Familles", "Enfants", "Adultes", "Envoi site", "Midi prévu", "Soir prévu", "Inscrite", "Personnes inscrites", "Midi inscrits", "Soir inscrits", "Écart", "Inscriptions"];
+    var lines = [head.join(";")].concat(m.rows.map(function (x) {
+      var r = x.row;
+      return [r.famille, r.enfants || "", r.adultes || "", r.envoi ? "V" : "", r.midi == null ? "" : r.midi, r.soir == null ? "" : r.soir,
+        LSTATUS[x.status][0].replace("✓ ", ""), x.status === "ok" ? x.real.pax : "", x.status === "ok" ? x.real.midi : "", x.status === "ok" ? x.real.soir : "",
+        x.ecart ? "oui" : "", x.regs.map(function (g) { return g.nom; }).join(", ")].map(csvCell).join(";");
+    }));
+    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "liste-prevue-a-jour.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
 
   /* ───────── Plan de cabine ─────────
      Les invités se placent eux-mêmes (page /table). Ici : vue en direct + corrections par glisser-déposer.
