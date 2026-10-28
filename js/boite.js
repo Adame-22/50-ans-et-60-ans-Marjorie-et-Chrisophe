@@ -6,7 +6,6 @@
   var preview = document.getElementById("bn-preview");
   var wall = document.getElementById("bn-wall");
   var errorEl = form.querySelector(".form-error");
-  var photoData = "";
 
   try { form.name.value = localStorage.getItem("mc-name") || ""; } catch (e) { /* ignoré */ }
 
@@ -35,39 +34,82 @@
     });
   }
 
-  fileInput.addEventListener("change", function () {
-    var f = fileInput.files[0];
-    photoData = ""; preview.hidden = true;
-    if (!f) return;
-    shrink(f).then(function (d) { photoData = d; preview.src = d; preview.hidden = false; document.getElementById("bn-photo-label").textContent = "Changer de photo"; })
-      .catch(function (e) { errorEl.textContent = e.message; errorEl.hidden = false; });
+  // Jusqu'à 10 photos d'un coup : chacune devient une carte de la Boîte noire
+  var MAX_PHOTOS = 10, photos = [];
+  var label = document.getElementById("bn-photo-label");
+  function showPhotos() {
+    preview.innerHTML = photos.map(function (d, i) {
+      return '<span class="bn-thumb"><img src="' + d + '" alt="Photo ' + (i + 1) + '" /><button type="button" data-rm="' + i + '" aria-label="Retirer la photo ' + (i + 1) + '">×</button></span>';
+    }).join("");
+    preview.hidden = !photos.length;
+    label.textContent = photos.length ? "Ajouter d'autres photos (" + photos.length + ")" : "Ajouter des photos";
+  }
+  preview.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-rm]");
+    if (!b) return;
+    photos.splice(+b.getAttribute("data-rm"), 1);
+    showPhotos();
   });
+  fileInput.addEventListener("change", function () {
+    var files = Array.prototype.slice.call(fileInput.files || []);
+    fileInput.value = "";
+    errorEl.hidden = true;
+    if (photos.length + files.length > MAX_PHOTOS) {
+      errorEl.textContent = MAX_PHOTOS + " photos maximum à la fois : envoyez-en d'abord " + MAX_PHOTOS + ", puis les suivantes.";
+      errorEl.hidden = false;
+      files = files.slice(0, Math.max(0, MAX_PHOTOS - photos.length));
+    }
+    label.textContent = "Préparation…";
+    files.reduce(function (p, f) {
+      return p.then(function () { return shrink(f).then(function (d) { photos.push(d); }); });
+    }, Promise.resolve())
+      .catch(function (e) { errorEl.textContent = e.message; errorEl.hidden = false; })
+      .then(showPhotos);
+  });
+
+  function post(body) {
+    return fetch("/api/boite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || "Erreur"); return d; }); })
+      .then(function (d) {
+        if (d.entry) {
+          wall.insertAdjacentHTML("afterbegin", item(d.entry));
+          if (wall.firstElementChild) wall.firstElementChild.classList.add("fx-land");
+        }
+      });
+  }
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     errorEl.hidden = true;
     var message = form.message.value.trim();
-    if (!message && !photoData) { errorEl.textContent = "Écrivez un message ou ajoutez une photo."; errorEl.hidden = false; return; }
+    if (!message && !photos.length) { errorEl.textContent = "Écrivez un message ou ajoutez une photo."; errorEl.hidden = false; return; }
     var btn = form.querySelector("button[type=submit]");
     btn.disabled = true; btn.textContent = "Enregistrement…";
     try { localStorage.setItem("mc-name", form.name.value.trim()); } catch (err) { /* ignoré */ }
-    fetch("/api/boite", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: form.name.value, message: message, photo: photoData, website: form.website.value })
-    }).then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || "Erreur"); return d; }); })
-      .then(function (d) {
-        form.message.value = ""; fileInput.value = ""; photoData = ""; preview.hidden = true;
-        document.getElementById("bn-photo-label").textContent = "Ajouter une photo";
-        if (d.entry) {
-          wall.insertAdjacentHTML("afterbegin", item(d.entry));
-          if (wall.firstElementChild) wall.firstElementChild.classList.add("fx-land");
-        }
-        btn.textContent = "Enregistré ✓";
+    var name = form.name.value, website = form.website.value;
+    // le message part avec la première photo, les suivantes une par une
+    var queue = photos.length ? photos.slice() : [""], total = queue.length, done = 0;
+    queue.reduce(function (p, photo, i) {
+      return p.then(function () {
+        if (total > 1) btn.textContent = "Envoi " + (i + 1) + " / " + total + "…";
+        return post({ name: name, message: i ? "" : message, photo: photo, website: website }).then(function () {
+          done++;
+          if (i === 0) form.message.value = "";
+          photos.shift();
+        });
+      });
+    }, Promise.resolve())
+      .then(function () {
+        btn.textContent = total > 1 ? total + " photos enregistrées ✓" : "Enregistré ✓";
         if (window.McFx) window.McFx.celebrate();
         setTimeout(function () { btn.textContent = "Enregistrer"; }, 2500);
       })
-      .catch(function (err) { errorEl.textContent = err.message; errorEl.hidden = false; btn.textContent = "Enregistrer"; })
-      .then(function () { btn.disabled = false; });
+      .catch(function (err) {
+        errorEl.textContent = (done ? done + " envoyée" + (done > 1 ? "s" : "") + ", la suite a échoué : " : "") + err.message;
+        errorEl.hidden = false;
+        btn.textContent = "Enregistrer";
+      })
+      .then(function () { showPhotos(); btn.disabled = false; });
   });
 
   function item(e) {

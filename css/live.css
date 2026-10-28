@@ -588,3 +588,11 @@ body.live::before {
 .sealed__lock { font-size: 2rem; display: block; margin-bottom: .4rem; }
 .sealed p { margin: .2rem 0; line-height: 1.55; }
 .sealed b { color: #ff9a5c; font-size: 1.05rem; }
+
+/* Boîte noire : plusieurs photos à la fois */
+.recorder .photo-pick { flex-wrap: wrap; }
+.bn-thumbs { display: flex; flex-wrap: wrap; gap: 8px; flex-basis: 100%; }
+.bn-thumbs[hidden] { display: none; }
+.bn-thumb { position: relative; display: block; }
+.bn-thumb img { display: block; width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
+.bn-thumb button { position: absolute; top: -7px; right: -7px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: #000033; color: #fffbfe; font-size: 1rem; line-height: 1; cursor: pointer; box-shadow: 0 0 0 2px rgba(255, 251, 254, .8); }
