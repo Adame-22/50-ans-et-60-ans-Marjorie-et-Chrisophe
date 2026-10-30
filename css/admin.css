@@ -795,3 +795,53 @@ body.admin { font-variant-numeric: lining-nums; }
 .chat__form textarea { flex: 1; min-height: 48px; max-height: 160px; resize: vertical; padding: .7rem .9rem; border-radius: 14px; border: 1.5px solid #e2d6c6; font: inherit; font-size: 1rem; }
 .chat__form textarea:focus { outline: 0; border-color: var(--gold); box-shadow: 0 0 0 4px rgba(166, 112, 70, .14); }
 .chat__form .btn { min-height: 48px; }
+
+/* ───────── Tables : toutes visibles en grille, placement en touchant un nom ───────── */
+.cabin .fuselage { max-width: none; margin: 0; }
+.cabin .fuselage__nose, .cabin .fuselage__tail { display: none; }
+.cabin .fuselage__body { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; padding: 0; background: none; border: 0; box-shadow: none; }
+.cabin .fuselage__body::before, .cabin .fuselage__body::after { display: none; }
+.cabin .row { margin: 0; background: #fff; border: 1.5px solid #ebe2d6; border-radius: 16px; padding: 12px 12px 14px; }
+.cabin .row.is-full { border-color: #e6a39a; }
+.row__head { flex-wrap: wrap; }
+.row__name { font-size: 1.15rem; }
+.row__count { font-family: var(--sans); font-size: .85rem; font-weight: 700; color: var(--navy); background: #f4efe8; border-radius: 999px; padding: .15rem .55rem; }
+.row.is-full .row__count { background: #fde4e3; }
+.row__seatsl { display: inline-flex; align-items: center; gap: 4px; font-size: .8rem; color: var(--muted); }
+.row__seats { font-family: var(--sans); font-size: .9rem; width: 3.2em; }
+.cabin .row .dropzone { flex-direction: column; flex-wrap: nowrap; }
+.cabin .pax { cursor: pointer; width: 100%; }
+.cabin .pax b { flex: 1; }
+.place-list { display: grid; gap: 8px; }
+.place { display: grid; gap: 2px; text-align: left; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #e2d6c6; background: #fff; color: var(--navy); font: inherit; cursor: pointer; }
+.place:hover, .place:focus-visible { border-color: var(--gold); outline: 0; }
+.place b { font-size: 1.05rem; }
+.place small { color: #6d7070; font-size: .85rem; }
+.place.is-current { border-color: var(--navy); background: #f4f2fb; }
+.place.is-tight small { color: #a3412f; }
+.place--out { border-style: dashed; }
+@media (max-width: 860px) {
+  .cabin { grid-template-columns: minmax(0, 1fr); }
+  .dropzone--pool { max-height: 40vh; }
+}
+
+/* ───────── Vue d'ensemble en liste ───────── */
+.overview__bar { gap: 10px; }
+.ov-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-items: start; }
+.ov-board[hidden] { display: none; }
+.bd-card { background: #fff; border: 1.5px solid #ebe2d6; border-radius: 16px; padding: 12px 12px 8px; }
+.bd-card header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 0 2px 8px; border-bottom: 1px solid #f0e9df; margin-bottom: 6px; }
+.bd-card h3 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 1.3rem; color: var(--navy); }
+.bd-count { font-size: .85rem; font-weight: 700; color: var(--gold); }
+.bd-card--muted { background: #faf8f6; }
+.bd-card--alert { border-color: #f3d29a; }
+.bd-card details summary { cursor: pointer; padding: 6px 2px; font-weight: 600; color: var(--navy); }
+.bd-reg { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; width: 100%; text-align: left; padding: 8px 6px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; cursor: pointer; }
+.bd-reg:hover, .bd-reg:focus-visible { background: #f7f2ea; outline: 0; }
+.bd-reg__who b { color: var(--navy); font-weight: 600; }
+.bd-reg__who small { color: #6d7070; font-size: .85rem; }
+.bd-reg__tags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.bd-n { font-style: normal; font-size: .8rem; font-weight: 700; color: var(--navy); background: #f4efe8; border-radius: 999px; padding: .05rem .45rem; }
+.bd-reg__meal { grid-column: 1 / -1; font-size: .82rem; color: #8a5a00; }
+.bd-empty { margin: 8px 4px; color: #b7b0a2; font-size: .9rem; }
+.graph-wrap[hidden] { display: none; }

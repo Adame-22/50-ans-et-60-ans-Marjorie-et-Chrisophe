@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261103" />
-  <link rel="stylesheet" href="css/style.css?v=20261103" />
-  <link rel="stylesheet" href="css/admin.css?v=20261103" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261104" />
+  <link rel="stylesheet" href="css/style.css?v=20261104" />
+  <link rel="stylesheet" href="css/admin.css?v=20261104" />
 </head>
 <body class="admin">
 
@@ -320,7 +320,7 @@
 
     <!-- Plan de cabine -->
     <section class="panel" id="tab-cabine" role="tabpanel" hidden>
-      <div class="panel__intro"><h2>Les tables</h2><p>Le jour J, chacun scanne le QR code de sa table et le plan se remplit tout seul. Pour déplacer quelqu'un, <b>faites glisser son nom</b> sur une autre table.</p></div>
+      <div class="panel__intro"><h2>Les tables</h2><p><b>Touchez un nom</b> pour choisir sa table (sur ordinateur, vous pouvez aussi le faire glisser). Le jour J, les invités peuvent aussi se placer eux-mêmes en scannant le QR code de leur table.</p></div>
       <div class="toolbar">
         <span class="toolbar__grow"></span>
         <span class="save-state" id="c-state"></span>
@@ -333,7 +333,7 @@
       <div class="cabin">
         <aside class="card cabin__pool">
           <h3>Pas encore à table <span class="pill" id="c-pool-count">0</span></h3>
-          <p class="hint hint--tiny">Les passagers déjà arrivés (pointés à l'accueil) sont en tête, avec un liseré doré.</p>
+          <p class="hint hint--tiny">Touchez un nom pour lui choisir une table.</p>
           <div class="dropzone dropzone--pool" id="c-pool" data-table=""></div>
         </aside>
 
@@ -347,14 +347,25 @@
 
     <!-- Constellation (graphe façon Obsidian) -->
     <section class="panel" id="tab-constellation" role="tabpanel" hidden>
-      <div class="panel__intro"><h2>Vue d'ensemble</h2><p>Tous les invités d'un coup d'œil. Touchez un nom pour voir le détail.</p></div>
-      <div class="toolbar">
-        <div class="seg" role="group" aria-label="Regrouper par">
+      <div class="panel__intro"><h2>Vue d'ensemble</h2><p>Tous les invités, rangés comme vous voulez. Touchez un nom pour ouvrir sa fiche.</p></div>
+      <div class="kpis" id="g-kpis"></div>
+      <div class="toolbar overview__bar">
+        <div class="seg seg--wrap" role="group" aria-label="Ranger par">
           <button type="button" data-group="table" aria-pressed="true">Par table</button>
+          <button type="button" data-group="moment" aria-pressed="false">Midi / soir</button>
+          <button type="button" data-group="repas" aria-pressed="false">Régimes &amp; allergies</button>
           <button type="button" data-group="equipe" aria-pressed="false">Par équipe</button>
-          <button type="button" data-group="repas" aria-pressed="false">Par repas</button>
         </div>
-        <p class="hint">Faites glisser les points, zoomez à la molette ou en pinçant, cliquez sur un invité pour le détail.</p>
+        <span class="toolbar__grow"></span>
+        <div class="seg" role="group" aria-label="Affichage">
+          <button type="button" data-gview="liste" aria-pressed="true">Liste</button>
+          <button type="button" data-gview="graphe" aria-pressed="false">Constellation</button>
+        </div>
+      </div>
+      <div class="ov-board" id="g-board"></div>
+      <div class="graph-wrap" id="g-graph" hidden>
+      <div class="toolbar">
+        <p class="hint">Faites glisser les points, zoomez en pinçant, touchez un invité pour le détail.</p>
         <span class="toolbar__grow"></span>
         <button class="btn btn--small btn--line" id="g-fit" type="button">Recentrer</button>
       </div>
@@ -368,6 +379,7 @@
           <span><i class="dot dot--ring"></i>Repas spécial</span>
         </div>
         <p class="graph__empty" id="g-empty" hidden>Aucun invité confirmé pour l'instant.</p>
+      </div>
       </div>
       <p class="hint" id="g-stats"></p>
     </section>
@@ -666,6 +678,25 @@
     </form>
   </dialog>
 
+  <dialog class="sheet" id="place-sheet" aria-labelledby="pl-title">
+    <form method="dialog" id="pl-form">
+      <header class="sheet__head">
+        <div>
+          <p class="sheet__kicker" id="pl-kicker">Choisir une table</p>
+          <h3 id="pl-title">Invité</h3>
+        </div>
+        <button type="button" class="sheet__close" data-pl-close aria-label="Fermer">×</button>
+      </header>
+      <div class="sheet__body">
+        <p class="ls-plan" id="pl-who"></p>
+        <div class="place-list" id="pl-list"></div>
+      </div>
+      <footer class="sheet__foot">
+        <button type="button" class="btn btn--small btn--line" data-pl-close>Annuler</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog class="modal" id="code-modal">
     <p class="eyebrow">Code provisoire</p>
     <h3 id="code-title"></h3>
@@ -684,9 +715,9 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261103"></script>
+  <script src="js/graph.js?v=20261104"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261103"></script>
-  <script src="js/admin.js?v=20261103"></script>
+  <script src="js/xlsx.js?v=20261104"></script>
+  <script src="js/admin.js?v=20261104"></script>
 </body>
 </html>

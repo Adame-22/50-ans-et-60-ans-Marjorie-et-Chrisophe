@@ -1379,7 +1379,7 @@
         '<div class="row__head">' +
         '<input class="row__name" value="' + esc(t.name) + '" aria-label="Nom de la table" maxlength="40" />' +
         '<span class="row__count"></span>' +
-        '<input class="row__seats" type="number" min="1" max="40" value="' + t.seats + '" aria-label="Nombre de places" title="Places" />' +
+        '<label class="row__seatsl">places <input class="row__seats" type="number" min="1" max="40" value="' + t.seats + '" aria-label="Nombre de places" /></label>' +
         '<button class="row__del" type="button" title="Supprimer cette table" aria-label="Supprimer cette table">×</button>' +
         "</div>" +
         '<div class="dropzone" data-table="' + esc(t.id) + '">' + inRow.map(function (r) { return paxHtml(r, fresh[r.id]); }).join("") + "</div>" +
@@ -1392,7 +1392,7 @@
         animation: 160,
         forceFallback: false,
         onStart: function () { document.body.classList.add("is-dragging"); },
-        onEnd: function () { document.body.classList.remove("is-dragging"); },
+        onEnd: function () { document.body.classList.remove("is-dragging"); lastDrag = Date.now(); },
         onAdd: function (evt) {
           var id = evt.item.getAttribute("data-id");
           var table = zone.getAttribute("data-table");
@@ -1407,6 +1407,48 @@
     });
     updateCounts();
   }
+
+  /* Placer quelqu'un en touchant son nom : plus simple que le glisser-déposer sur téléphone */
+  var placeId = null, lastDrag = 0;
+  function seatedAt(tableId) {
+    return state.rsvps.filter(function (r) { return r.presence === "oui" && state.plan.assign[r.id] === tableId; })
+      .reduce(function (n, r) { return n + (r.passagers || 1); }, 0);
+  }
+  function openPlace(id) {
+    var r = state.rsvps.find(function (x) { return x.id === id; });
+    if (!r) return;
+    placeId = id;
+    var cur = state.plan.assign[id], n = r.passagers || 1;
+    $("#pl-title").textContent = r.nom + (n > 1 ? " (" + n + " personnes)" : "");
+    $("#pl-who").textContent = (r.accompagnants || []).length ? "Avec " + r.accompagnants.join(", ") + "." : "";
+    $("#pl-list").innerHTML = state.plan.tables.map(function (t) {
+      var used = seatedAt(t.id) - (cur === t.id ? n : 0), free = t.seats - used, fits = free >= n;
+      return '<button type="button" class="place' + (cur === t.id ? " is-current" : "") + (fits ? "" : " is-tight") + '" data-place="' + esc(t.id) + '">' +
+        "<b>" + esc(t.name) + "</b><small>" + (cur === t.id ? "sa table actuelle · " : "") +
+        (free > 0 ? free + " place" + (free > 1 ? "s" : "") + " libre" + (free > 1 ? "s" : "") : "complète") + (fits ? "" : " · pas assez de place") + "</small></button>";
+    }).join("") + (cur ? '<button type="button" class="place place--out" data-place=""><b>Retirer de sa table</b><small>repasse dans « Pas encore à table »</small></button>' : "");
+    $("#place-sheet").showModal();
+  }
+  $("#pl-list").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-place]");
+    if (!b || !placeId) return;
+    var table = b.getAttribute("data-place"), r = state.rsvps.find(function (x) { return x.id === placeId; });
+    var t = state.plan.tables.find(function (x) { return x.id === table; });
+    if (b.classList.contains("is-tight") && !confirm("« " + t.name + " » n'a pas assez de places libres. Placer quand même ?")) return;
+    if (table) { state.plan.assign[placeId] = table; (state.plan.src = state.plan.src || {})[placeId] = "equipage"; }
+    else { delete state.plan.assign[placeId]; if (state.plan.src) delete state.plan.src[placeId]; }
+    if (seenAssign) seenAssign[placeId] = table || undefined;
+    $("#place-sheet").close();
+    renderCabin();
+    saveAssign(placeId, table);
+    toast(r.nom + (table ? " → " + t.name : " retiré·e de sa table") + ".");
+  });
+  $all("[data-pl-close]").forEach(function (b) { b.addEventListener("click", function () { $("#place-sheet").close(); }); });
+  $("#tab-cabine").addEventListener("click", function (e) {
+    var p = e.target.closest(".pax");
+    if (!p || Date.now() - lastDrag < 400 || document.body.classList.contains("is-dragging")) return;
+    openPlace(p.getAttribute("data-id"));
+  });
 
   function paxCount(zone) {
     return $all(".pax", zone).reduce(function (n, el) {
@@ -1510,7 +1552,7 @@
 
   /* ───────── Constellation ───────── */
   var graph = null;
-  var graphGroup = "table";
+  var graphGroup = "table", graphView = "liste";
 
   function destroyGraph() {
     if (graph) { graph.destroy(); graph = null; }
@@ -1527,6 +1569,10 @@
 
   function renderGraph() {
     destroyGraph();
+    renderOverviewKpis();
+    $("#g-board").hidden = graphView !== "liste";
+    $("#g-graph").hidden = graphView === "liste";
+    if (graphView === "liste") return renderBoard();
     $("#g-info").hidden = true;
     var confirmed = state.rsvps.filter(function (r) { return r.presence === "oui"; });
     var tableName = {};
@@ -1556,6 +1602,9 @@
       } else if (graphGroup === "equipe") {
         var e = teamOf[r.id];
         h = e ? hub("e:" + e, "Équipe " + teamName[e]) : hub("_noteam", "Sans équipe");
+      } else if (graphGroup === "moment") {
+        var mo = momentOf(r);
+        h = hub("mo:" + mo, mo);
       } else {
         var m = r.repas || "Standard";
         h = hub(m, m);
@@ -1568,12 +1617,97 @@
     });
 
     var pax = confirmed.reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
-    $("#g-stats").textContent = confirmed.length + " réponse" + (confirmed.length > 1 ? "s" : "") + " à bord · " + pax + " passager" + (pax > 1 ? "s" : "");
-    $("#g-hub-label").textContent = { table: "Table", equipe: "Équipe", repas: "Type de repas" }[graphGroup];
+    $("#g-stats").textContent = plural(confirmed.length, "inscription", "inscriptions") + " · " + plural(pax, "personne", "personnes");
+    $("#g-hub-label").textContent = { table: "Table", equipe: "Équipe", repas: "Type de repas", moment: "Midi / soir" }[graphGroup];
     $("#g-empty").hidden = confirmed.length > 0;
 
     graph = window.McGraph.mount($("#g-canvas"), { nodes: nodes, links: links }, { onSelect: showGraphInfo });
   }
+
+  /* Vue d'ensemble en liste : des cartes par table, moment, régime ou équipe */
+  function momentOf(r) {
+    var f = fares(r), m = f.filter(function (x) { return x === "midi"; }).length, so = f.filter(function (x) { return x === "soir"; }).length;
+    return m === f.length ? "Midi seulement" : so === f.length ? "Soir seulement" : !m && !so ? "Midi et soir" : "Selon la personne";
+  }
+  function renderOverviewKpis() {
+    var yes = state.rsvps.filter(function (r) { return r.presence === "oui"; }), all = [];
+    yes.forEach(function (r) { all = all.concat(fares(r)); });
+    var special = yes.filter(isSpecial);
+    $("#g-kpis").innerHTML =
+      '<div class="kpi kpi--main"><span>Personnes</span><strong>' + all.length + "</strong><small>" + plural(yes.length, "inscription", "inscriptions") + "</small></div>" +
+      '<div class="kpi"><span>Au déjeuner</span><strong>' + all.filter(function (f) { return f !== "soir"; }).length + "</strong><small>midi</small></div>" +
+      '<div class="kpi"><span>Au dîner</span><strong>' + all.filter(function (f) { return f !== "midi"; }).length + "</strong><small>soir</small></div>" +
+      '<div class="kpi"><span>Régimes, allergies</span><strong>' + special.length + "</strong><small>inscriptions</small></div>";
+  }
+  function regLine(r, n) {
+    var others = (r.accompagnants || []).map(function (a) { return a.split(" ")[0]; });
+    var count = n == null ? r.passagers || 1 : n;
+    return '<button type="button" class="bd-reg" data-rid="' + esc(r.id) + '"><span class="bd-reg__who"><b>' + esc(r.nom) + "</b>" +
+      (others.length ? '<small> avec ' + esc(others.join(", ")) + "</small>" : "") + "</span>" +
+      // vue midi / soir : seulement le nombre concerné ; sinon les billets de la famille (« Midi ×2 »)
+      '<span class="bd-reg__tags">' + (n == null ? fareTags(r) : '<em class="bd-n">' + plural(count, "pers.", "pers.") + "</em>") + "</span>" +
+      ((r.repas && r.repas !== "Standard") || r.allergies ? '<span class="bd-reg__meal">⚠ ' + esc([r.repas !== "Standard" ? r.repas : "", r.allergies].filter(Boolean).join(" · ")) + "</span>" : "") +
+      "</button>";
+  }
+  function boardCard(title, sub, regs, opts) {
+    opts = opts || {};
+    var pax = regs.reduce(function (n, x) { return n + (x.n == null ? x.r.passagers || 1 : x.n); }, 0);
+    var body = regs.length ? regs.map(function (x) { return regLine(x.r, x.n); }).join("") : '<p class="bd-empty">Personne pour l\'instant</p>';
+    return '<section class="bd-card' + (opts.muted ? " bd-card--muted" : "") + (opts.alert ? " bd-card--alert" : "") + '">' +
+      '<header><h3>' + esc(title) + '</h3><span class="bd-count">' + (sub ? esc(sub) : plural(pax, "personne", "personnes")) + "</span></header>" +
+      (opts.fold ? '<details><summary>Voir les ' + regs.length + " inscriptions</summary>" + body + "</details>" : body) + "</section>";
+  }
+  function renderBoard() {
+    var yes = state.rsvps.filter(function (r) { return r.presence === "oui"; }).sort(function (a, b) { return a.nom.localeCompare(b.nom, "fr"); });
+    var wrap = function (r) { return { r: r }; }, html = "";
+    if (graphGroup === "table") {
+      state.plan.tables.forEach(function (t) {
+        var regs = yes.filter(function (r) { return state.plan.assign[r.id] === t.id; });
+        var pax = regs.reduce(function (n, r) { return n + (r.passagers || 1); }, 0);
+        html += boardCard(t.name, pax + " / " + t.seats + " places", regs.map(wrap), { alert: pax > t.seats });
+      });
+      var none = yes.filter(function (r) { return !state.plan.tables.some(function (t) { return t.id === state.plan.assign[r.id]; }); });
+      if (none.length) html += boardCard("Pas encore à table", "", none.map(wrap), { muted: true });
+    } else if (graphGroup === "moment") {
+      // une famille peut être dans deux cartes si chacun ne vient pas au même moment : on compte les personnes
+      [["Midi et soir", "journee"], ["Midi seulement", "midi"], ["Soir seulement", "soir"]].forEach(function (g) {
+        var regs = yes.map(function (r) { return { r: r, n: fares(r).filter(function (f) { return f === g[1]; }).length }; }).filter(function (x) { return x.n; });
+        html += boardCard(g[0], "", regs);
+      });
+    } else if (graphGroup === "repas") {
+      var kinds = {};
+      yes.forEach(function (r) { if (r.repas && r.repas !== "Standard") (kinds[r.repas] = kinds[r.repas] || []).push(r); });
+      Object.keys(kinds).sort().forEach(function (k) { html += boardCard(k, "", kinds[k].map(wrap), { alert: true }); });
+      var allerg = yes.filter(function (r) { return r.allergies && (!r.repas || r.repas === "Standard"); });
+      html += boardCard("Allergies et précisions", "", allerg.map(wrap), { alert: allerg.length > 0 });
+      var std = yes.filter(function (r) { return (!r.repas || r.repas === "Standard") && !r.allergies; });
+      html += boardCard("Repas standard", "", std.map(wrap), { muted: true, fold: true });
+    } else {
+      var teams = state.teams && state.teams.teams || [], inTeam = {};
+      teams.forEach(function (t) {
+        var ids = {};
+        t.people.forEach(function (p) { ids[p.id] = 1; inTeam[p.id] = 1; });
+        html += boardCard("Équipe " + t.name, "", yes.filter(function (r) { return ids[r.id]; }).map(wrap));
+      });
+      var free = yes.filter(function (r) { return !inTeam[r.id]; });
+      if (!teams.length) html += '<p class="hint">Pas encore d\'équipes : elles se forment le jour J, à partir des tables (onglet « Équipes »).</p>';
+      if (free.length && teams.length) html += boardCard("Sans équipe", "", free.map(wrap), { muted: true });
+    }
+    $("#g-board").innerHTML = html || '<p class="hint">Aucun invité confirmé pour l\'instant.</p>';
+  }
+  $("#g-board").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-rid]");
+    if (!b) return;
+    var r = state.rsvps.find(function (x) { return x.id === b.getAttribute("data-rid"); });
+    if (r) openGuest(r);
+  });
+  $all("[data-gview]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      graphView = b.getAttribute("data-gview");
+      $all("[data-gview]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      if (state.plan) renderGraph();
+    });
+  });
 
   function showGraphInfo(n) {
     var box = $("#g-info");
