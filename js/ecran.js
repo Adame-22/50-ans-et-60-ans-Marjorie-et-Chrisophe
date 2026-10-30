@@ -156,116 +156,318 @@
       .then(function () { setTimeout(loadSongs, 15000); });
   }
 
+  /* ───────── Sons de la salle (synthétisés : aucun fichier à charger) ─────────
+     Activés par le bouton « Son » (les navigateurs exigent un clic). Uniquement sur l'écran géant. */
+  var Sound = (function () {
+    var ctx = null, master = null, on = false, loop = null, loopStep = 0;
+    try { on = localStorage.getItem("mc-screen-sound") === "1"; } catch (e) { /* ignoré */ }
+    function init() {
+      if (ctx) { if (ctx.state === "suspended") ctx.resume(); return true; }
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      ctx = new AC();
+      master = ctx.createGain(); master.gain.value = 0.55; master.connect(ctx.destination);
+      return true;
+    }
+    function tone(freq, start, dur, type, vol, slide) {
+      if (!on || !ctx) return;
+      var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + (start || 0);
+      o.type = type || "triangle";
+      o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.2, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(master);
+      o.start(t); o.stop(t + dur + 0.05);
+    }
+    function noise(start, dur, vol, freq) {
+      if (!on || !ctx) return;
+      var len = Math.floor(ctx.sampleRate * dur), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      var src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), t = ctx.currentTime + (start || 0);
+      src.buffer = buf; f.type = "bandpass"; f.frequency.value = freq || 1800; g.gain.value = vol || 0.3;
+      src.connect(f); f.connect(g); g.connect(master); src.start(t);
+    }
+    var N = function (semi) { return 261.63 * Math.pow(2, semi / 12); }; // do = 0
+    // petites boucles : attente (salle d'embarquement) et réflexion (pendant la question)
+    var LOOPS = {
+      lobby: { ms: 240, notes: [0, 4, 7, 12, 7, 4, 2, 7, 0, 4, 9, 12, 9, 4, 2, 7], bass: [-12, -12, -15, -17], vol: 0.07 },
+      think: { ms: 180, notes: [12, 7, 12, 14, 12, 7, 12, 16], bass: [-12, -10], vol: 0.05 },
+    };
+    function startLoop(name) {
+      if (loop && loop.name === name) return;
+      stopLoop();
+      if (!on || !ctx) return;
+      var L = LOOPS[name];
+      loopStep = 0;
+      loop = { name: name, timer: setInterval(function () {
+        var s = loopStep++;
+        tone(N(L.notes[s % L.notes.length]), 0, L.ms / 1000 * 0.9, "triangle", L.vol);
+        if (s % 4 === 0) tone(N(L.bass[(s / 4) % L.bass.length]), 0, L.ms / 1000 * 3.5, "sine", L.vol * 1.6);
+      }, L.ms) };
+    }
+    function stopLoop() { if (loop) { clearInterval(loop.timer); loop = null; } }
+    return {
+      get on() { return on; },
+      toggle: function () {
+        on = !on;
+        try { localStorage.setItem("mc-screen-sound", on ? "1" : "0"); } catch (e) { /* ignoré */ }
+        if (on) { init(); tone(N(12), 0, 0.15, "sine", 0.2); tone(N(19), 0.12, 0.25, "sine", 0.2); } else stopLoop();
+        return on;
+      },
+      wake: function () { if (on) init(); },
+      loop: startLoop,
+      stop: stopLoop,
+      join: function () { tone(N(19), 0, 0.12, "sine", 0.12); tone(N(24), 0.07, 0.16, "sine", 0.1); },
+      tick: function (last) { noise(0, 0.05, last ? 0.5 : 0.35, last ? 2600 : 2000); tone(last ? 1200 : 900, 0, 0.06, "square", 0.05); },
+      gong: function () { [55, 110, 165.5, 221, 277].forEach(function (f, i) { tone(f, 0, 2.6 - i * 0.3, "sine", 0.35 / (i + 1)); }); noise(0, 0.4, 0.25, 400); },
+      go: function () { tone(N(12), 0, 0.12, "square", 0.08); tone(N(19), 0.1, 0.12, "square", 0.08); tone(N(24), 0.2, 0.3, "square", 0.09); },
+      reveal: function () { [0, 4, 7, 12].forEach(function (s, i) { tone(N(s + 12), i * 0.09, 0.35, "triangle", 0.16); }); },
+      whoosh: function () { noise(0, 0.5, 0.2, 900); tone(N(0), 0, 0.4, "sine", 0.08, N(12)); },
+      drumroll: function (sec) { var n = Math.floor(sec * 18); for (var i = 0; i < n; i++) noise(i / 18, 0.07, 0.12 + 0.25 * i / n, 1200); },
+      fanfare: function () {
+        [[0, 0, 0.18], [7, 0.18, 0.18], [12, 0.36, 0.18], [16, 0.54, 0.5], [12, 0.95, 0.18], [16, 1.13, 0.9]].forEach(function (x) {
+          tone(N(x[0]), x[1], x[2] + 0.1, "sawtooth", 0.07); tone(N(x[0] - 12), x[1], x[2] + 0.1, "triangle", 0.1);
+        });
+        noise(0.54, 0.6, 0.18, 4000); noise(1.13, 1.2, 0.22, 4000);
+      },
+    };
+  })();
+  var soundBtn = document.getElementById("sc-sound");
+  function soundLabel() { soundBtn.textContent = Sound.on ? "🔊 Son activé" : "🔇 Activer le son"; soundBtn.classList.toggle("is-on", Sound.on); }
+  soundBtn.addEventListener("click", function () { Sound.toggle(); soundLabel(); if (inQuiz) { quizKey = ""; renderQuiz(); } });
+  soundLabel();
+  document.addEventListener("click", function () { Sound.wake(); }, { once: false });
+
   /* ───────── Quiz ───────── */
-  function tiles(q, reveal) {
-    var total = reveal ? Math.max(1, quiz.counts.reduce(function (a, b) { return a + b; }, 0)) : 1;
-    return '<div class="qz-grid' + (reveal ? " is-reveal" : "") + '">' + q.choices.map(function (c, i) {
-      var n = reveal ? quiz.counts[i] || 0 : 0;
-      return '<div class="qz-tile c' + i + (reveal && i === quiz.correct ? " is-correct" : "") + '">' +
-        (reveal ? '<span class="fill" style="width:' + Math.round((n / total) * 100) + '%"></span>' : "") +
-        '<span class="shape"><b>' + "ABCD".charAt(i) + "</b><i>" + SHAPES[i] + "</i></span><span>" + esc(c) + "</span>" +
-        (reveal ? '<span class="count">' + n + "</span>" : "") + "</div>";
+  // Heure du serveur : on écarte les réponses servies en retard par le cache (en-tête Age)
+  var offsets = [];
+  function clock(d, age) {
+    offsets.push(d.serverNow + (age || 0) * 1000 - Date.now());
+    if (offsets.length > 10) offsets.shift();
+    offset = Math.max.apply(null, offsets);
+  }
+  function now() { return Date.now() + offset; }
+  var lobbySeen = {}, lobbyOrder = [], lastTick = -1, timeUpDone = "", stageTimers = [];
+  function later(fn, ms) { stageTimers.push(setTimeout(fn, ms)); }
+  function clearStage() { stageTimers.forEach(clearTimeout); stageTimers = []; cancelAnimationFrame(timerRaf); }
+  function isLong(q) { return q.q.length > 110 || q.choices.some(function (c) { return c.length > 40; }); }
+
+  function tiles(q) {
+    return '<div class="qz-grid">' + q.choices.map(function (c, i) {
+      return '<div class="qz-tile k' + i + '" data-i="' + i + '"><span class="qz-shape">' + SHAPES[i] + "</span><span class=\"qz-txt\">" + esc(c) + "</span></div>";
     }).join("") + "</div>";
   }
+  function playersCount() { return quiz.players || (quiz.leaderboard || []).length || 0; }
 
-  function renderQuiz() {
-    var key = [quiz.phase, quiz.round, quiz.index].join("|");
-    if (quiz.phase === "lobby" || quiz.phase === "board" || quiz.phase === "podium") key += "|" + (quiz.leaderboard || []).map(function (p) { return p.pub + p.score; }).join(",") +
-      "|" + (quiz.teams || []).map(function (t) { return t.id + t.score + "/" + t.players; }).join(",");
-    if (key === quizKey) {
-      var a = document.getElementById("qz-answered");
-      if (a && quiz.phase === "question") a.textContent = (quiz.answered || 0) + " réponse" + (quiz.answered > 1 ? "s" : "");
-      return;
-    }
-    quizKey = key;
-    cancelAnimationFrame(timerRaf);
+  function renderLobby() {
     var lb = quiz.leaderboard || [];
-
-    if (quiz.phase === "lobby") {
-      stage.innerHTML = '<section class="slide lobby-slide"><div class="qr">' + qr("/quiz") + "<span>" + esc(location.host) + "/quiz</span></div>" +
-        '<div><p class="eyebrow-xl">Quiz de bord</p><h2 class="title-xl">Connaissez-vous vos commandants de bord&nbsp;?</h2>' +
-        '<p class="eyebrow-xl" style="margin-top:4vh">' + lb.length + " passager" + (lb.length > 1 ? "s" : "") + " à bord</p>" +
-        '<div class="lobby-names">' + lb.map(function (p) { return "<span>" + esc(p.name) + "</span>"; }).join("") + "</div>" +
-        (quiz.teamMode && quiz.teams && quiz.teams.length ? '<div class="lobby-teams">' + quiz.teams.map(function (t) {
-          return '<span style="--team:' + esc(t.color) + '"><i></i>' + esc(t.name) + " <b>" + t.players + "</b></span>";
-        }).join("") + "</div>" : "") + "</div></section>";
-      return;
+    if (!document.getElementById("lobby-n")) {
+      lobbySeen = {}; lobbyOrder = [];
+      stage.innerHTML = '<section class="slide lobby-slide2">' +
+        '<div class="lobby2__join"><div class="lobby2__qr">' + qr("/quiz") + '</div><p class="lobby2__url">' + esc(location.host) + "/quiz</p>" +
+        '<p class="lobby2__how">Scannez avec l\'appareil photo<br>et entrez votre prénom</p></div>' +
+        '<div class="lobby2__side"><p class="eyebrow-xl">Quiz de bord</p><h2 class="lobby2__title">Connaissez-vous vos commandants de bord&nbsp;?</h2>' +
+        '<p class="lobby2__count"><b id="lobby-n">0</b><span>joueurs à bord</span></p>' +
+        '<div class="lobby2__names" id="lobby-names"></div><p class="lobby2__more" id="lobby-more"></p>' +
+        '<div class="lobby-teams" id="lobby-teams"></div></div></section>';
+      Sound.loop("lobby");
     }
-    if (quiz.phase === "question" || quiz.phase === "reveal") {
-      var q = quiz.question, reveal = quiz.phase === "reveal";
-      stage.innerHTML = '<section class="slide quiz-slide">' +
-        '<div class="qz-top"><span>Question ' + (quiz.index + 1) + " / " + quiz.total + '</span><span class="answered" id="qz-answered">' +
-        (reveal ? "" : (quiz.answered || 0) + " réponse" + (quiz.answered > 1 ? "s" : "")) + '</span><span id="qz-left"></span></div>' +
-        '<div class="qz-bar"><i id="qz-bar"' + (reveal ? ' style="transform:scaleX(0)"' : "") + "></i></div>" +
-        '<p class="qz-question">' + esc(q.q) + "</p>" + tiles(q, reveal) + "</section>";
-      if (!reveal) runTimer();
-      return;
-    }
-    if (quiz.phase === "board") {
-      var players = '<ol class="board-list">' + lb.slice(0, 5).map(function (p, i) {
-        return '<li style="animation-delay:' + i * 0.12 + 's"><b>' + esc(p.name) + "</b><span>" + p.score + "</span></li>";
-      }).join("") + "</ol>";
-      var tlist = quiz.teamMode ? quiz.teams || [] : [];
-      stage.innerHTML = '<section class="slide board-slide"><div class="center"><p class="eyebrow-xl">Quiz de bord</p><h2 class="title-xl">Classement</h2></div>' +
-        (tlist.length
-          ? '<div class="board-cols"><div><p class="eyebrow-xl">Équipes · moyenne des points</p><ol class="board-list board-list--teams">' + tlist.slice(0, 6).map(function (t, i) {
-              return '<li style="--team:' + esc(t.color) + ";animation-delay:" + i * 0.12 + 's"><b><i></i>' + esc(t.name) + " <small>" + t.players + "</small></b><span>" + t.score + "</span></li>";
-            }).join("") + '</ol></div><div><p class="eyebrow-xl">Joueurs</p>' + players + "</div></div>"
-          : players) + "</section>";
-      return;
-    }
-    if (quiz.phase === "podium") {
-      var teamPodium = quiz.teamMode && quiz.teams && quiz.teams.length > 1;
-      var src = teamPodium ? quiz.teams : lb;
-      var order = [src[1], src[0], src[2]];
-      stage.innerHTML = '<section class="slide board-slide"><div class="center"><p class="eyebrow-xl">Atterrissage</p><h2 class="title-xl">' +
-        (teamPodium ? "Le podium des équipes" : "Le podium") + "</h2></div>" +
-        '<div class="podium">' + order.map(function (p, i) {
-          var rank = [2, 1, 3][i];
-          return '<div class="podium__step"' + (teamPodium && p ? ' style="--team:' + esc(p.color) + '"' : "") + ">" +
-            (p ? '<p class="podium__name">' + (teamPodium ? "Équipe " : "") + esc(p.name) + '</p><p class="podium__score">' + p.score + " pts" + (teamPodium ? " · " + p.players + " joueurs" : "") + "</p>" : "") +
-            '<div class="podium__block">' + rank + "</div></div>";
-        }).join("") + "</div>" +
-        (teamPodium && lb[0] ? '<p class="podium__best">Meilleur joueur de la soirée&nbsp;: <b>' + esc(lb[0].name) + "</b> · " + lb[0].score + " pts</p>" : "") +
-        "</section>";
-      // pluie de confettis quand le premier monte sur la plus haute marche
-      var pk = quiz.round + "|" + (order[1] ? order[1].name : "");
-      if (window.McFx && podiumDone !== pk) {
-        podiumDone = pk;
-        setTimeout(function () { window.McFx.celebrate(); }, 1500);
-        setTimeout(function () { window.McFx.confetti({ x: 0.5, y: 0.35, count: 160, spread: 160, velocity: 16 }); }, 2300);
-      }
-    }
+    // nouveaux joueurs en tête, sans tout redessiner
+    var fresh = lb.filter(function (p) { return !lobbySeen[p.pub]; });
+    fresh.forEach(function (p) { lobbySeen[p.pub] = 1; lobbyOrder.unshift(p); });
+    if (fresh.length && Object.keys(lobbySeen).length > fresh.length) Sound.join();
+    document.getElementById("lobby-n").textContent = lb.length;
+    var MAX = 28;
+    document.getElementById("lobby-names").innerHTML = lobbyOrder.slice(0, MAX).map(function (p) {
+      return '<span class="' + (fresh.indexOf(p) >= 0 ? "is-new" : "") + '">' + esc(p.name) + "</span>";
+    }).join("");
+    document.getElementById("lobby-more").textContent = lobbyOrder.length > MAX ? "+ " + (lobbyOrder.length - MAX) + " autres" : "";
+    document.getElementById("lobby-teams").innerHTML = quiz.teamMode && quiz.teams && quiz.teams.length ? quiz.teams.map(function (t) {
+      return '<span style="--team:' + esc(t.color) + '"><i></i>' + esc(t.name) + " <b>" + t.players + "</b></span>";
+    }).join("") : "";
   }
 
-  function runTimer() {
-    var bar = document.getElementById("qz-bar"), left = document.getElementById("qz-left");
-    var total = quiz.question.time * 1000;
-    (function frame() {
-      var rest = Math.max(0, quiz.endsAt - (Date.now() + offset));
-      if (bar) bar.style.transform = "scaleX(" + Math.min(1, rest / total) + ")";
-      if (left) left.textContent = Math.ceil(rest / 1000) + " s";
-      if (rest > 0) timerRaf = requestAnimationFrame(frame);
+  function renderCountdown() {
+    var q = quiz.question;
+    stage.innerHTML = '<section class="slide quiz-intro"><p class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + "</p>" +
+      '<p class="qz-question qz-question--intro' + (isLong(q) ? " is-long" : "") + '">' + esc(q.q) + "</p>" +
+      '<div class="qz-intro-count"><span id="qz-count">3</span></div></section>';
+    Sound.stop();
+    var last = -1;
+    (function tick() {
+      var rest = quiz.startedAt - now(), el = document.getElementById("qz-count");
+      if (!el) return;
+      if (rest <= 0) { quizKey = ""; renderQuiz(); return; }
+      var s = Math.ceil(rest / 1000);
+      if (s !== last) { last = s; el.textContent = s; el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); Sound.tick(false); }
+      later(tick, Math.min(200, rest));
     })();
   }
 
+  function renderQuestion() {
+    var q = quiz.question;
+    stage.innerHTML = '<section class="slide quiz-slide2' + (isLong(q) ? " is-long" : "") + '">' +
+      '<div class="qz-head"><span class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + "</span></div>" +
+      '<p class="qz-question">' + esc(q.q) + "</p>" +
+      '<div class="qz-mid"><div class="qz-clock" id="qz-clock"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" class="qz-clock__bg"/><circle cx="50" cy="50" r="44" class="qz-clock__fg" id="qz-ring"/></svg><b id="qz-left"></b></div>' +
+      '<div class="qz-answers"><b id="qz-answered">' + (quiz.answered || 0) + '</b><span>réponses<br>sur ' + playersCount() + "</span></div></div>" +
+      tiles(q) + "</section>";
+    Sound.loop("think");
+    Sound.go();
+    lastTick = -1;
+    runTimer();
+  }
+
+  function runTimer() {
+    var ring = document.getElementById("qz-ring"), left = document.getElementById("qz-left"), box = document.getElementById("qz-clock");
+    var total = quiz.question.time * 1000, C = 2 * Math.PI * 44;
+    if (ring) ring.style.strokeDasharray = C;
+    (function frame() {
+      var rest = Math.max(0, Math.min(total, quiz.endsAt - now())), sec = Math.ceil(rest / 1000);
+      if (ring) ring.style.strokeDashoffset = C * (1 - rest / total);
+      if (left) left.textContent = rest > 0 ? sec : "0";
+      if (box) box.classList.toggle("is-hurry", rest > 0 && rest <= 5000);
+      if (rest > 0 && rest <= 5000 && sec !== lastTick) { lastTick = sec; Sound.tick(sec <= 1); }
+      if (rest <= 0) {
+        var k = quiz.round + ":" + quiz.startedAt;
+        if (timeUpDone !== k) {
+          timeUpDone = k;
+          Sound.stop(); Sound.gong();
+          var sl = stage.querySelector(".quiz-slide2");
+          if (sl) sl.classList.add("is-timeup");
+          var head = stage.querySelector(".qz-head");
+          if (head) head.insertAdjacentHTML("beforeend", '<span class="qz-timeup">Temps écoulé&nbsp;!</span>');
+        }
+        return;
+      }
+      timerRaf = requestAnimationFrame(frame);
+    })();
+  }
+
+  function renderReveal() {
+    var q = quiz.question, counts = quiz.counts || [], total = counts.reduce(function (a, b) { return a + b; }, 0);
+    var max = Math.max.apply(null, counts.concat([1])), good = counts[quiz.correct] || 0;
+    var pct = total ? Math.round(good / total * 100) : 0;
+    stage.innerHTML = '<section class="slide quiz-slide2 is-reveal' + (isLong(q) ? " is-long" : "") + '">' +
+      '<div class="qz-head"><span class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + '</span><span class="qz-pct">' + pct + " % de bonnes réponses</span></div>" +
+      '<p class="qz-question">' + esc(q.q) + "</p>" +
+      '<div class="qz-hist">' + q.choices.map(function (c, i) {
+        return '<div class="qz-col k' + i + (i === quiz.correct ? " is-correct" : "") + '"><span class="qz-col__n">' + (counts[i] || 0) + "</span>" +
+          '<i class="qz-col__bar" data-h="' + Math.round((counts[i] || 0) / max * 100) + '"></i><span class="qz-col__shape">' + SHAPES[i] + (i === quiz.correct ? " ✓" : "") + "</span></div>";
+      }).join("") + "</div>" + tiles(q) + "</section>";
+    stage.querySelectorAll(".qz-tile").forEach(function (t) { t.classList.toggle("is-correct", +t.getAttribute("data-i") === quiz.correct); t.classList.toggle("is-wrong", +t.getAttribute("data-i") !== quiz.correct); });
+    // les barres montent (au rendu suivant, pour que l'animation se joue)
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      stage.querySelectorAll(".qz-col__bar").forEach(function (b) { b.style.height = Math.max(3, +b.getAttribute("data-h")) + "%"; });
+    }); });
+    Sound.stop(); Sound.reveal();
+  }
+
+  function renderBoard() {
+    var lb = quiz.leaderboard || [], gains = quiz.gains || {};
+    // rang avant cette question : score moins les points qu'on vient de gagner
+    var before = lb.map(function (p) { return { pub: p.pub, s: p.score - (gains[p.pub] || 0), name: p.name }; })
+      .sort(function (a, b) { return b.s - a.s || a.name.localeCompare(b.name, "fr"); });
+    var prevRank = {};
+    before.forEach(function (p, i) { prevRank[p.pub] = i + 1; });
+    var players = '<ol class="board2">' + lb.slice(0, 5).map(function (p, i) {
+      var mv = (prevRank[p.pub] || i + 1) - (i + 1), g = gains[p.pub] || 0;
+      return '<li style="animation-delay:' + (0.15 * i).toFixed(2) + 's"><span class="board2__rank">' + (p.rank || i + 1) + "</span><b>" + esc(p.name) + "</b>" +
+        (g ? '<em class="board2__gain">+' + g + "</em>" : "") +
+        (mv > 0 ? '<em class="board2__up">▲ ' + mv + "</em>" : mv < 0 ? '<em class="board2__down">▼ ' + (-mv) + "</em>" : "") +
+        "<span class=\"board2__score\">" + p.score + "</span></li>";
+    }).join("") + "</ol>";
+    var tlist = quiz.teamMode ? quiz.teams || [] : [];
+    stage.innerHTML = '<section class="slide board-slide"><div class="center"><p class="eyebrow-xl">Après la question ' + (quiz.index + 1) + '</p><h2 class="title-xl">Classement</h2></div>' +
+      (tlist.length
+        ? '<div class="board-cols"><div><p class="eyebrow-xl">Équipes · moyenne des points</p><ol class="board-list board-list--teams">' + tlist.slice(0, 6).map(function (t, i) {
+            return '<li style="--team:' + esc(t.color) + ";animation-delay:" + i * 0.12 + 's"><b><i></i>' + esc(t.name) + " <small>" + t.players + "</small></b><span>" + t.score + "</span></li>";
+          }).join("") + '</ol></div><div><p class="eyebrow-xl">Joueurs</p>' + players + "</div></div>"
+        : players) + "</section>";
+    Sound.whoosh();
+  }
+
+  // Podium en trois temps : 3e, 2e, roulement de tambour, 1er
+  function renderPodium() {
+    var lb = quiz.leaderboard || [];
+    var teamPodium = quiz.teamMode && quiz.teams && quiz.teams.length > 1;
+    var src = teamPodium ? quiz.teams : lb;
+    var order = [src[1], src[0], src[2]];
+    stage.innerHTML = '<section class="slide board-slide"><div class="center"><p class="eyebrow-xl">Atterrissage</p><h2 class="title-xl">' +
+      (teamPodium ? "Le podium des équipes" : "Le podium") + "</h2></div>" +
+      '<div class="podium podium--staged">' + order.map(function (p, i) {
+        var rank = [2, 1, 3][i];
+        return '<div class="podium__step" data-rank="' + rank + '"' + (teamPodium && p ? ' style="--team:' + esc(p.color) + '"' : "") + ">" +
+          (p ? '<p class="podium__name">' + (teamPodium ? "Équipe " : "") + esc(p.name) + '</p><p class="podium__score">' + p.score + " pts" + (teamPodium ? " · " + p.players + " joueurs" : "") + "</p>" : "") +
+          '<div class="podium__block">' + rank + "</div></div>";
+      }).join("") + "</div>" +
+      (teamPodium && lb[0] ? '<p class="podium__best" id="podium-best">Meilleur joueur de la soirée&nbsp;: <b>' + esc(lb[0].name) + "</b> · " + lb[0].score + " pts</p>" : "") +
+      "</section>";
+    var pk = quiz.round + "|" + (order[1] ? order[1].name : "");
+    var show = function (r) { var s = stage.querySelector('.podium__step[data-rank="' + r + '"]'); if (s) s.classList.add("is-shown"); };
+    if (podiumDone === pk) { show(3); show(2); show(1); var b = document.getElementById("podium-best"); if (b) b.classList.add("is-shown"); return; }
+    podiumDone = pk;
+    Sound.stop();
+    later(function () { show(3); Sound.reveal(); }, 1200);
+    later(function () { show(2); Sound.reveal(); }, 3400);
+    later(function () { Sound.drumroll(2.6); }, 5000);
+    later(function () {
+      show(1); Sound.fanfare();
+      var b = document.getElementById("podium-best"); if (b) b.classList.add("is-shown");
+      if (window.McFx) { window.McFx.celebrate(); later(function () { window.McFx.confetti({ x: 0.5, y: 0.35, count: 160, spread: 160, velocity: 16 }); }, 700); }
+    }, 7700);
+  }
+
+  function renderQuiz() {
+    var waiting = quiz.phase === "question" && quiz.startedAt && now() < quiz.startedAt;
+    var key = [quiz.phase, quiz.round, quiz.index, waiting ? "w" : "", quiz.scoring ? "s" : ""].join("|");
+    // le classement change seulement entre deux questions : les nouvelles inscriptions n'y touchent pas
+    if (quiz.phase === "board") key += "|" + (quiz.leaderboard || []).slice(0, 5).map(function (p) { return p.pub + p.score; }).join(",") + "|" + (quiz.teams || []).map(function (t) { return t.id + t.score; }).join(",");
+    if (quiz.phase === "lobby") { if (quizKey.indexOf("lobby|") !== 0) { clearStage(); quizKey = key; stage.innerHTML = ""; } renderLobby(); return; }
+    if (key === quizKey) {
+      if (quiz.phase === "question") {
+        var a = document.getElementById("qz-answered"); if (a) a.textContent = quiz.answered || 0;
+      }
+      return;
+    }
+    quizKey = key;
+    clearStage();
+    if (quiz.phase === "question") return waiting ? renderCountdown() : renderQuestion();
+    if (quiz.phase === "reveal") {
+      if (quiz.scoring) { var sl = stage.querySelector(".quiz-slide2"); if (!sl) renderQuestion(); return; } // on attend la fin du calcul
+      return renderReveal();
+    }
+    if (quiz.phase === "board") return renderBoard();
+    if (quiz.phase === "podium") return renderPodium();
+  }
+
   function pollQuiz() {
-    getJson("/api/quiz?view=public").then(function (d) {
+    fetch("/api/quiz?view=public").then(function (r) {
+      // une erreur passagère de la base ne doit pas faire quitter le quiz
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      var age = parseFloat(r.headers.get("Age")) || 0;
+      return r.json().then(function (d) { if (!d || !d.phase) throw new Error("réponse vide"); return { d: d, age: age }; });
+    }).then(function (x) {
+      var d = x.d;
       quiz = d;
-      if (d.serverNow) offset = d.serverNow - Date.now();
-      var active = d.phase && d.phase !== "off";
+      if (d.serverNow) clock(d, x.age);
+      var active = d.phase !== "off";
       if (active) {
         if (!inQuiz) { inQuiz = true; clearTimeout(slideTimer); quizKey = ""; }
         renderQuiz();
       } else if (inQuiz) {
-        inQuiz = false; cancelAnimationFrame(timerRaf); nextSlide();
+        inQuiz = false; clearStage(); Sound.stop(); quizKey = ""; nextSlide();
       }
-    }).catch(function () {}).then(function () { setTimeout(pollQuiz, 1000); });
+    }).catch(function () { /* on garde l'affichage en cours et on réessaie */ })
+      .then(function () { setTimeout(pollQuiz, 1000); });
   }
 
   /* ───────── Plein écran, veille, curseur ───────── */
   var fsBtn = document.getElementById("sc-fs");
   fsBtn.addEventListener("click", function () {
+    Sound.wake();
     var el = document.documentElement;
     (el.requestFullscreen || el.webkitRequestFullscreen || function () {}).call(el);
   });

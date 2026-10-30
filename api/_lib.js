@@ -63,7 +63,7 @@ function localRedis([cmd, key, ...args]) {
     case "INCR": db[key] = (parseInt(db[key], 10) || 0) + 1; save(); return db[key];
     case "EXPIRE": return 1;
     case "HGET": return h()[args[0]] === undefined ? null : h()[args[0]];
-    case "HSET": h()[args[0]] = args[1]; save(); return 1;
+    case "HSET": for (let i = 0; i + 1 < args.length; i += 2) h()[args[i]] = args[i + 1]; save(); return args.length / 2;
     case "HSETNX": if (h()[args[0]] !== undefined) return 0; h()[args[0]] = args[1]; save(); return 1;
     case "HDEL": delete h()[args[0]]; save(); return 1;
     case "HINCRBY": h()[args[0]] = String((parseInt(h()[args[0]], 10) || 0) + parseInt(args[1], 10)); save(); return parseInt(h()[args[0]], 10);

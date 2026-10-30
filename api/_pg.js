@@ -81,9 +81,16 @@ async function pgCommand([cmd, key, ...args]) {
       const r = await q(`select v from mc.kv where k = $1 and f = $2`, [key, args[0]]);
       return r.rows[0] ? r.rows[0].v : null;
     }
-    case "HSET":
-      await q(`insert into mc.kv (k, f, v) values ($1, $2, $3) on conflict (k, f) do update set v = excluded.v`, [key, args[0], args[1]]);
-      return 1;
+    case "HSET": {
+      // plusieurs paires champ / valeur en une seule requête (scores du quiz)
+      const rows = [], params = [key];
+      for (let i = 0; i + 1 < args.length; i += 2) {
+        params.push(args[i], args[i + 1]);
+        rows.push("($1, $" + (params.length - 1) + ", $" + params.length + ")");
+      }
+      await q(`insert into mc.kv (k, f, v) values ${rows.join(", ")} on conflict (k, f) do update set v = excluded.v`, params);
+      return rows.length;
+    }
     case "HSETNX": {
       const r = await q(`insert into mc.kv (k, f, v) values ($1, $2, $3) on conflict do nothing`, [key, args[0], args[1]]);
       return r.rowCount;

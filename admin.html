@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261105" />
-  <link rel="stylesheet" href="css/style.css?v=20261105" />
-  <link rel="stylesheet" href="css/admin.css?v=20261105" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261106" />
+  <link rel="stylesheet" href="css/style.css?v=20261106" />
+  <link rel="stylesheet" href="css/admin.css?v=20261106" />
 </head>
 <body class="admin">
 
@@ -423,6 +423,8 @@
           <span class="toolbar__grow"></span>
           <a class="btn btn--small btn--line" href="/ecran" target="_blank" rel="noopener">Ouvrir l'écran géant</a>
         </div>
+        <p class="regie__lost" id="qz-lost" role="alert" hidden></p>
+        <p class="hint hint--tiny regie__screen">Écran géant : sur l'ordinateur relié au vidéoprojecteur, ouvrez <b id="qz-screen-url"></b>, puis « Activer le son » et « Plein écran ».</p>
         <ol class="regie__dots" id="qz-dots" aria-hidden="true"></ol>
 
         <p class="regie__say" id="qz-say"></p>
@@ -441,6 +443,7 @@
 
         <button type="button" class="btn btn--gold regie__next" id="qz-next">…</button>
         <p class="hint hint--tiny regie__kbd">Sur ordinateur : barre d'espace = étape suivante.</p>
+        <p class="hint hint--tiny regie__by" id="qz-by"></p>
 
         <div class="regie__more">
           <button type="button" class="btn btn--small btn--line" id="qz-skip" hidden>Passer le classement</button>
@@ -736,9 +739,9 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261105"></script>
+  <script src="js/graph.js?v=20261106"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261105"></script>
-  <script src="js/admin.js?v=20261105"></script>
+  <script src="js/xlsx.js?v=20261106"></script>
+  <script src="js/admin.js?v=20261106"></script>
 </body>
 </html>

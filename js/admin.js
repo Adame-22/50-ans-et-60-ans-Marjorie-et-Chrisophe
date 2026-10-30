@@ -1915,33 +1915,54 @@
 
   /* ───────── Quiz (animateur) ───────── */
   var PHASES = { off: "Fermé", lobby: "Embarquement", question: "Question", reveal: "Réponse", board: "Classement", podium: "Podium" };
-  var qz = { timer: 0, questions: null, state: null, offset: 0, dirty: false, raf: 0 };
+  var qz = { timer: 0, questions: null, state: null, offset: 0, dirty: false, raf: 0, gen: 0, lastOk: 0, qsig: "" };
 
   function startQuizAdmin() {
     stopQuizAdmin();
+    var gen = ++qz.gen; // une réponse d'une ancienne boucle est ignorée
+    quizWake(true);
     (function poll() {
       api("/api/quiz?view=admin").then(function (d) {
+        if (gen !== qz.gen) return;
+        qz.lastOk = Date.now();
         qz.state = d.state; qz.offset = d.serverNow - Date.now();
-        if (!qz.questions || !qz.dirty) { qz.questions = d.questions; renderQuizList(); }
+        // l'éditeur n'est redessiné que si les questions ont changé et que personne n'est en train d'y écrire
+        var sig = JSON.stringify(d.questions), typing = $("#qz-list").contains(document.activeElement);
+        if (!qz.questions || (!qz.dirty && !typing && sig !== qz.qsig)) { qz.questions = d.questions; qz.qsig = sig; renderQuizList(); }
         renderQuizStatus(d);
       }).catch(function (e) { onAuthError(e); }).then(function () {
-        if (!$("#tab-quiz").hidden) qz.timer = setTimeout(poll, 1500);
+        if (gen === qz.gen && !$("#tab-quiz").hidden) qz.timer = setTimeout(poll, 1500);
       });
     })();
+    clearInterval(qz.watch);
+    qz.watch = setInterval(function () {
+      var lost = qz.lastOk && Date.now() - qz.lastOk > 5000;
+      $("#qz-lost").hidden = !lost;
+      if (lost) $("#qz-lost").textContent = "Connexion perdue depuis " + Math.round((Date.now() - qz.lastOk) / 1000) + " s : l'affichage n'est peut-être plus à jour.";
+    }, 1000);
   }
-  function stopQuizAdmin() { clearTimeout(qz.timer); cancelAnimationFrame(qz.raf); }
+  $("#qz-screen-url").textContent = location.host + "/ecran";
+  function stopQuizAdmin() { qz.gen++; clearTimeout(qz.timer); clearInterval(qz.watch); cancelAnimationFrame(qz.raf); quizWake(false); }
+  // le téléphone de l'animateur ne doit pas se verrouiller pendant le quiz
+  var qzLock = null;
+  function quizWake(on) {
+    if (on && !qzLock && navigator.wakeLock && document.visibilityState === "visible") navigator.wakeLock.request("screen").then(function (l) { qzLock = l; l.addEventListener("release", function () { qzLock = null; }); }).catch(function () {});
+    if (!on && qzLock) { qzLock.release().catch(function () {}); qzLock = null; }
+  }
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && !$("#tab-quiz").hidden) { qzLock = null; startQuizAdmin(); } });
 
   // Régie : d'après l'étape en cours, ce que fait le gros bouton et ce que l'animateur annonce
   function nextStep(st, n) {
     var last = st.index >= n - 1;
     switch (st.phase) {
-      case "lobby": return { label: "Lancer la question " + (st.index + 2), action: "start" };
+      case "lobby": return last ? { label: "Afficher le podium final", action: "podium" } : { label: "Lancer la question " + (st.index + 2), action: "start" };
       case "question": return { label: "Révéler la réponse", action: "reveal" };
       case "reveal": return { label: "Afficher le classement", action: "board" };
       case "board": return last ? { label: "Afficher le podium final", action: "podium" } : { label: "Lancer la question " + (st.index + 2), action: "start" };
       case "podium": return { label: "Terminer le quiz", action: "off" };
       default:
-        if (st.index >= n - 1 && st.index >= 0) return { label: "Quiz terminé ✓", action: null };
+        if (st.done) return { label: "Réafficher le podium", action: "podium" };
+        if (last && st.index >= 0) return { label: "Afficher le podium final", action: "podium" };
         return { label: st.index >= 0 ? "Reprendre le quiz" : "Ouvrir le quiz : les invités rejoignent", action: "lobby" };
     }
   }
@@ -1951,7 +1972,8 @@
     qz.d = d;
     $("#qz-phase").textContent = PHASES[st.phase] || st.phase;
     $("#qz-phase").className = "regie__phase regie__phase--" + st.phase;
-    $("#qz-index").textContent = st.index >= 0 ? "Question " + (st.index + 1) + " sur " + n : n + " questions prêtes";
+    $("#qz-index").textContent = (st.index >= 0 ? "Question " + (st.index + 1) + " sur " + n : n + " questions prêtes") + (d.teams ? " · par équipes" : "");
+    $("#qz-by").textContent = st.by ? "Dernière action : " + st.by : "";
     $("#qz-players").textContent = d.players;
     $("#qz-dots").innerHTML = d.questions.map(function (x, i) {
       var cls = i < st.index || (i === st.index && ["reveal", "board", "podium"].indexOf(st.phase) >= 0) || (st.phase === "podium") ? "is-done" : i === st.index && st.phase === "question" ? "is-now" : "";
@@ -1960,12 +1982,15 @@
 
     // ce qu'il faut dire
     var top = d.top || [], correct = q && st.counts ? st.counts[q.answer] || 0 : 0, total = st.counts ? st.counts.reduce(function (a, b) { return a + b; }, 0) : 0;
-    var scored = top.filter(function (p) { return p.score > 0; });
+    var teamMode = !!(d.teams && d.teams.length > 1);
+    var scored = (teamMode ? d.teams.map(function (t) { return { name: "équipe " + t.name, score: t.score }; }) : top).filter(function (p) { return p.score > 0; });
     var medal = function (k) { return scored[k] ? ["🥇", "🥈", "🥉"][k] + " " + scored[k].name + " (" + scored[k].score + " pts)" : ""; };
     var podium = [medal(0), medal(1), medal(2)].filter(Boolean).join(", ") || "personne n'a encore marqué de points";
     var say = {
-      off: st.index >= n - 1 && st.index >= 0
-        ? "Le quiz est terminé. Pour le rejouer depuis le début : « Autres options » puis « Tout remettre à zéro »."
+      off: st.done
+        ? "Le quiz est terminé. Après une répétition, pensez à « Autres options » puis « Tout remettre à zéro » avant la fête."
+        : st.index >= n - 1 && st.index >= 0
+        ? "Le quiz a été fermé à la dernière question : affichez le podium final."
         : st.index >= 0
           ? "Le quiz est en pause (arrêté après la question " + (st.index + 1) + "). « Reprendre le quiz » continue là où vous en étiez ; pour tout recommencer : « Autres options » puis « Tout remettre à zéro »."
           : "Avant de commencer : affichez l'écran géant sur le vidéoprojecteur (bouton en haut). Puis appuyez sur le gros bouton : l'écran montre le QR code pour rejoindre.",
@@ -1997,14 +2022,14 @@
     // classement
     var showTop = (st.phase === "board" || st.phase === "podium") && top.length;
     $("#qz-top").hidden = !showTop;
-    if (showTop) $("#qz-top").innerHTML = top.slice(0, st.phase === "podium" ? 3 : 5).map(function (p) { return "<li><span>" + esc(p.name) + "</span><b>" + p.score + " pts</b></li>"; }).join("");
+    if (showTop) $("#qz-top").innerHTML = (teamMode ? d.teams.map(function (t) { return { name: "Équipe " + t.name, score: t.score }; }) : top).slice(0, st.phase === "podium" ? 3 : 5).map(function (p) { return "<li><span>" + esc(p.name) + "</span><b>" + p.score + " pts</b></li>"; }).join("");
 
     var step = nextStep(st, n), btn = $("#qz-next");
     qz.next = step;
-    btn.disabled = !step.action || qz.busy;
+    btn.disabled = !step.action || qz.busy || Date.now() < (qz.cool || 0);
     $("#qz-skip").hidden = st.phase !== "reveal";
     $("#qz-skip").textContent = st.index >= n - 1 ? "Passer au podium final" : "Passer le classement → question " + (st.index + 2);
-    $("#qz-podium").hidden = ["lobby", "question", "reveal", "board"].indexOf(st.phase) < 0 || st.index >= n - 1 || st.index < 0;
+    $("#qz-podium").hidden = ["lobby", "reveal", "board"].indexOf(st.phase) < 0 || st.index >= n - 1 || st.index < 0;
     $all(".qz-item").forEach(function (li, i) { li.classList.toggle("is-current", i === st.index && st.phase !== "off"); });
     cancelAnimationFrame(qz.raf);
     (function tick() {
@@ -2017,12 +2042,13 @@
   }
   $("#qz-next").addEventListener("click", function () {
     var step = qz.next;
-    if (!step || !step.action || qz.busy) return;
+    // 1,5 s de pause après chaque étape : un double appui ne révèle pas une question à peine lancée
+    if (!step || !step.action || qz.busy || Date.now() < (qz.cool || 0)) return;
     quizAction(step.action);
   });
   $("#qz-skip").addEventListener("click", function () {
     var d = qz.d;
-    if (!d) return;
+    if (!d || qz.busy) return;
     quizAction(d.state.index >= d.questions.length - 1 ? "podium" : "start");
   });
   // barre d'espace = étape suivante (sauf en tapant dans un champ)
@@ -2037,7 +2063,7 @@
       var ch = q.choices.concat(["", "", "", ""]).slice(0, 4);
       return '<li class="qz-item" data-i="' + i + '">' +
         '<div class="qz-item__head"><input type="text" class="qz-item__q" data-f="q" value="' + esc(q.q) + '" placeholder="Question" maxlength="200" />' +
-        '<input type="number" class="qz-item__time" data-f="time" min="5" max="60" value="' + q.time + '" title="Secondes" /></div>' +
+        '<label class="qz-item__secs"><input type="number" class="qz-item__time" data-f="time" min="5" max="60" value="' + q.time + '" aria-label="Durée en secondes" /> s</label></div>' +
         '<div class="qz-choices">' + ch.map(function (c, j) {
           return '<label class="qz-choice"><input type="radio" name="qz-ok-' + i + '" data-f="answer" value="' + j + '"' + (q.answer === j ? " checked" : "") + ' title="Bonne réponse" />' +
             '<input type="text" data-f="c' + j + '" value="' + esc(c) + '" placeholder="Réponse ' + "ABCD"[j] + '" maxlength="80" /></label>';
@@ -2064,12 +2090,17 @@
   $("#qz-list").addEventListener("click", function (e) {
     var del = e.target.getAttribute("data-del-q"), launch = e.target.getAttribute("data-launch");
     if (del !== null) {
+      if (!confirm("Supprimer la question " + (parseInt(del, 10) + 1) + " ? (Elle ne sera vraiment supprimée qu'en cliquant sur « Enregistrer les questions ».)")) return;
       qz.questions = readQuizList(); qz.questions.splice(parseInt(del, 10), 1); qz.dirty = true; renderQuizList();
       $("#qz-save-state").textContent = "Modifications non enregistrées";
     }
     if (launch !== null) {
       if (qz.dirty) return toast("Enregistrez d'abord les questions.", true);
-      quizAction("start", { index: parseInt(launch, 10) });
+      var li = parseInt(launch, 10), cur = qz.d && qz.d.state;
+      var warn = cur && cur.phase === "question" ? "\n\nLa question en cours sera abandonnée, sans points." : cur && li <= cur.index ? "\n\nAttention : cette question a déjà été jouée, ses points compteront deux fois." : "";
+      if (!confirm("Lancer maintenant la question " + (li + 1) + " ?" + warn)) return;
+      if (cur && cur.phase === "question") return toast("Révélez d'abord la réponse de la question en cours.", true);
+      quizAction("start", { index: li });
     }
   });
   $("#qz-add").addEventListener("click", function () {
@@ -2078,9 +2109,17 @@
     var items = $all(".qz-item"); items[items.length - 1].querySelector("input").focus();
   });
   $("#qz-save").addEventListener("click", function () {
+    // une bonne réponse cochée sur une case vide deviendrait la réponse A sans prévenir
+    var bad = $all(".qz-item").map(function (li, i) {
+      var ok = li.querySelector('[data-f="answer"]:checked'), v = ok ? li.querySelector('[data-f="c' + ok.value + '"]').value.trim() : "";
+      return v ? null : i + 1;
+    }).filter(Boolean);
+    if (bad.length) return toast("Question " + bad.join(", ") + " : la bonne réponse cochée est vide.", true);
+    var cur = qz.d && qz.d.state;
+    if (cur && cur.phase !== "off" && !confirm("Le quiz est en cours. Enregistrer quand même ? (Ne supprimez pas ou ne déplacez pas les questions déjà jouées.)")) return;
     var list = readQuizList();
     api("/api/quiz", { method: "PUT", body: { questions: list } }).then(function (d) {
-      qz.questions = d.questions; qz.dirty = false; renderQuizList();
+      qz.questions = d.questions; qz.qsig = JSON.stringify(d.questions); qz.dirty = false; renderQuizList();
       $("#qz-save-state").textContent = "Enregistré ✓"; toast("Questions enregistrées.");
     }).catch(function (err) { toast(err.message, true); });
   });
@@ -2088,11 +2127,16 @@
   function quizAction(action, extra) {
     if (action === "reset" && !confirm("Remettre le quiz à zéro ? Les joueurs et les scores seront effacés.")) return;
     if (action === "off" && qz.d && qz.d.state.phase !== "podium" && qz.d.state.phase !== "off" && !confirm("Fermer le quiz maintenant ? Les joueurs verront « quiz fermé ».")) return;
-    var body = Object.assign({ action: action }, extra || {});
+    if (qz.busy) return;
+    var st = qz.d && qz.d.state;
+    var body = Object.assign({ action: action }, st ? { from: { phase: st.phase, round: st.round || 0, index: st.index } } : {}, extra || {});
     qz.busy = true;
     $("#qz-next").disabled = true;
-    api("/api/quiz", { method: "POST", body: body }).then(function () { qz.busy = false; startQuizAdmin(); })
-      .catch(function (err) { qz.busy = false; $("#qz-next").disabled = false; toast(err.message, true); });
+    api("/api/quiz", { method: "POST", body: body }).then(function () {
+      qz.busy = false; qz.cool = Date.now() + 1500; startQuizAdmin();
+      setTimeout(function () { if (qz.next && qz.next.action && !qz.busy) $("#qz-next").disabled = false; }, 1550);
+    })
+      .catch(function (err) { qz.busy = false; $("#qz-next").disabled = false; toast(err.message, true); if (err.status === 409) startQuizAdmin(); });
   }
   $all("[data-qz]").forEach(function (b) {
     b.addEventListener("click", function () { quizAction(b.getAttribute("data-qz")); });

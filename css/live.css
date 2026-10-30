@@ -596,3 +596,48 @@ body.live::before {
 .bn-thumb { position: relative; display: block; }
 .bn-thumb img { display: block; width: 64px; height: 64px; object-fit: cover; border-radius: 10px; }
 .bn-thumb button { position: absolute; top: -7px; right: -7px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: #000033; color: #fffbfe; font-size: 1rem; line-height: 1; cursor: pointer; box-shadow: 0 0 0 2px rgba(255, 251, 254, .8); }
+
+/* ───────── Quiz façon Kahoot : couleurs franches, verdict plein écran ───────── */
+:root { --k0: #e21b3c; --k1: #1368ce; --k2: #ffb000; --k3: #26890c; }
+.k0 { background: var(--k0); color: #fff; }
+.k1 { background: var(--k1); color: #fff; }
+.k2 { background: var(--k2); color: #241800; }
+.k3 { background: var(--k3); color: #fff; }
+.choices--kahoot { grid-template-columns: 1fr 1fr; gap: 10px; }
+.choices--kahoot .choice-btn { min-height: 128px; flex-direction: column; justify-content: center; align-items: center; gap: .5rem; text-align: center; padding: 14px 10px; border-radius: 14px; box-shadow: inset 0 -5px 0 rgba(0, 0, 0, .22); font-size: 1.12rem; font-weight: 700; }
+.choices--kahoot .choice-btn .shape { display: flex; align-items: center; gap: .4rem; background: none; width: auto; height: auto; padding: 0; }
+.choices--kahoot .choice-btn .shape i { font-style: normal; font-size: 2rem; line-height: 1; }
+.choices--kahoot .choice-btn .shape b { font-family: var(--sans); font-size: 1rem; opacity: .85; }
+.choices--kahoot.is-locked .choice-btn:not(.is-picked) { opacity: .2; filter: grayscale(.6); }
+.choices--kahoot .choice-btn.is-picked { outline: 4px solid #fff; outline-offset: 3px; }
+.q-text--small { font-size: clamp(1.15rem, 4.6vw, 1.5rem); margin: .2rem 0 1rem; }
+.q-status { min-height: 1.4em; margin: 1rem 0 0; font-weight: 600; color: var(--gold-light); }
+.q-left { font-size: 1.15rem; font-weight: 700; }
+/* top départ */
+.q-ready { display: grid; place-items: center; gap: .4rem; margin-top: 1.6rem; }
+.q-ready span { display: grid; place-items: center; width: 120px; height: 120px; border-radius: 50%; background: var(--gold-light); color: var(--navy); font: 700 4rem/1 var(--sans); animation: fx-pop .5s cubic-bezier(.3, 1.4, .5, 1) both; }
+.q-ready p { margin: 0; color: rgba(255, 251, 254, .8); font-weight: 600; }
+/* réponse envoyée : on attend la révélation */
+.sent { display: grid; place-items: center; gap: .5rem; padding: 26px 16px; border-radius: 18px; text-align: center; box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .22); margin-top: .6rem; }
+.sent .shape { display: flex; align-items: center; gap: .5rem; background: none; }
+.sent .shape i { font-style: normal; font-size: 2.6rem; }
+.sent .shape b { font-family: var(--sans); font-size: 1.1rem; }
+.sent__txt { margin: 0; font-size: 1.3rem; font-weight: 700; }
+.sent__title { margin: 1.2rem 0 .2rem; text-align: center; font-family: var(--serif); font-size: 2rem; }
+/* verdict */
+.verdict-screen { display: grid; justify-items: center; gap: .3rem; padding: 26px 16px 22px; border-radius: 20px; text-align: center; background: #3a3f55; }
+.verdict-screen.is-ok { background: linear-gradient(160deg, #2fae50, #1d7f37); }
+.verdict-screen.is-ko { background: linear-gradient(160deg, #e2483f, #a8231c); }
+.verdict-screen__icon { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: rgba(255, 255, 255, .2); font-size: 3rem; font-weight: 700; line-height: 1; animation: fx-pop .55s cubic-bezier(.3, 1.4, .5, 1) both; }
+.verdict-screen__title { margin: .3rem 0 0; font-family: var(--serif); font-size: 2.3rem; line-height: 1.1; }
+.verdict-screen__pts { margin: 0; font-size: 1.3rem; font-weight: 700; }
+.verdict-screen.is-ko .verdict-screen__pts, .verdict-screen.is-none .verdict-screen__pts { font-size: 1.05rem; font-weight: 600; }
+.verdict-screen__streak { margin: .4rem 0 0; padding: .3rem .8rem; border-radius: 999px; background: rgba(0, 0, 0, .2); font-weight: 700; }
+.rankline em { font-style: normal; font-weight: 700; margin-left: .4rem; }
+.rankline em.up { color: #6ee08e; }
+.rankline em.down { color: #ff8a80; }
+.gap { margin: .5rem 0 0; text-align: center; color: rgba(255, 251, 254, .8); }
+@media (prefers-reduced-motion: reduce) { .q-ready span, .verdict-screen__icon { animation: none; } }
+.choices--kahoot .choice-btn .shape, .sent .shape { opacity: 1; }
+.choices--kahoot .choice-btn .shape i, .sent .shape i { color: inherit; opacity: 1; }
+.q-left { font-family: var(--sans); letter-spacing: 0; }

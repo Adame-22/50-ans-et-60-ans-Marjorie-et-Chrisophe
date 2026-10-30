@@ -888,3 +888,10 @@ body.admin { font-variant-numeric: lining-nums; }
 .regie__opts summary { cursor: pointer; font-weight: 600; color: var(--navy); padding: 6px 0; }
 .regie__optsbody { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 6px; }
 .regie__optsbody .hint { flex-basis: 100%; margin: 0; }
+.regie__lost { margin: 0; padding: 10px 14px; border-radius: 12px; background: #fde4e3; border: 1px solid #f1a9a3; color: #a3412f; font-weight: 700; }
+.regie__lost[hidden] { display: none; }
+.regie__screen { margin: -4px 0 0; }
+.regie__screen b { color: var(--navy); }
+.regie__by { margin: -6px 0 0; text-align: center; }
+.regie__by:empty { display: none; }
+.qz-item__secs { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--muted); white-space: nowrap; }

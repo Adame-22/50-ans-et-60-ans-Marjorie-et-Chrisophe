@@ -161,6 +161,8 @@ async function quizTeams(players) {
     const tid = (p.rid && r.teamOfPid[p.rid]) || (r.cfg.mode !== "mix" && p.table && r.teamOfTable[p.table]) || null;
     if (!tid || !byTeam[tid]) continue;
     teamOf[p.pub] = tid;
+    // seuls ceux qui ont joué au moins une fois comptent dans la moyenne (pas les inscrits fantômes)
+    if (!(p.played > 0) && !(p.score > 0)) continue;
     byTeam[tid].players++;
     byTeam[tid].sum += p.score || 0;
   }
