@@ -240,13 +240,15 @@
     var q = state.question, k = rk(), mine = mem.ans[k];
     if (mine !== undefined) return renderSent();
     if (!shownAt[k]) shownAt[k] = Date.now();
+    document.body.classList.add("is-playing"); // les 4 cases occupent tout le bas de l'écran, sous le pouce
     app.innerHTML =
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
       '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
       '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) +
       '<div class="choices choices--kahoot" id="choices">' +
       q.choices.map(function (c, i) {
-        return '<button class="choice-btn k' + i + '" data-i="' + i + '" style="animation-delay:' + (0.06 * i) + 's">' + badge(i) + '<span class="choice-btn__txt">' + esc(c) + "</span></button>";
+        var len = c.length, size = len > 30 ? " is-xlong" : len > 16 ? " is-long" : "";
+        return '<button class="choice-btn k' + i + size + '" data-i="' + i + '" style="animation-delay:' + (0.06 * i) + 's">' + badge(i) + '<span class="choice-btn__txt">' + esc(c).replace(/(\S)-(\S)/g, "$1&#8209;$2") + "</span></button>"; // « Jean-Jacques » ne se coupe pas au tiret
       }).join("") + "</div>" +
       '<p class="center q-status" id="q-status" role="status"></p>';
 
@@ -402,6 +404,7 @@
     }
     viewKey = key;
     cancelAnimationFrame(timerRaf);
+    document.body.classList.remove("is-playing");
     clearTimeout(startTimer);
 
     if (state.phase === "off") {

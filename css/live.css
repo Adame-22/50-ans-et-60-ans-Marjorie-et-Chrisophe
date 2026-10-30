@@ -659,3 +659,29 @@ body.live::before {
 
 /* Répétition privée */
 .live__tag--test { background: #7b5cd6; color: #fff; padding: .15rem .6rem; border-radius: 999px; margin-right: auto; margin-left: .6rem; }
+
+/* Question en cours (mobile) : les 4 cases remplissent l'écran jusqu'en bas, sous le pouce,
+   en rangées de même hauteur ; police réduite pour les réponses longues */
+body.live.is-playing { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+body.live.is-playing .live__main { flex: 1; display: flex; flex-direction: column; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+body.live.is-playing .live__legal { display: none; }
+body.live.is-playing .choices--kahoot { flex: 1; grid-auto-rows: 1fr; min-height: 232px; max-height: 580px; }
+body.live.is-playing .q-status { margin-top: .6rem; }
+.choices--kahoot .choice-btn { min-height: 112px; }
+.choices--kahoot .choice-btn__txt { overflow-wrap: break-word; line-height: 1.2; }
+.choices--kahoot .choice-btn.is-long { font-size: 1.02rem; }
+.choices--kahoot .choice-btn.is-xlong { font-size: .9rem; }
+@media (max-width: 359px) {
+  .choices--kahoot { gap: 8px; }
+  .choices--kahoot .choice-btn { padding: 10px 8px; }
+  .choices--kahoot .choice-btn .shape i { font-size: 1.6rem; }
+  .choices--kahoot .choice-btn.is-xlong { font-size: .84rem; }
+  .live__tag--test { font-size: .72rem; }
+}
+.live__tag--test { white-space: nowrap; }
+@media (min-height: 760px) and (min-width: 360px) {
+  .choices--kahoot .choice-btn { font-size: 1.3rem; }
+  .choices--kahoot .choice-btn.is-long { font-size: 1.15rem; }
+  .choices--kahoot .choice-btn.is-xlong { font-size: 1.02rem; }
+  .choices--kahoot .choice-btn .shape i { font-size: 2.4rem; }
+}
