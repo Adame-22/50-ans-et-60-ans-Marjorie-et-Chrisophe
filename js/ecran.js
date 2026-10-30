@@ -166,14 +166,14 @@
   /* ───────── Sons de la salle (synthétisés : aucun fichier à charger) ─────────
      Activés par le bouton « Son » (les navigateurs exigent un clic). Uniquement sur l'écran géant. */
   var Sound = (function () {
-    var ctx = null, master = null, on = false, loop = null, loopStep = 0;
+    var ctx = null, master = null, on = false, loop = null, loopStep = 0, want = null; // want : boucle demandée avant que le son soit prêt
     try { on = localStorage.getItem("mc-screen-sound") === "1"; } catch (e) { /* ignoré */ }
     function init() {
       if (ctx) { if (ctx.state === "suspended") ctx.resume(); return true; }
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return false;
       ctx = new AC();
-      master = ctx.createGain(); master.gain.value = 0.55; master.connect(ctx.destination);
+      master = ctx.createGain(); master.gain.value = 0.8; master.connect(ctx.destination);
       return true;
     }
     function tone(freq, start, dur, type, vol, slide) {
@@ -203,8 +203,9 @@
       think: { ms: 180, notes: [12, 7, 12, 14, 12, 7, 12, 16], bass: [-12, -10], vol: 0.05 },
     };
     function startLoop(name) {
+      want = name;
       if (loop && loop.name === name) return;
-      stopLoop();
+      stopLoop(true);
       if (!on || !ctx) return;
       var L = LOOPS[name];
       loopStep = 0;
@@ -214,18 +215,19 @@
         if (s % 4 === 0) tone(N(L.bass[(s / 4) % L.bass.length]), 0, L.ms / 1000 * 3.5, "sine", L.vol * 1.6);
       }, L.ms) };
     }
-    function stopLoop() { if (loop) { clearInterval(loop.timer); loop = null; } }
+    function stopLoop(keep) { if (loop) { clearInterval(loop.timer); loop = null; } if (!keep) want = null; }
     return {
       get on() { return on; },
       toggle: function () {
         on = !on;
         try { localStorage.setItem("mc-screen-sound", on ? "1" : "0"); } catch (e) { /* ignoré */ }
-        if (on) { init(); tone(N(12), 0, 0.15, "sine", 0.2); tone(N(19), 0.12, 0.25, "sine", 0.2); } else stopLoop();
+        if (on) { init(); tone(N(12), 0, 0.15, "sine", 0.2); tone(N(19), 0.12, 0.25, "sine", 0.2); if (want) startLoop(want); } else stopLoop(true);
         return on;
       },
-      wake: function () { if (on) init(); },
+      // son resté activé d'une fois sur l'autre : au premier clic (ex. « Plein écran »), la musique en attente démarre
+      wake: function () { if (on) { init(); if (want && !loop) startLoop(want); } },
       loop: startLoop,
-      stop: stopLoop,
+      stop: function () { stopLoop(); },
       join: function () { tone(N(19), 0, 0.12, "sine", 0.12); tone(N(24), 0.07, 0.16, "sine", 0.1); },
       tick: function (last) { noise(0, 0.05, last ? 0.5 : 0.35, last ? 2600 : 2000); tone(last ? 1200 : 900, 0, 0.06, "square", 0.05); },
       gong: function () { [55, 110, 165.5, 221, 277].forEach(function (f, i) { tone(f, 0, 2.6 - i * 0.3, "sine", 0.35 / (i + 1)); }); noise(0, 0.4, 0.25, 400); },
@@ -378,7 +380,7 @@
     if (q.audio) {
       // l'extrait démarre au top départ (ou là où il en est si l'écran vient d'être rechargé)
       Sound.stop();
-      Music.play(q.audio.url, q.audio.start + Math.max(0, now() - quiz.startedAt) / 1000, 1);
+      Music.play(q.audio.url, q.audio.start + Math.max(0, now() - quiz.startedAt) / 1000, 0.7);
     } else {
       Music.stop();
       Sound.loop("think");
@@ -436,7 +438,7 @@
     }); });
     Sound.stop(); Sound.reveal();
     // la chanson repart pendant qu'on découvre la réponse
-    if (q.audio) later(function () { Music.resume(q.audio.url, q.audio.start, 0.85); }, 700);
+    if (q.audio) later(function () { Music.resume(q.audio.url, q.audio.start, 0.6); }, 700);
   }
 
   function renderBoard() {
