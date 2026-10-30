@@ -25,6 +25,7 @@ async function assertAnotherAdmin(exceptUsername) {
 
 module.exports = L.handler(async (req, res) => {
   const me = await L.requireUser(req, { admin: true });
+  L.noAgent(me);
   // les fêtés ne gèrent pas les comptes (ils ne peuvent donc pas lever leur propre protection anti-surprise)
   if (L.isHost(me)) throw new L.HttpError(403, "Les comptes sont gérés par l'équipage.");
 

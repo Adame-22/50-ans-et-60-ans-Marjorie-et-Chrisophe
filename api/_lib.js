@@ -229,9 +229,21 @@ function sessionCookie(req, token, maxAge) {
   return COOKIE + "=" + token + "; Path=/; HttpOnly; SameSite=Lax; Max-Age=" + maxAge + secure;
 }
 
+// Clé de modification donnée à l'assistant (variable AGENT_TOKEN dans Vercel ; la supprimer coupe l'accès).
+// Mêmes droits qu'un admin sur les inscriptions, jamais sur les comptes ni les mots de passe.
+const AGENT = { username: "claude", name: "Claude", role: "admin", agent: true };
+function agentFromHeader(req) {
+  const key = process.env.AGENT_TOKEN || "";
+  const given = String((req.headers && req.headers.authorization) || "").replace(/^Bearer\s+/i, "");
+  return key.length >= 32 && given.length === key.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(key)) ? Object.assign({}, AGENT) : null;
+}
+function noAgent(user) {
+  if (user && user.agent) throw new HttpError(403, "Non autorisé avec la clé de l'assistant.");
+}
+
 async function requireUser(req, { admin = false, allowMustChange = false } = {}) {
   await ensureSeed();
-  const user = await readSession(req);
+  const user = agentFromHeader(req) || (await readSession(req));
   if (!user) throw new HttpError(401, "Veuillez vous connecter.");
   if (user.mustChange && !allowMustChange) throw new HttpError(403, "Choisissez d'abord un nouveau mot de passe.");
   if (admin && !isAdmin(user)) throw new HttpError(403, "Réservé aux administrateurs.");
@@ -296,6 +308,6 @@ function str(v, max) {
 
 module.exports = {
   K, HttpError, redis, hgetallJson, hashPassword, verifyPassword, tempCode,
-  ensureSeed, getUser, isAdmin, isHost, HOSTS, noSpoil, boiteSealed, readSession, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
+  ensureSeed, getUser, isAdmin, noAgent, isHost, HOSTS, noSpoil, boiteSealed, readSession, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
   readBody, send, handler, query, str, clientIp, rateLimit,
 };

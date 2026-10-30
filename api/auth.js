@@ -29,6 +29,7 @@ async function applyResets(username) {
 module.exports = L.handler(async (req, res) => {
   if (req.method === "GET") {
     const user = await L.requireUser(req, { allowMustChange: true });
+    L.noAgent(user);
     return L.send(res, 200, { user: L.publicUser(user) });
   }
   if (req.method !== "POST") return L.send(res, 405, { error: "Méthode non autorisée." });
@@ -73,6 +74,7 @@ module.exports = L.handler(async (req, res) => {
 
   if (body.action === "password") {
     const user = await L.requireUser(req, { allowMustChange: true });
+    L.noAgent(user);
     const next = String(body.next || "");
     if (!L.verifyPassword(String(body.current || ""), user.hash)) throw new L.HttpError(400, "Le mot de passe actuel est incorrect.");
     if (next.length < 8) throw new L.HttpError(400, "Le nouveau mot de passe doit faire au moins 8 caractères.");
@@ -86,6 +88,7 @@ module.exports = L.handler(async (req, res) => {
 
   if (body.action === "backup-codes") {
     const user = await L.requireUser(req);
+    L.noAgent(user);
     if (user.role !== "superadmin") throw new L.HttpError(403, "Réservé au super admin.");
     const codes = L.backupCodes();
     user.backup = codes.map((c) => L.hashPassword(c));
