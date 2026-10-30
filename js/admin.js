@@ -735,6 +735,7 @@
         soir: num(cell(r, "soir")),
         envoi: (!!envoi && !/^(non|n|0|-)$/i.test(envoi)) || !!before.envoi,
         links: before.links || null,
+        alias: before.alias || "",
       };
     }).filter(function (r) { return r.famille && !/^total/.test(lnorm(r.famille)); });
   }
@@ -774,6 +775,20 @@
   // « Jean-Jacques » reste un seul prénom
   function nameWords(s) { return lnorm(String(s == null ? "" : s).replace(/(\w)-(?=\w)/g, "$1")).split(" ").filter(function (t) { return t.length > 1; }); }
   function rowTokens(f) { return nameWords(f).filter(function (t) { return !LSTOP[t]; }); }
+  // Surnoms → prénoms d'état civil (Tom reste Tom : un Thomas est quelqu'un d'autre)
+  var NICK = {
+    mc: ["mariechristine"], dany: ["daniel", "danielle", "daniele"], dani: ["daniel", "danielle", "daniele"],
+    melo: ["melanie", "melodie"], mick: ["mickael", "michael", "mikael"], mike: ["mickael", "michael", "mikael"],
+    nadette: ["bernadette"], jacquot: ["jacques"], fred: ["frederic", "frederique"], greg: ["gregory", "gregoire"],
+    jj: ["jeanjacques"], steph: ["stephane", "stephanie"], killian: ["kylian", "kilian", "kyllian"],
+    kylian: ["killian", "kilian", "kyllian"], kilian: ["killian", "kylian", "kyllian"],
+  };
+  // Le fichier est tenu par Marjorie : « moi », c'est elle, « Kiki », c'est Christophe → les fêtés, pas d'inscription à attendre
+  function isHostRow(row) { return /(^| )(moi|kiki|marjorie|christophe)( |$)/.test(lnorm(row.famille)); }
+  // Une case par personne de la ligne (+ « Autres noms »), avec ses variantes
+  function rowSlots(row) {
+    return rowTokens(row.famille + " " + (row.alias || "")).map(function (t) { return { key: t, alts: [t].concat(NICK[t] || []) }; });
+  }
   function rsvpWords(r) {
     var w = nameWords([r.nom, r.prenom, r.nomFamille].concat(r.accompagnants || []).join(" "));
     return w.concat(w.slice(1).map(function (x, i) { return w[i] + x; })); // « Jean Jacques » écrit sans tiret
@@ -814,23 +829,29 @@
       return { row: row, manual: !!links, ids: links || [] };
     });
     rows.forEach(function (m, i) {
-      if (m.manual) return;
-      var toks = rowTokens(m.row.famille);
+      m.host = isHostRow(m.row);
+      if (m.manual || m.host) return;
+      var slots = rowSlots(m.row);
       m.covered = {};
       state.rsvps.forEach(function (r) {
         if (owner[r.id]) return;
         var words = rsvpWords(r), first = lnorm(r.prenom || r.nom).split(" ")[0];
-        var hit = toks.filter(function (t) { return words.some(function (w) { return tokMatch(t, w); }); });
+        var fam = nameWords(r.nomFamille || String(r.nom || "").split(" ").slice(1).join(" "));
+        var has = function (slot, list) { return slot.alts.some(function (a) { return list.some(function (w) { return tokMatch(a, w); }); }); };
+        var hit = slots.filter(function (sl) { return has(sl, words); });
+        if (!hit.length) return;
         // l'inscrit lui-même compte plus que ses accompagnants
-        var own = toks.some(function (t) { return tokMatch(t, first); }) ? 0.5 : 0;
-        if (hit.length) pairs.push({ i: i, id: r.id, hit: hit, score: hit.length + own, share: hit.length / toks.length });
+        var own = slots.some(function (sl) { return has(sl, [first]); }) ? 0.5 : 0;
+        pairs.push({ i: i, id: r.id, hit: hit.map(function (sl) { return sl.key; }), score: hit.length + own, share: hit.length / slots.length,
+          // famille désignée par son nom (« Rivières ») : toutes les inscriptions à ce nom en font partie
+          byName: hit.some(function (sl) { return has(sl, fam); }) });
       });
     });
     pairs.sort(function (a, b) { return b.score - a.score || b.share - a.share; });
-    // une inscription n'est rattachée que si elle apporte quelqu'un de la famille pas encore trouvé
+    // sinon, une inscription n'est rattachée que si elle apporte quelqu'un de la famille pas encore trouvé
     pairs.forEach(function (p) {
       var m = rows[p.i];
-      if (owner[p.id] || !p.hit.some(function (t) { return !m.covered[t]; })) return;
+      if (owner[p.id] || (!p.byName && !p.hit.some(function (t) { return !m.covered[t]; }))) return;
       p.hit.forEach(function (t) { m.covered[t] = 1; });
       owner[p.id] = m.row.id;
       m.ids.push(p.id);
@@ -842,7 +863,8 @@
       m.regs = regs;
       m.real = { pax: all.length, midi: all.filter(function (f) { return f !== "soir"; }).length, soir: all.filter(function (f) { return f !== "midi"; }).length };
       m.pax = (row.adultes || 0) + (row.enfants || 0);
-      m.status = !regs.length ? "manque" : yes.length ? "ok" : "non";
+      m.status = m.host ? "fetes" : !regs.length ? "manque" : yes.length ? "ok" : "non";
+      if (m.host) m.real = { pax: m.pax, midi: row.midi || 0, soir: row.soir || 0 };
       var planned = row.midi != null || row.soir != null;
       m.ecart = m.status === "ok" && (planned ? (m.real.midi !== (row.midi || 0) || m.real.soir !== (row.soir || 0)) : m.pax > 0 && m.real.pax !== m.pax);
       m.notes = [];
@@ -863,7 +885,7 @@
     bits.push(row.soir != null ? row.soir + " le soir" : "soir ?");
     return bits.join(" · ");
   }
-  var LSTATUS = { ok: ["✓ Inscrite", "ok"], manque: ["Pas encore inscrite", "manque"], non: ["A répondu non", "non"] };
+  var LSTATUS = { ok: ["✓ Inscrite", "ok"], manque: ["Pas encore inscrite", "manque"], non: ["A répondu non", "non"], fetes: ["★ Les fêtés", "fetes"] };
   function renderListe() {
     var has = liste.rows.length;
     $("#l-body").hidden = !has;
@@ -903,7 +925,7 @@
         (regs ? '<ul class="guest__pax">' + regs + "</ul>" : "") +
         (m.notes.length ? '<p class="liste-row__note">' + esc(m.notes.join(" · ")) + "</p>" : "") +
         "</div>" +
-        '<div class="guest__side"><span class="guest__open">' + (m.manual ? "corrigé à la main" : m.regs.length ? "reconnu auto" : "") + " ›</span></div></div>";
+        '<div class="guest__side"><span class="guest__open">' + (m.host ? "pas d'inscription attendue" : m.manual ? "corrigé à la main" : m.regs.length ? "reconnu auto" : "") + " ›</span></div></div>";
     }).join("") || '<p class="empty">Aucune famille dans ce filtre.</p>';
     $all("[data-li]").forEach(function (el) {
       var open = function () { openListeSheet(+el.getAttribute("data-li")); };
@@ -940,6 +962,7 @@
     }).join("") || '<p class="hint">Aucune inscription sur le site pour l\'instant.</p>';
     $("#ls-search").value = "";
     $("#ls-envoi").checked = !!row.envoi;
+    $("#ls-alias").value = row.alias || "";
     $("#ls-auto").hidden = !m.manual;
     $("#liste-sheet").showModal();
   }
@@ -952,12 +975,16 @@
     e.preventDefault();
     var row = liste.rows[lsIndex];
     var ids = $all("#ls-checks input:checked").map(function (c) { return c.value; });
-    // une inscription n'appartient qu'à une famille : on fige les autres familles concernées
-    listeMatch.rows.forEach(function (o) {
-      if (o.row === row || !ids.some(function (id) { return o.ids.indexOf(id) >= 0; })) return;
-      o.row.links = o.ids.filter(function (id) { return ids.indexOf(id) < 0; });
-    });
-    row.links = ids;
+    // seules les cases cochées ou décochées passent la famille « à la main » ; sinon elle reste en reconnaissance auto
+    if ($all("#ls-checks input").some(function (c) { return c.checked !== c.defaultChecked; })) {
+      // une inscription n'appartient qu'à une famille : on fige les autres familles concernées
+      listeMatch.rows.forEach(function (o) {
+        if (o.row === row || !ids.some(function (id) { return o.ids.indexOf(id) >= 0; })) return;
+        o.row.links = o.ids.filter(function (id) { return ids.indexOf(id) < 0; });
+      });
+      row.links = ids;
+    }
+    row.alias = $("#ls-alias").value.trim();
     row.envoi = $("#ls-envoi").checked;
     $("#liste-sheet").close();
     saveListe("« " + row.famille + " » enregistrée.");

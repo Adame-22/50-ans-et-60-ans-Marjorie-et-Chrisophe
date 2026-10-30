@@ -159,6 +159,7 @@ module.exports = L.handler(async (req, res) => {
       const rows = (Array.isArray(b.rows) ? b.rows : []).slice(0, 300).map((r, i) => ({
         id: L.str(r.id, 16) || "l" + i,
         famille: L.str(r.famille, 80),
+        alias: L.str(r.alias, 120),
         enfants: n(r.enfants), adultes: n(r.adultes),
         midi: opt(r.midi), soir: opt(r.soir),
         envoi: !!r.envoi,
