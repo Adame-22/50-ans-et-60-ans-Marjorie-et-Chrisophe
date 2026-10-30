@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261101" />
-  <link rel="stylesheet" href="css/style.css?v=20261101" />
-  <link rel="stylesheet" href="css/admin.css?v=20261101" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261102" />
+  <link rel="stylesheet" href="css/style.css?v=20261102" />
+  <link rel="stylesheet" href="css/admin.css?v=20261102" />
 </head>
 <body class="admin">
 
@@ -72,25 +72,57 @@
     </header>
 
     <nav class="tabs" role="tablist" aria-label="Sections">
-      <button role="tab" data-tab="manifeste" aria-selected="true">Invités</button>
+      <button role="tab" data-tab="accueil" aria-selected="true">Accueil</button>
+      <button role="tab" data-tab="manifeste">Invités</button>
       <button role="tab" data-tab="liste">Liste prévue</button>
       <button role="tab" data-tab="cabine">Tables</button>
-      <button role="tab" data-tab="envois">Envois &amp; annonces</button>
-      <button role="tab" data-tab="partager">Partager le site</button>
-      <button role="tab" data-tab="equipes">Équipes</button>
-      <button role="tab" data-tab="quiz" data-nospoil>Quiz</button>
-      <button role="tab" data-tab="boite" data-nospoil>Boîte noire</button>
-      <button role="tab" data-tab="radio">Radio</button>
-      <button role="tab" data-tab="constellation">Vue d'ensemble</button>
-      <button role="tab" data-tab="comptes" data-admin-only>Comptes</button>
-      <button role="tab" data-tab="moi">Mon compte</button>
+      <button role="tab" data-tab="envois">Messages</button>
+      <button role="tab" data-tab="partager" data-more>Partager le site</button>
+      <button role="tab" data-tab="equipes" data-more>Équipes</button>
+      <button role="tab" data-tab="quiz" data-more data-nospoil>Quiz</button>
+      <button role="tab" data-tab="boite" data-more data-nospoil>Boîte noire</button>
+      <button role="tab" data-tab="radio" data-more>Radio</button>
+      <button role="tab" data-tab="constellation" data-more>Vue d'ensemble</button>
+      <button role="tab" data-tab="comptes" data-more data-admin-only>Comptes</button>
+      <button role="tab" data-tab="moi" data-more>Mon compte</button>
+      <button type="button" class="tabs__more" id="tabs-more" aria-expanded="false">Plus <span aria-hidden="true">▾</span></button>
     </nav>
 
+    <!-- Accueil : où on en est, ce qu'il reste à faire -->
+    <section class="panel home" id="tab-accueil" role="tabpanel">
+      <div class="home__hello">
+        <h2>Bonjour <span data-me="name"></span></h2>
+        <p id="h-countdown"></p>
+      </div>
+
+      <div class="kpis home__kpis">
+        <div class="kpi kpi--main"><span>Au déjeuner</span><strong id="h-midi">–</strong><small>personnes le midi</small></div>
+        <div class="kpi kpi--main"><span>Au dîner</span><strong id="h-soir">–</strong><small>personnes le soir</small></div>
+        <div class="kpi"><span>Inscriptions</span><strong id="h-rep">–</strong><small id="h-rep-d"></small></div>
+        <div class="kpi" id="h-fam-box" hidden><span>Familles de la liste</span><strong id="h-fam">–</strong><small id="h-fam-d"></small></div>
+      </div>
+
+      <div class="card home__todo">
+        <h3>À faire</h3>
+        <ul class="todo" id="h-todo"><li class="todo__item todo__item--wait">Chargement…</li></ul>
+      </div>
+
+      <h3 class="home__h">Que voulez-vous faire ?</h3>
+      <div class="home__actions">
+        <button type="button" class="home__act" data-go="ajouter"><i aria-hidden="true">＋</i><b>Ajouter une inscription</b><small>quelqu'un vous a répondu de vive voix ou par message</small></button>
+        <button type="button" class="home__act" data-go="manifeste"><i aria-hidden="true">✎</i><b>Corriger une inscription</b><small>un nom, le nombre de personnes, midi ou soir</small></button>
+        <button type="button" class="home__act" data-go="liste"><i aria-hidden="true">☰</i><b>Comparer avec ma liste</b><small>qui manque encore par rapport au fichier Excel</small></button>
+        <button type="button" class="home__act" data-go="cabine"><i aria-hidden="true">◎</i><b>Placer les invités à table</b><small>le plan de la salle</small></button>
+        <button type="button" class="home__act" data-go="envois"><i aria-hidden="true">✉</i><b>Prévenir les invités</b><small>le rappel avant la fête, un message à tous</small></button>
+        <button type="button" class="home__act" data-go="partager"><i aria-hidden="true">↗</i><b>Envoyer le lien du site</b><small>à quelqu'un qui ne l'a pas reçu</small></button>
+      </div>
+    </section>
+
     <!-- Manifeste -->
-    <section class="panel" id="tab-manifeste" role="tabpanel">
+    <section class="panel" id="tab-manifeste" role="tabpanel" hidden>
       <div class="panel__intro">
         <h2>Les invités</h2>
-        <p>Toutes les réponses reçues. <b>Touchez une fiche</b> pour la corriger, renvoyer la carte d'embarquement ou pointer l'arrivée.</p>
+        <p>Toutes les inscriptions. <b>Touchez une fiche</b> pour la corriger.</p>
       </div>
 
       <div class="kpis">
@@ -109,15 +141,15 @@
       <div class="guest-tools">
         <input type="search" id="m-search" placeholder="Rechercher un nom, un e-mail…" aria-label="Rechercher un invité" />
         <div class="guest-tools__actions">
-          <button class="btn btn--small btn--gold" id="m-add" type="button">+ Ajouter une réponse</button>
+          <button class="btn btn--small btn--gold" id="m-add" type="button">+ Ajouter une inscription</button>
           <button class="btn btn--small btn--line" id="m-export" type="button">Exporter (Excel)</button>
           <a class="btn btn--small btn--line" id="m-backup" data-nospoil href="/api/backup" download title="Réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe) dans un fichier">Sauvegarde</a>
         </div>
       </div>
       <div class="chips" id="m-chips" role="group" aria-label="Filtrer les invités">
         <button type="button" data-f="" aria-pressed="true">Tous</button>
-        <button type="button" data-f="oui">À bord</button>
-        <button type="button" data-f="non">Au sol</button>
+        <button type="button" data-f="oui">Viennent</button>
+        <button type="button" data-f="non">Ne viennent pas</button>
         <button type="button" data-f="midi-tous">Le midi</button>
         <button type="button" data-f="soir-tous">Le soir</button>
         <button type="button" data-f="special">Régimes &amp; allergies</button>
@@ -134,7 +166,7 @@
     <section class="panel" id="tab-liste" role="tabpanel" hidden>
       <div class="panel__intro">
         <h2>Liste prévue</h2>
-        <p>La liste des familles invitées (le fichier Excel), comparée aux inscriptions du site : qui s'est inscrit, qui manque encore, qui n'a jamais reçu le lien, et où les nombres ne collent pas. <b>Les inscriptions sont reconnues automatiquement</b> ; si une famille est mal reconnue, ouvrez-la pour corriger.</p>
+        <p>Votre fichier Excel comparé aux inscriptions du site. <b>Touchez une famille</b> pour voir ou corriger son inscription.</p>
       </div>
 
       <div class="liste-import card" id="l-import">
@@ -142,7 +174,8 @@
           <h3 id="l-import-title">Importer la liste</h3>
           <p class="hint" id="l-import-hint">Choisissez le fichier Excel (.xlsx) ou collez les lignes copiées depuis Excel. Colonnes reconnues : Familles, Enfants, Adultes, Envoi site, Midi, Soir.</p>
         </div>
-        <div class="send-box__actions">
+        <button type="button" class="linklike liste-import__toggle" id="l-import-toggle" hidden>Changer de fichier ou télécharger la liste</button>
+        <div class="send-box__actions liste-import__actions">
           <label class="btn btn--small btn--gold" for="l-file">Choisir le fichier Excel</label>
           <input id="l-file" type="file" accept=".xlsx,.csv,.txt" hidden />
           <button class="btn btn--small btn--line" id="l-paste-btn" type="button">Coller depuis Excel</button>
@@ -186,10 +219,27 @@
     <!-- Envois & annonces -->
     <section class="panel" id="tab-envois" role="tabpanel" hidden>
       <div class="panel__intro">
-        <h2>Envois &amp; annonces</h2>
-        <p>Les cartes d'embarquement partent toutes seules par e-mail à chaque inscription. Ici, vous pouvez envoyer celles qui manquent, et prévenir tous les invités d'un coup (« le quiz commence ! »). Pour renvoyer la carte d'une seule personne, ouvrez sa fiche dans <b>Invités</b>.</p>
+        <h2>Messages aux invités</h2>
+        <p>Le rappel avant la fête, les cartes d'embarquement et les annonces à tous les invités.</p>
       </div>
       <div class="ops">
+      <div class="card send-box remind" id="remind-box">
+        <div>
+          <h3>Rappel J-5 <small class="remind__when">à envoyer le lundi 2 novembre</small></h3>
+          <p class="hint">Un e-mail récapitulatif complet à tous ceux qui viennent : date, heure, <b>bonne adresse</b> avec itinéraire, billet de chaque passager, dress code, plan de vol et lien vers la carte. Chacun ne le reçoit qu'une fois.</p>
+          <p class="hint" id="remind-status">…</p>
+        </div>
+        <div class="send-box__actions">
+          <a class="btn btn--small btn--line" href="/api/rsvp?view=reminder-preview" target="_blank" rel="noopener">Voir l'e-mail</a>
+          <button class="btn btn--small btn--gold" id="remind-send" type="button" disabled>Envoyer le rappel</button>
+        </div>
+        <details class="remind__nomail" id="remind-nomail" hidden>
+          <summary id="remind-nomail-sum"></summary>
+          <p class="hint hint--tiny">Pas d'e-mail pour eux : copiez le message et envoyez-le par WhatsApp ou SMS.</p>
+          <ul class="remind__list" id="remind-list"></ul>
+        </details>
+      </div>
+
       <div class="card send-box" id="send-box">
         <div>
           <h3>Cartes d'embarquement</h3>
@@ -198,7 +248,7 @@
         <div class="send-box__actions">
           <button class="btn btn--small btn--gold" id="send-email" type="button" disabled>Envoyer par e-mail</button>
         </div>
-        <details class="mail-setup" id="mail-setup" data-admin-only hidden>
+        <details class="mail-setup" id="mail-setup" data-super-only hidden>
           <summary>Réglages et e-mail d'essai</summary>
           <form id="mail-form" novalidate>
             <div class="grid-4">
@@ -220,23 +270,6 @@
             <button class="btn btn--small btn--line" type="submit">Envoyer l'essai</button>
           </form>
           <ul class="mail-log" id="mail-log"></ul>
-        </details>
-      </div>
-
-      <div class="card send-box remind" id="remind-box">
-        <div>
-          <h3>Rappel J-5 <small class="remind__when">à envoyer le lundi 2 novembre</small></h3>
-          <p class="hint">Un e-mail récapitulatif complet à tous ceux qui viennent : date, heure, <b>bonne adresse</b> avec itinéraire, billet de chaque passager, dress code, plan de vol et lien vers la carte. Chacun ne le reçoit qu'une fois.</p>
-          <p class="hint" id="remind-status">…</p>
-        </div>
-        <div class="send-box__actions">
-          <a class="btn btn--small btn--line" href="/api/rsvp?view=reminder-preview" target="_blank" rel="noopener">Voir l'e-mail</a>
-          <button class="btn btn--small btn--gold" id="remind-send" type="button" disabled>Envoyer le rappel</button>
-        </div>
-        <details class="remind__nomail" id="remind-nomail" hidden>
-          <summary id="remind-nomail-sum"></summary>
-          <p class="hint hint--tiny">Pas d'e-mail pour eux : copiez le message et envoyez-le par WhatsApp ou SMS.</p>
-          <ul class="remind__list" id="remind-list"></ul>
         </details>
       </div>
 
@@ -507,7 +540,7 @@
       <header class="sheet__head">
         <div>
           <p class="sheet__kicker" id="g-kicker">Fiche invité</p>
-          <h3 id="g-title">Nouvelle réponse</h3>
+          <h3 id="g-title">Nouvelle inscription</h3>
         </div>
         <button type="button" class="sheet__close" data-sheet-close aria-label="Fermer">×</button>
       </header>
@@ -515,13 +548,13 @@
         <div class="sheet__sec">
           <p class="sheet__label">Présence</p>
           <div class="seg-pick" role="radiogroup" aria-label="Présence">
-            <label><input type="radio" name="presence" value="oui" checked /><span>✈ À bord</span></label>
-            <label><input type="radio" name="presence" value="non" /><span>Au sol</span></label>
+            <label><input type="radio" name="presence" value="oui" checked /><span>✓ Vient</span></label>
+            <label><input type="radio" name="presence" value="non" /><span>Ne vient pas</span></label>
           </div>
         </div>
 
         <div class="sheet__sec" data-if-oui>
-          <p class="sheet__label">Passagers et billets</p>
+          <p class="sheet__label">Les personnes, midi ou soir</p>
           <p class="sheet__hint">Une ligne par personne. Le premier est celui qui a répondu.</p>
           <div class="people" id="g-people"></div>
           <button type="button" class="btn btn--small btn--line" id="g-add-person">+ Ajouter une personne</button>
@@ -619,8 +652,8 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261101"></script>
+  <script src="js/graph.js?v=20261102"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261101"></script>
+  <script src="js/admin.js?v=20261102"></script>
 </body>
 </html>

@@ -115,7 +115,7 @@
     setMe(user);
     if (user.mustChange) return showView("password");
     showView("app");
-    selectTab(location.hash.slice(1) || "manifeste");
+    selectTab(location.hash.slice(1) || "accueil");
   }
 
   /* ───────── Connexion ───────── */
@@ -167,10 +167,11 @@
   /* ───────── Onglets ───────── */
   function selectTab(name) {
     var tab = $('[data-tab="' + name + '"]');
-    if (!tab || tab.hidden) { name = "manifeste"; tab = $('[data-tab="manifeste"]'); }
+    if (!tab || tab.hidden) { name = "accueil"; tab = $('[data-tab="accueil"]'); }
     $all("[data-tab]").forEach(function (b) { b.setAttribute("aria-selected", String(b === tab)); });
     $all(".panel").forEach(function (p) { p.hidden = p.id !== "tab-" + name; });
     history.replaceState(null, "", "#" + name);
+    if (name === "accueil") loadHome();
     if (name === "manifeste") { loadRsvps(); loadNotify(); }
     if (name === "envois") { loadRsvps(); loadNotify(); loadAnnounce(); }
     if (name === "liste") { loadListe(); loadNotify(); }
@@ -185,6 +186,78 @@
   }
   $all("[data-tab]").forEach(function (b) {
     b.addEventListener("click", function () { selectTab(b.getAttribute("data-tab")); });
+  });
+
+  /* ───────── Accueil : les chiffres, ce qu'il reste à faire, les gestes courants ───────── */
+  var EVENT_DAY = new Date(2026, 10, 7), REMIND_FROM = new Date(2026, 10, 2);
+  function plural(n, one, many) { return n + " " + (n > 1 ? many : one); }
+  function countdown() {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var d = Math.round((EVENT_DAY - today) / 86400000);
+    return d > 1 ? "Plus que " + d + " jours avant la fête (samedi 7 novembre, 12h30)."
+      : d === 1 ? "C'est demain ! Samedi 7 novembre, 12h30." : d === 0 ? "C'est aujourd'hui ! Bonne fête ✈" : "La fête a eu lieu le 7 novembre.";
+  }
+  function loadHome() {
+    $("#h-countdown").textContent = countdown();
+    Promise.all([api("/api/rsvp"), api("/api/rsvp?view=liste").catch(function () { return { rows: [] }; }), api("/api/rsvp?view=notify").catch(function () { return notify; })])
+      .then(function (res) {
+        state.rsvps = res[0].rsvps;
+        liste = res[1];
+        notify = res[2];
+        renderHome(res[0].doublons || 0);
+      }).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
+  }
+  function renderHome(doublons) {
+    var yes = state.rsvps.filter(function (r) { return r.presence === "oui"; }), all = [];
+    yes.forEach(function (r) { all = all.concat(fares(r)); });
+    $("#h-midi").textContent = all.filter(function (f) { return f !== "soir"; }).length;
+    $("#h-soir").textContent = all.filter(function (f) { return f !== "midi"; }).length;
+    $("#h-rep").textContent = state.rsvps.length;
+    $("#h-rep-d").textContent = plural(all.length, "personne", "personnes") + (state.rsvps.length - yes.length ? " · " + (state.rsvps.length - yes.length) + " ne viennent pas" : "");
+
+    var todo = [], m = liste.rows && liste.rows.length ? matchListe() : null;
+    if (doublons) todo.push({ txt: plural(doublons, "inscription en double", "inscriptions en double") + " à regrouper.", btn: "Regrouper", go: "doublons" });
+    if (m) {
+      var missing = m.rows.filter(function (x) { return x.status === "manque"; });
+      var ecart = m.rows.filter(function (x) { return x.ecart; });
+      $("#h-fam-box").hidden = false;
+      $("#h-fam").textContent = (m.rows.length - missing.length) + " / " + m.rows.length;
+      $("#h-fam-d").textContent = missing.length ? plural(missing.length, "pas encore inscrite", "pas encore inscrites") : "toutes inscrites ✓";
+      if (missing.length) todo.push({ txt: plural(missing.length, "famille de votre liste n'est", "familles de votre liste ne sont") + " pas encore inscrite" + (missing.length > 1 ? "s" : "") + " : " + missing.map(function (x) { return x.row.famille; }).join(", ") + ".", btn: "Voir", go: "liste:manque" });
+      if (ecart.length) todo.push({ txt: plural(ecart.length, "famille n'a", "familles n'ont") + " pas le même nombre que dans votre liste : " + ecart.map(function (x) { return x.row.famille; }).join(", ") + ".", btn: "Voir", go: "liste:ecart" });
+      if (m.extra.length) todo.push({ txt: plural(m.extra.length, "inscription n'est", "inscriptions ne sont") + " rattachée" + (m.extra.length > 1 ? "s" : "") + " à aucune famille de votre liste : " + m.extra.map(function (r) { return r.nom; }).join(", ") + ".", btn: "Voir", go: "liste" });
+    } else {
+      $("#h-fam-box").hidden = true;
+      todo.push({ txt: "Importez votre liste Excel pour voir qui manque encore.", btn: "Importer", go: "liste" });
+    }
+    var today = new Date(), toRemind = yes.filter(function (r) { return r.email && !r.remindedAt; }).length;
+    var noMail = yes.filter(function (r) { return !r.email; }).length;
+    if (today >= REMIND_FROM && today < EVENT_DAY && toRemind) todo.push({ txt: "Envoyer le rappel avant la fête à " + plural(toRemind, "inscription", "inscriptions") + (noMail ? ", et prévenir par WhatsApp les " + noMail + " sans e-mail" : "") + ".", btn: "Envoyer", go: "envois", hot: true });
+    else if (today < REMIND_FROM) todo.push({ txt: "Lundi 2 novembre : envoyer le rappel à tout le monde (un bouton dans « Messages »).", later: true });
+    $("#h-todo").innerHTML = (todo.filter(function (t) { return !t.later; }).length ? "" : '<li class="todo__item todo__item--ok">✓ Tout est à jour : rien à faire pour l\'instant.</li>') +
+      todo.map(function (t, i) {
+        return '<li class="todo__item' + (t.later ? " todo__item--later" : "") + (t.hot ? " todo__item--hot" : "") + '"><span>' + esc(t.txt) + "</span>" +
+          (t.btn ? '<button type="button" class="btn btn--small ' + (t.hot ? "btn--gold" : "btn--line") + '" data-todo="' + i + '">' + t.btn + "</button>" : "") + "</li>";
+      }).join("");
+    $all("[data-todo]").forEach(function (b) { b.addEventListener("click", function () { go(todo[+b.getAttribute("data-todo")].go); }); });
+  }
+  // Raccourcis de l'accueil : « liste:manque » ouvre la liste filtrée, « ajouter » ouvre une fiche vide…
+  function go(where) {
+    var parts = where.split(":");
+    if (parts[0] === "ajouter") { selectTab("manifeste"); $("#m-add").click(); return; }
+    if (parts[0] === "doublons") { selectTab("manifeste"); $("#m-dup").scrollIntoView({ block: "center" }); return; }
+    if (parts[0] === "liste") setListeFilter(parts[1] || "");
+    selectTab(parts[0]);
+    window.scrollTo(0, 0);
+  }
+  $all("[data-go]").forEach(function (b) { b.addEventListener("click", function () { go(b.getAttribute("data-go")); }); });
+
+  // Onglets peu utilisés avant le jour J : rangés derrière « Plus »
+  $("#tabs-more").addEventListener("click", function () {
+    var open = !$(".tabs").classList.contains("is-more");
+    $(".tabs").classList.toggle("is-more", open);
+    this.setAttribute("aria-expanded", String(open));
+    this.innerHTML = (open ? "Moins" : "Plus") + ' <span aria-hidden="true">' + (open ? "▴" : "▾") + "</span>";
   });
 
   /* ───────── Manifeste ───────── */
@@ -227,14 +300,13 @@
     notify = d;
     $("#send-status").innerHTML = d.email
       ? "✓ Envoi automatique actif · " + esc(PROVIDER[d.provider] || d.provider) + (d.from ? " · " + esc(d.from) : "") + ". La carte part toute seule à chaque enregistrement."
-      : "Envoi automatique pas encore réglé" + (d.admin ? " (voir « Réglages » ci-dessous)" : "") + ". En attendant : bouton ✉ sur chaque ligne.";
+      : "L'envoi automatique des e-mails n'est pas encore réglé" + (state.me && state.me.role === "superadmin" ? " (voir « Réglages » ci-dessous)." : " : prévenez Adame.");
     if (d.admin) {
       $("#mail-provider").value = d.provider || "brevo";
       $("#mail-from").value = d.from || "";
       $("#mail-name").value = d.fromName || "";
       $("#mail-key").value = "";
       $("#mail-off").hidden = d.source !== "admin";
-      if (!d.email) $("#mail-setup").open = true;
       mailHelp();
       $("#mail-log").innerHTML = (d.log || []).slice(0, 5).map(function (l) {
         return '<li class="' + (l.ok ? "mail-log-ok" : "mail-log-err") + '">' + (l.ok ? "✓ " : "✕ ") + esc(l.to) + " · " + esc(l.detail) + " · " + fmtDate(l.at) + "</li>";
@@ -388,7 +460,7 @@
     $("#s-midi").textContent = cnt(function (x) { return x !== "soir"; });
     $("#s-soir").textContent = cnt(function (x) { return x !== "midi"; });
     $("#s-total").textContent = list.length;
-    $("#s-total-d").textContent = yes.length + " à bord · " + (list.length - yes.length) + " au sol";
+    $("#s-total-d").textContent = yes.length + " viennent · " + (list.length - yes.length) + " ne viennent pas";
     var paxIn = yes.filter(function (r) { return r.arrivedAt; }).reduce(function (n, r) { return n + (r.passagers || 0); }, 0);
     $("#s-arrived").textContent = paxIn + " / " + pax;
     $("#s-arrived-box").hidden = !paxIn;
@@ -429,7 +501,7 @@
           '<p class="guest__contact">' + contact + "</p>" +
         "</div>" +
         '<div class="guest__side">' +
-          (on ? '<span class="pill pill--on">À bord · ' + (r.passagers || 1) + "</span>" : '<span class="pill pill--off">Au sol</span>') +
+          (on ? '<span class="pill pill--on">' + plural(r.passagers || 1, "personne", "personnes") + "</span>" : '<span class="pill pill--off">Ne vient pas</span>') +
           (r.arrivedAt ? '<span class="pill pill--in">Arrivé·e ✓</span>' : "") +
           '<span class="guest__open">Ouvrir ›</span>' +
         "</div>" +
@@ -500,7 +572,7 @@
     current = r || null;
     formError(gform, "");
     gform.reset();
-    $("#g-title").textContent = r ? r.nom : "Nouvelle réponse";
+    $("#g-title").textContent = r ? r.nom : "Nouvelle inscription";
     $("#g-kicker").textContent = r ? "Fiche invité · reçue le " + fmtDate(r.createdAt) : "Réponse reçue par téléphone, de vive voix…";
     $("#g-save").textContent = r ? "Enregistrer les corrections" : "Ajouter";
     gform.presence.value = r && r.presence !== "oui" ? "non" : "oui";
@@ -623,7 +695,7 @@
     var lines = [head.join(";")].concat(state.rsvps.map(function (r) {
       var table = plan.assign[r.id] ? tableOf[plan.assign[r.id]] || "" : "";
       var fs = fares(r);
-      return [r.nom, r.prenom || "", r.nomFamille || "", r.telephone || "", (r.accompagnants || []).map(function (n, i) { return n + " (" + FARE[fs[i + 1] || fs[0]][1] + ")"; }).join(", "), r.presence === "oui" ? "À bord" : "Au sol", r.presence === "oui" ? FARE[fareOf(r)][1] : "", r.passagers, r.repas, r.allergies, r.email, r.message, table,
+      return [r.nom, r.prenom || "", r.nomFamille || "", r.telephone || "", (r.accompagnants || []).map(function (n, i) { return n + " (" + FARE[fs[i + 1] || fs[0]][1] + ")"; }).join(", "), r.presence === "oui" ? "Vient" : "Ne vient pas", r.presence === "oui" ? FARE[fareOf(r)][1] : "", r.passagers, r.repas, r.allergies, r.email, r.message, table,
         r.arrivedAt ? fmtDate(r.arrivedAt) : "", fmtDate(r.createdAt)]
         .map(csvCell).join(";");
     }));
@@ -757,6 +829,11 @@
       ? f.arrayBuffer().then(unzip).then(xlsxGrid)
       : f.text().then(textGrid);
     read.then(function (g) { importGrid(g, f.name); }).catch(function (e) { toast(e.message || "Fichier illisible.", true); });
+  });
+  $("#l-import-toggle").addEventListener("click", function () {
+    $("#l-import").classList.remove("is-compact");
+    $("#l-import").dataset.opened = "1";
+    this.hidden = true;
   });
   $("#l-paste-btn").addEventListener("click", function () { $("#l-paste").hidden = !$("#l-paste").hidden; if (!$("#l-paste").hidden) $("#l-paste-text").focus(); });
   $("#l-paste").addEventListener("submit", function (e) {
@@ -897,6 +974,9 @@
     $("#l-body").hidden = !has;
     $("#l-export").hidden = !has;
     $("#l-import-title").textContent = has ? "Liste importée" : "Importer la liste";
+    if (!has) $("#l-import").classList.remove("is-compact");
+    else if (!$("#l-import").dataset.opened) $("#l-import").classList.add("is-compact");
+    $("#l-import-toggle").hidden = !has || !$("#l-import").classList.contains("is-compact");
     $("#l-import-hint").textContent = has
       ? liste.rows.length + " familles" + (liste.file ? " · " + liste.file : "") + (liste.updatedAt ? " · mise à jour " + fmtDate(liste.updatedAt) + (liste.by ? " par " + liste.by : "") : "") + ". Pour la remplacer, importez une nouvelle version du fichier."
       : "Choisissez le fichier Excel (.xlsx) ou collez les lignes copiées depuis Excel. Colonnes reconnues : Familles, Enfants, Adultes, Envoi site, Midi, Soir.";
@@ -922,7 +1002,7 @@
     $("#l-list").innerHTML = show.map(function (m) {
       var row = m.row, st = LSTATUS[m.status];
       var regs = m.regs.map(function (r) {
-        return "<li><span>" + esc(r.nom) + (r.passagers > 1 ? " +" + (r.passagers - 1) : "") + "</span> " + (r.presence === "oui" ? fareTags(r) : '<em class="fare">au sol</em>') + "</li>";
+        return "<li><span>" + esc(r.nom) + (r.passagers > 1 ? " +" + (r.passagers - 1) : "") + "</span> " + (r.presence === "oui" ? fareTags(r) : '<em class="fare">ne vient pas</em>') + "</li>";
       }).join("");
       return '<div class="guest liste-row liste-row--' + st[1] + (m.ecart ? " liste-row--ecart" : "") + '" tabindex="0" role="button" data-li="' + m.i + '">' +
         '<div class="guest__main"><div class="guest__name"><b>' + esc(row.famille) + "</b>" +
@@ -944,15 +1024,15 @@
     var extra = listeMatch.extra;
     $("#l-extra").hidden = !extra.length;
     $("#l-extra-list").innerHTML = extra.map(function (r) {
-      return "<li><b>" + esc(r.nom) + "</b>" + ((r.accompagnants || []).length ? " avec " + esc(r.accompagnants.join(", ")) : "") + " " + (r.presence === "oui" ? fareTags(r) : '<em class="fare">au sol</em>') + "</li>";
+      return "<li><b>" + esc(r.nom) + "</b>" + ((r.accompagnants || []).length ? " avec " + esc(r.accompagnants.join(", ")) : "") + " " + (r.presence === "oui" ? fareTags(r) : '<em class="fare">ne vient pas</em>') + "</li>";
     }).join("");
   }
+  function setListeFilter(f) {
+    listeFilter = f;
+    $all("#l-chips button").forEach(function (x) { x.setAttribute("aria-pressed", String(x.getAttribute("data-f") === f)); });
+  }
   $all("#l-chips button").forEach(function (b) {
-    b.addEventListener("click", function () {
-      listeFilter = b.getAttribute("data-f");
-      $all("#l-chips button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
-      renderListe();
-    });
+    b.addEventListener("click", function () { setListeFilter(b.getAttribute("data-f")); renderListe(); });
   });
 
   /* Inscrire une famille de la liste avec ses nombres prévus (prénoms de la ligne, midi / soir de l'Excel) */
@@ -1011,7 +1091,7 @@
     $("#ls-checks").innerHTML = mine.concat(others).map(function (r) {
       var where = ownerName[r.id] && ownerName[r.id] !== row.famille ? " · <small>déjà avec « " + esc(ownerName[r.id]) + " »</small>" : "";
       return '<label class="ls-check" data-s="' + esc(lnorm(rsvpWords(r).join(" "))) + '"><input type="checkbox" value="' + esc(r.id) + '"' + (m.ids.indexOf(r.id) >= 0 ? " checked" : "") + " /><span><b>" + esc(r.nom) + "</b>" +
-        ((r.accompagnants || []).length ? " avec " + esc(r.accompagnants.join(", ")) : "") + " · " + (r.presence === "oui" ? r.passagers + " pers." : "au sol") + where + "</span></label>";
+        ((r.accompagnants || []).length ? " avec " + esc(r.accompagnants.join(", ")) : "") + " · " + (r.presence === "oui" ? r.passagers + " pers." : "ne vient pas") + where + "</span></label>";
     }).join("") || '<p class="hint">Aucune inscription sur le site pour l\'instant.</p>';
     $("#ls-search").value = "";
     $("#ls-envoi").checked = !!row.envoi;

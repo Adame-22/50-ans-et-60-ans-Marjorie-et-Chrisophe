@@ -708,3 +708,46 @@ body.admin { font-variant-numeric: lining-nums; }
 .ls-envoi input { width: 20px; height: 20px; accent-color: var(--navy); }
 .liste-row--fetes { border-left: 4px solid var(--gold-light, #ffb100); }
 .l-pill--fetes { background: var(--navy); color: var(--gold-light, #ffb100); }
+
+/* ───────── Simplification : onglets rangés, accueil, « À faire » ───────── */
+/* Les onglets du jour J et des réglages restent derrière « Plus » (sauf celui qui est ouvert) */
+.tabs:not(.is-more) [data-more]:not([aria-selected="true"]) { display: none; }
+.tabs [data-more] { font-size: .86rem; }
+.tabs__more { flex: none; margin-left: auto; background: none; border: 0; cursor: pointer; padding: .95rem 1rem .85rem; color: var(--gold-light); font: 600 .92rem var(--sans); }
+.tabs__more:hover { color: var(--ivory); }
+@media (max-width: 760px) {
+  /* tout visible d'un coup d'œil : pas de défilement de côté sur téléphone */
+  .tabs { flex-wrap: wrap; overflow: visible; gap: 0; padding: 0 8px; position: static; }
+  .tabs button, .tabs__more { padding: .8rem .7rem .7rem; font-size: .95rem; }
+  .tabs__more { margin-left: 0; }
+}
+
+.home__hello h2 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: clamp(1.9rem, 5vw, 2.4rem); color: var(--navy); }
+.home__hello p { margin: .2rem 0 0; font-size: 1.05rem; color: #5d6061; }
+.home__kpis { margin-bottom: 0; }
+.home__kpis .kpi strong { font-size: 2.6rem; }
+.home__todo h3, .home__h { margin: 0 0 .6rem; font-family: var(--serif); font-weight: 500; font-size: 1.45rem; color: var(--navy); }
+.home__h { margin: 6px 0 -6px; }
+.todo { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.todo__item { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 14px; border-radius: 12px; background: #fff6e5; border: 1px solid #f3d29a; font-size: 1rem; line-height: 1.45; color: #4a3a1c; }
+.todo__item span { flex: 1 1 240px; }
+.todo__item .btn { flex: none; min-height: 44px; }
+.todo__item--ok { background: #e8f8ee; border-color: #b9e8c9; color: #146c3c; font-weight: 600; }
+.todo__item--later { background: #f4f2ef; border-color: #e5e0d8; color: #5d6061; }
+.todo__item--hot { background: #fff; border: 2px solid var(--gold); }
+.todo__item--wait { background: none; border: 0; color: #8a8c8c; }
+.home__actions { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.home__act { display: grid; grid-template-columns: 46px 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; text-align: left; padding: 16px; border-radius: 16px; border: 1.5px solid #e2d6c6; background: #fff; color: var(--navy); font: inherit; cursor: pointer; transition: border-color .2s, box-shadow .2s, transform .15s; }
+.home__act:hover, .home__act:focus-visible { border-color: var(--gold); box-shadow: 0 10px 24px -18px rgba(0, 0, 51, .5); outline: 0; }
+.home__act:active { transform: scale(.99); }
+.home__act i { grid-row: 1 / 3; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--navy); color: var(--gold-light); font-style: normal; font-size: 1.3rem; }
+.home__act b { font-size: 1.08rem; }
+.home__act small { font-size: .88rem; color: #6d7070; line-height: 1.35; }
+
+/* Liste prévue : une fois la liste importée, l'encart d'import se fait discret */
+.liste-import.is-compact .liste-import__actions, .liste-import.is-compact .liste-paste { display: none; }
+.liste-import__toggle { color: var(--gold); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 640px) {
+  .home__kpis .kpi--main { grid-column: auto; }
+  .home__kpis .kpi strong { font-size: 2.3rem; }
+}
