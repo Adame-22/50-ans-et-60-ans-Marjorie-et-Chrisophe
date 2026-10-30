@@ -7,6 +7,11 @@
  *   POST { action: "join", name, rid?, table? } → { pid, pub }   (rid : invité, table : sa table, pour le jeu par équipe)
  *   POST { action: "link", pid, rid?, table? }  → rattache un joueur à sa table / son équipe
  *   POST { action: "answer", pid, choice }      → enregistre la réponse (une seule par question)
+ *   POST { action: "answer", pid, text }        → réponse tapée (questions « à taper » : blind test)
+ *
+ * Question « à taper » (mode: "type") : pendant hintAt secondes, les joueurs tapent leur réponse
+ * (jusqu'à 1000 points, correction tolérante) ; ensuite les 4 choix apparaissent (400 points au plus).
+ * À la révélation, l'écran montre quelques réponses fausses tapées (« réponses drôles », filtrées).
  *
  * Quand l'équipage active « classement par équipe » (onglet Équipes), l'état public
  * contient aussi teams (moyenne des points par équipe) et teamOf (joueur → équipe).
@@ -32,6 +37,7 @@
 const crypto = require("crypto");
 const L = require("./_lib");
 const TM = require("./_teams");
+const TY = require("./_typed");
 
 function keysFor(test) {
   const p = test ? "mc:quiz:test:" : "mc:quiz:";
@@ -139,6 +145,12 @@ function sanitizeQuestions(list) {
     if (choices.length < 2) throw new L.HttpError(400, "Chaque question doit avoir au moins 2 réponses.");
     const answer = Math.min(choices.length - 1, Math.max(0, parseInt(x.answer, 10) || 0));
     const out = { q: L.str(x.q, 200) || "Question", choices, answer, time: Math.min(60, Math.max(5, parseInt(x.time, 10) || 20)) };
+    if (x.mode === "type") {
+      out.mode = "type";
+      out.time = Math.max(out.time, 12);
+      out.hintAt = Math.min(out.time - 4, Math.max(3, parseInt(x.hintAt, 10) || 10));
+      out.accept = (Array.isArray(x.accept) ? x.accept : String(x.accept || "").split(/[,;\n]/)).map((a) => L.str(a, 80)).filter(Boolean).slice(0, 10);
+    }
     const audio = sanitizeAudio(x.audio);
     if (audio) out.audio = audio;
     return out;
@@ -232,6 +244,11 @@ module.exports = L.handler(async (req, res) => {
     if (K.test) out.test = true;
     if (cur && ["question", "reveal", "board"].includes(state.phase)) {
       out.question = { q: cur.q, choices: cur.choices, time: cur.time };
+      if (cur.mode === "type") {
+        const hintTs = state.startedAt + cur.hintAt * 1000;
+        Object.assign(out.question, { mode: "type", hintAt: hintTs, n: cur.choices.length });
+        if (state.phase === "question" && now < hintTs) out.question.choices = null; // les choix n'arrivent qu'après le temps de saisie
+      }
       // l'écran géant joue l'extrait ; le titre n'est donné qu'à la révélation
       if (cur.audio) out.question.audio = state.phase === "question" ? { url: cur.audio.url, start: cur.audio.start } : cur.audio;
       out.round = state.round;
@@ -247,7 +264,8 @@ module.exports = L.handler(async (req, res) => {
     if (["reveal", "board"].includes(state.phase)) {
       out.correct = cur ? cur.answer : null;
       out.counts = state.counts || [];
-      out.answered = (state.counts || []).reduce((a, b) => a + b, 0);
+      out.answered = (state.counts || []).reduce((a, b) => a + b, 0) + (state.typed ? state.typed.ok + state.typed.ko : 0);
+      if (state.typed) { out.typed = state.typed; out.funnies = state.showFunny === false ? [] : state.funnies || []; }
       out.gains = state.gains || {};
       out.scoring = !!state.scoring; // points en cours de calcul (moins d'une seconde)
     }
@@ -312,19 +330,32 @@ module.exports = L.handler(async (req, res) => {
     if (now < state.startedAt - 250) throw new L.HttpError(409, "Pas encore : attendez le top départ !");
     if (now > state.endsAt + 1500) throw new L.HttpError(409, "Trop tard !");
     const cur = questions[state.index];
-    const choice = parseInt(body.choice, 10);
-    if (!cur || !(choice >= 0 && choice < cur.choices.length)) throw new L.HttpError(400, "Réponse invalide.");
+    if (!cur) throw new L.HttpError(400, "Réponse invalide.");
+    const typing = cur.mode === "type";
+    let rec;
+    if (body.text !== undefined) {
+      const text = L.str(body.text, 60);
+      if (!typing) throw new L.HttpError(400, "Réponse invalide.");
+      if (!text) throw new L.HttpError(400, "Tapez une réponse.");
+      rec = { text };
+    } else {
+      const choice = parseInt(body.choice, 10);
+      if (!(choice >= 0 && choice < cur.choices.length)) throw new L.HttpError(400, "Réponse invalide.");
+      if (typing && now < state.startedAt + cur.hintAt * 1000 - 400) throw new L.HttpError(409, "Les choix ne sont pas encore affichés : tapez votre réponse ou patientez.");
+      rec = { choice };
+    }
     // Rapidité : le téléphone dit depuis quand il affiche la question (il la reçoit 1 à 4 s après le lancement) ;
     // on ne lui accorde pas plus de 2,5 s d'avance sur l'heure du serveur.
     const serverMs = Math.max(0, now - state.startedAt);
     const clientMs = Number(body.elapsed);
     const ms = Number.isFinite(clientMs) ? Math.round(Math.min(serverMs, Math.max(serverMs - 2500, clientMs))) : serverMs;
-    const ok = await L.redis(["HSETNX", K.answers(state.round), pid, JSON.stringify({ choice, ms })]);
+    rec.ms = ms;
+    const ok = await L.redis(["HSETNX", K.answers(state.round), pid, JSON.stringify(rec)]);
     if (!ok) {
       const prev = JSON.parse((await L.redis(["HGET", K.answers(state.round), pid])) || "{}");
-      return L.send(res, 200, { ok: true, already: true, choice: prev.choice, round: state.round });
+      return L.send(res, 200, { ok: true, already: true, choice: prev.choice, text: prev.text, round: state.round });
     }
-    return L.send(res, 200, { ok: true, choice, round: state.round });
+    return L.send(res, 200, { ok: true, choice: rec.choice, text: rec.text, round: state.round });
   }
 
   /* ───────── Animateur ───────── */
@@ -390,7 +421,7 @@ module.exports = L.handler(async (req, res) => {
         if (!(await L.redis(["HSETNX", K.locks, "start:" + round, String(now)]))) throw new L.HttpError(409, "Cette question vient déjà d'être lancée.");
         Object.assign(state, {
           phase: "question", index, round, done: false,
-          startedAt: now + 3000, endsAt: now + 3000 + q.time * 1000, counts: null, gains: null,
+          startedAt: now + 3000, endsAt: now + 3000 + q.time * 1000, counts: null, gains: null, typed: null, funnies: null,
         });
         break;
       }
@@ -408,14 +439,28 @@ module.exports = L.handler(async (req, res) => {
         const counts = q.choices.map(() => 0);
         const gains = {};
         const writes = [];
+        const typing = q.mode === "type", T = q.time * 1000, H = typing ? q.hintAt * 1000 : 0;
+        const targets = [q.choices[q.answer]].concat(q.accept || []);
+        const typed = { ok: 0, ko: 0 }, wrong = [];
         for (const [pid, a] of Object.entries(answers)) {
-          if (a.choice >= 0 && a.choice < counts.length) counts[a.choice]++;
           const p = players[pid];
+          let good;
+          if (a.text !== undefined) {
+            good = TY.isRight(a.text, targets);
+            if (good) typed.ok++; else { typed.ko++; if (p) wrong.push({ name: p.name, text: a.text }); }
+          } else {
+            if (a.choice >= 0 && a.choice < counts.length) counts[a.choice]++;
+            good = a.choice === q.answer;
+          }
           if (!p) continue;
           let pts = 0;
-          if (a.choice === q.answer) {
-            const ratio = Math.min(1, a.ms / (q.time * 1000));
+          if (good && !typing) {
+            const ratio = Math.min(1, a.ms / T);
             pts = Math.round(1000 * (1 - ratio / 2)); // 1000 si instantané, 500 au gong
+          } else if (good && a.text !== undefined && a.ms <= H) {
+            pts = Math.round(1000 * (1 - Math.min(1, a.ms / H) / 2)); // trouvé au clavier : 1000 → 500
+          } else if (good) {
+            pts = Math.round(400 * (1 - Math.min(1, Math.max(0, a.ms - H) / Math.max(1, T - H)) / 2)); // avec les choix : 400 → 200
           }
           gains[p.pub] = pts;
           p.score = (p.score || 0) + pts;
@@ -424,12 +469,16 @@ module.exports = L.handler(async (req, res) => {
         }
         // tous les scores en une seule écriture (rapide même avec 70 joueurs)
         if (writes.length) await L.redis(["HSET", K.players].concat(writes));
-        Object.assign(state, { counts, gains, scoring: false });
+        Object.assign(state, { counts, gains, scoring: false, typed: typing ? typed : null, funnies: typing ? TY.funny(wrong, 4) : null });
         break;
       }
 
       case "board":
         Object.assign(state, { phase: "board" });
+        break;
+
+      case "funny": // afficher ou non les réponses drôles sur l'écran géant
+        state.showFunny = !!body.on;
         break;
 
       case "podium":

@@ -24,6 +24,8 @@
   var celebrated = {};
   var shownAt = {};                  // manche → instant où les réponses sont apparues (pour la rapidité)
   var sending = false;
+  var drafts = {};                   // manche → texte en cours de saisie (questions « à taper »)
+  var hintPolled = "";
 
   function load(k) {
     try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; }
@@ -236,27 +238,90 @@
       "<div><b>" + esc(a.title) + "</b><span>" + esc(a.artist) + (a.year ? " · " + esc(a.year) : "") + "</span></div></div>";
   }
 
+  function isTyped(v) { return v !== null && typeof v === "object"; }
+  function choicesHtml(q) {
+    return '<div class="choices choices--kahoot" id="choices">' +
+      q.choices.map(function (c, i) {
+        var len = c.length, size = len > 30 ? " is-xlong" : len > 16 ? " is-long" : "";
+        return '<button class="choice-btn k' + i + size + '" data-i="' + i + '" style="animation-delay:' + (0.06 * i) + 's">' + badge(i) + '<span class="choice-btn__txt">' + esc(c).replace(/(\S)-(\S)/g, "$1&#8209;$2") + "</span></button>"; // « Jean-Jacques » ne se coupe pas au tiret
+      }).join("") + "</div>";
+  }
+  function bindChoices() {
+    var box = document.getElementById("choices");
+    if (box) box.addEventListener("click", function (e) {
+      var b = e.target.closest(".choice-btn");
+      if (!b || sending || mem.ans[rk()] !== undefined) return;
+      choose(parseInt(b.getAttribute("data-i"), 10), b);
+    });
+  }
+
+  // Question « à taper » (blind test) : d'abord la réponse au clavier (jusqu'à 1000 pts), puis les 4 choix (400 pts au plus)
+  function renderTyping() {
+    var q = state.question, k = rk(), hinted = !!q.choices;
+    var had = document.activeElement && document.activeElement.id === "q-ans";
+    document.body.classList.toggle("is-playing", hinted);
+    app.innerHTML =
+      '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
+      '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
+      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) +
+      '<form class="q-type' + (hinted ? " is-small" : "") + '" id="q-type" novalidate autocomplete="off">' +
+      '<input id="q-ans" maxlength="60" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" placeholder="' + (hinted ? "Ou tapez votre réponse…" : "Tapez votre réponse…") + '" aria-label="Votre réponse" />' +
+      '<button class="btn btn--gold" type="submit">Valider</button></form>' +
+      (hinted ? '<p class="q-hint">Avec les choix : 400 points au plus</p>' + choicesHtml(q)
+        : '<p class="q-hint" id="q-hint">Tapez vite : jusqu\'à <b>1&nbsp;000 points</b>.<br>Pas sûr&nbsp;? Les 4 choix arrivent dans <b id="q-hint-s">…</b>&nbsp;s.</p>') +
+      '<p class="center q-status" id="q-status" role="status"></p>';
+    var input = document.getElementById("q-ans");
+    input.value = drafts[k] || "";
+    input.addEventListener("input", function () { drafts[k] = input.value; });
+    if (had || (!hinted && !drafts[k])) try { input.focus({ preventScroll: true }); } catch (e) { /* ignoré */ }
+    document.getElementById("q-type").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = input.value.trim();
+      if (!v || sending || mem.ans[rk()] !== undefined) return;
+      sendText(v);
+    });
+    bindChoices();
+    runTimer();
+  }
+  function sendText(text) {
+    var k = rk(), status = document.getElementById("q-status"), form = document.getElementById("q-type");
+    sending = true;
+    form.querySelectorAll("input, button").forEach(function (x) { x.disabled = true; });
+    var box = document.getElementById("choices");
+    if (box) box.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
+    status.textContent = "Envoi…";
+    buzz(25);
+    var elapsed = Math.max(0, Date.now() - Math.max(shownAt[k] || Date.now(), state.startedAt - offset));
+    (function attempt(n) {
+      post({ action: "answer", pid: me.pid, text: text, elapsed: elapsed }, 5000).then(function (d) {
+        sending = false;
+        mem.ans[k] = d.choice !== undefined ? d.choice : { t: d.text || text }; saveMem();
+        viewKey = ""; render();
+      }, function (err) {
+        if (err.status === 404) { sending = false; me = null; save(null); viewKey = ""; render(); return; }
+        if (err.network && n < 2) { status.textContent = "Réseau lent… nouvel essai"; return setTimeout(function () { attempt(n + 1); }, 700); }
+        sending = false;
+        if (err.status === 409) { status.textContent = err.message; return; }
+        form.querySelectorAll("input, button").forEach(function (x) { x.disabled = false; });
+        if (box) box.querySelectorAll("button").forEach(function (x) { x.disabled = false; });
+        status.textContent = "Réponse non envoyée : validez à nouveau.";
+      });
+    })(0);
+  }
+
   function renderQuestion() {
     var q = state.question, k = rk(), mine = mem.ans[k];
     if (mine !== undefined) return renderSent();
+    if (!shownAt[k]) shownAt[k] = Date.now();
+    if (q.mode === "type") return renderTyping();
     if (!shownAt[k]) shownAt[k] = Date.now();
     document.body.classList.add("is-playing"); // les 4 cases occupent tout le bas de l'écran, sous le pouce
     app.innerHTML =
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
       '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
-      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) +
-      '<div class="choices choices--kahoot" id="choices">' +
-      q.choices.map(function (c, i) {
-        var len = c.length, size = len > 30 ? " is-xlong" : len > 16 ? " is-long" : "";
-        return '<button class="choice-btn k' + i + size + '" data-i="' + i + '" style="animation-delay:' + (0.06 * i) + 's">' + badge(i) + '<span class="choice-btn__txt">' + esc(c).replace(/(\S)-(\S)/g, "$1&#8209;$2") + "</span></button>"; // « Jean-Jacques » ne se coupe pas au tiret
-      }).join("") + "</div>" +
+      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) + choicesHtml(q) +
       '<p class="center q-status" id="q-status" role="status"></p>';
-
-    document.getElementById("choices").addEventListener("click", function (e) {
-      var b = e.target.closest(".choice-btn");
-      if (!b || sending || mem.ans[rk()] !== undefined) return;
-      choose(parseInt(b.getAttribute("data-i"), 10), b);
-    });
+    bindChoices();
     runTimer();
   }
 
@@ -264,6 +329,8 @@
   function choose(i, btn) {
     var k = rk(), box = document.getElementById("choices"), status = document.getElementById("q-status");
     sending = true;
+    var form = document.getElementById("q-type");
+    if (form) form.querySelectorAll("input, button").forEach(function (x) { x.disabled = true; });
     box.classList.add("is-locked");
     btn.classList.add("is-picked");
     box.querySelectorAll("button").forEach(function (x) { x.disabled = true; });
@@ -291,10 +358,12 @@
   // Réponse envoyée : suspense jusqu'à la révélation
   function renderSent() {
     var q = state.question, mine = mem.ans[rk()];
+    var bubble = isTyped(mine)
+      ? '<div class="sent sent--typed fx-rise"><span class="sent__kbd" aria-hidden="true">⌨️</span><p class="sent__txt">«&nbsp;' + esc(mine.t) + "&nbsp;»</p></div>"
+      : '<div class="sent k' + mine + ' fx-rise">' + badge(mine) + '<p class="sent__txt">' + esc(q.choices ? q.choices[mine] : "") + "</p></div>";
     app.innerHTML =
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
-      '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
-      '<div class="sent k' + mine + ' fx-rise">' + badge(mine) + '<p class="sent__txt">' + esc(q.choices[mine]) + "</p></div>" +
+      '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' + bubble +
       '<p class="sent__title">Réponse envoyée&nbsp;!</p>' + musicBanner(q) +
       '<p class="center muted" id="q-answered"></p>';
     updateAnswered();
@@ -320,9 +389,18 @@
       box.classList.toggle("is-hurry", hurry);
       left.classList.toggle("is-hurry", hurry);
       if (hurry && sec !== lastSec) { lastSec = sec; left.classList.remove("tick"); void left.offsetWidth; left.classList.add("tick"); }
+      var q = state.question;
+      if (q.mode === "type" && !q.choices) {
+        var h = document.getElementById("q-hint-s"), toHint = q.hintAt - now();
+        if (h) h.textContent = Math.max(0, Math.ceil(toHint / 1000));
+        // les choix arrivent : on va les chercher tout de suite (puis encore une fois si le cache était en retard)
+        var hk = rk() + (toHint <= -1200 ? "b" : "a");
+        if (toHint <= 150 && hintPolled !== hk && (toHint > -1200 || hintPolled === rk() + "a")) { hintPolled = hk; setTimeout(poll, toHint <= -1200 ? 0 : 250); }
+      }
       if (rest <= 0 && mem.ans[rk()] === undefined && !sending) {
         var s = document.getElementById("q-status"); if (s) s.textContent = "Temps écoulé… la réponse arrive.";
         var c = document.getElementById("choices"); if (c) { c.classList.add("is-locked"); c.querySelectorAll("button").forEach(function (x) { x.disabled = true; }); }
+        var tf = document.getElementById("q-type"); if (tf) tf.querySelectorAll("input, button").forEach(function (x) { x.disabled = true; });
       }
       if (rest > 0) timerRaf = requestAnimationFrame(frame);
     })();
@@ -333,7 +411,7 @@
     if (state.scoring) return renderWaiting("Calcul des points…", "Encore une seconde de suspense.");
     var answered = !!(state.gains && me && Object.prototype.hasOwnProperty.call(state.gains, me.pub));
     var gain = answered ? state.gains[me.pub] : 0, ok = gain > 0;
-    var mine = mem.ans[k];
+    var mine = mem.ans[k], typedMine = isTyped(mine);
     // 0 point (ou pas de réponse) casse la série
     if (mem.gains[state.round] === undefined) { mem.gains[state.round] = gain; saveMem(); }
     var r = myRank(), t = myTeam(), s = streak();
@@ -342,7 +420,8 @@
     app.innerHTML =
       '<div class="verdict-screen ' + (!answered ? "is-none" : ok ? "is-ok" : "is-ko") + ' fx-rise">' +
       '<div class="verdict-screen__icon" aria-hidden="true">' + (!answered ? "⏱" : ok ? "✓" : "✗") + "</div>" +
-      '<p class="verdict-screen__title">' + (!answered ? "Pas de réponse" : ok ? "Bonne réponse&nbsp;!" : "Raté&nbsp;!") + "</p>" +
+      '<p class="verdict-screen__title">' + (!answered ? "Pas de réponse" : ok ? (typedMine && gain >= 500 ? "Trouvé au clavier&nbsp;!" : "Bonne réponse&nbsp;!") : "Raté&nbsp;!") + "</p>" +
+      (answered && !ok && typedMine ? '<p class="verdict-screen__typed">Vous avez tapé «&nbsp;' + esc(mine.t) + "&nbsp;»</p>" : "") +
       '<p class="verdict-screen__pts">' + (ok ? "+" + gain + " points" : answered ? "C'était : " + esc(q.choices[state.correct]) : "La bonne réponse : " + esc(q.choices[state.correct])) + "</p>" +
       (ok && s >= 2 ? '<p class="verdict-screen__streak">🔥 ' + s + " bonnes réponses d'affilée&nbsp;!</p>" : "") +
       "</div>" + songCard(q) +
@@ -395,7 +474,7 @@
     var t = myTeam(), k = rk();
     // Pas encore inscrit : on ne redessine pas le formulaire pendant qu'il tape son prénom
     var key = !me ? (state.phase === "off" ? "off" : "join")
-      : [state.phase, k, state.index, me.pid, mem.ans[k], t ? t.id : "", state.teamMode ? 1 : 0, state.scoring ? 1 : 0, state.done ? 1 : 0, state.game || ""].join("|");
+      : [state.phase, k, state.index, me.pid, isTyped(mem.ans[k]) ? "t" : mem.ans[k], state.question && state.question.mode === "type" ? (state.question.choices ? "c" : "n") : "", t ? t.id : "", state.teamMode ? 1 : 0, state.scoring ? 1 : 0, state.done ? 1 : 0, state.game || ""].join("|");
     if (me && state.phase === "question" && state.startedAt && now() < state.startedAt) key += "|wait";
     if (me && (state.phase === "reveal" || state.phase === "board" || state.phase === "podium")) key += "|" + JSON.stringify(myRank()) + JSON.stringify(t) + (state.teams ? state.teams.length : 0);
     if (key === viewKey) {

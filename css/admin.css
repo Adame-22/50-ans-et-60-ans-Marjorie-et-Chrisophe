@@ -943,3 +943,15 @@ body.admin { font-variant-numeric: lining-nums; }
 #tab-quiz.is-test .regie { border-color: #7b5cd6; box-shadow: 0 0 0 3px rgba(123, 92, 214, .15); }
 .qt-check { display: inline-flex; align-items: center; gap: .3rem; cursor: pointer; }
 .qt-check input { width: 1.2rem; height: 1.2rem; }
+
+/* Quiz : réponse à taper */
+.qz-item__mode { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; font-size: .92rem; }
+.qz-item__mode label { display: inline-flex; align-items: center; gap: .4rem; }
+.qz-item__mode select { font: inherit; padding: .4rem .6rem; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.qz-item__mode input[type=number] { width: 4.2em !important; }
+.qz-item__accept { flex: 1 1 260px; }
+.qz-item__accept input { flex: 1; }
+.regie__mode, .regie__typed { margin: .3rem 0; font-weight: 600; color: var(--navy); }
+.regie__funny { margin: .3rem 0 .6rem; padding: .6rem .8rem; border-radius: 10px; background: #fff7e6; font-size: .95rem; }
+.regie__funny small { color: var(--muted); }
+.regie__check { display: flex; align-items: center; gap: .5rem; font-size: .92rem; }

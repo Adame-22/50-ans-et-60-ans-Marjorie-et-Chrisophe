@@ -685,3 +685,18 @@ body.live.is-playing .q-status { margin-top: .6rem; }
   .choices--kahoot .choice-btn.is-xlong { font-size: 1.02rem; }
   .choices--kahoot .choice-btn .shape i { font-size: 2.4rem; }
 }
+
+/* Question « à taper » (blind test) : la case de réponse, puis les choix */
+.q-type { display: flex; gap: 8px; margin: .6rem 0 .4rem; }
+.q-type input { flex: 1; min-width: 0; font: 600 1.2rem/1.2 var(--sans); padding: 16px 14px; border-radius: 14px; border: 2px solid rgba(255, 251, 254, .25); background: rgba(255, 251, 254, .08); color: var(--paper); }
+.q-type input::placeholder { color: rgba(255, 251, 254, .5); }
+.q-type input:focus { outline: 0; border-color: var(--gold-light); background: rgba(255, 251, 254, .12); }
+.q-type .btn { flex: none; padding-inline: 18px; }
+.q-type.is-small input { padding: 10px 12px; font-size: 1rem; }
+.q-type.is-small .btn { padding-block: 8px; }
+.q-type input:disabled, .q-type .btn:disabled { opacity: .5; }
+.q-hint { margin: .4rem 0 .8rem; text-align: center; color: rgba(255, 251, 254, .78); font-size: .95rem; line-height: 1.45; }
+.q-hint b { color: var(--gold-light); }
+.sent--typed { background: rgba(255, 251, 254, .1); border: 2px solid rgba(255, 251, 254, .25); }
+.sent__kbd { font-size: 2rem; }
+.verdict-screen__typed { margin: .2rem 0 0; font-size: .95rem; opacity: .9; }

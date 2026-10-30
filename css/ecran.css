@@ -451,3 +451,25 @@ body.is-fullscreen #sc-sound { display: inline-block; }
 
 /* Répétition privée : bandeau bien visible */
 body.is-test .screen__now::before { content: "🧪 RÉPÉTITION · "; color: #b9a4ff; }
+
+/* Question « à taper » : invitation à taper, puis les choix qui arrivent */
+.qz-typing { display: grid; place-items: center; gap: 1.2vh; padding: 3vh 2vw; border-radius: 1.4vw; border: 3px dashed rgba(255, 251, 254, .3); text-align: center; }
+.qz-typing__t { margin: 0; font-size: min(3.2vw, 5.4vh); font-weight: 800; }
+.qz-typing__s { margin: 0; font-size: min(2vw, 3.4vh); color: rgba(255, 251, 254, .8); }
+.qz-typing__s b { color: var(--gold-light); font-size: 1.3em; }
+.qz-grid.is-arriving .qz-tile { animation: fx-pop .5s cubic-bezier(.3, 1.4, .5, 1) both; }
+.qz-grid.is-arriving .qz-tile:nth-child(2) { animation-delay: .08s; }
+.qz-grid.is-arriving .qz-tile:nth-child(3) { animation-delay: .16s; }
+.qz-grid.is-arriving .qz-tile:nth-child(4) { animation-delay: .24s; }
+/* révélation : bonne réponse, clavier / choix, réponses drôles */
+.quiz-slide2.is-typed { grid-template-rows: auto auto auto 1fr; align-content: start; }
+.qz-answer { margin: 0; text-align: center; font-size: min(3.4vw, 5.8vh); font-weight: 800; color: #6ee08e; }
+.qz-typedstats { display: flex; justify-content: center; gap: 5vw; }
+.qz-typedstats div { display: grid; justify-items: center; }
+.qz-typedstats b { font-size: min(5vw, 8.4vh); line-height: 1; color: var(--gold-light); }
+.qz-typedstats span { font-size: min(1.7vw, 2.9vh); font-weight: 600; }
+.qz-funny { text-align: center; }
+.qz-funny__t { margin: 0 0 1.2vh; font-size: min(1.9vw, 3.2vh); font-weight: 700; color: rgba(255, 251, 254, .85); }
+.qz-funny ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2vw; }
+.qz-funny li { display: grid; gap: .4vh; padding: 1.4vh 1.6vw; border-radius: 1.2vw; background: rgba(255, 251, 254, .1); font-family: var(--serif); font-size: min(2.4vw, 4vh); font-style: italic; animation: fx-pop .6s cubic-bezier(.3, 1.4, .5, 1) both; }
+.qz-funny li small { font-family: var(--sans); font-style: normal; font-size: min(1.4vw, 2.4vh); font-weight: 700; color: var(--gold-light); }

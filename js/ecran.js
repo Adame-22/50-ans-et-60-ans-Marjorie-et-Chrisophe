@@ -308,7 +308,18 @@
   var lobbySeen = {}, lobbyOrder = [], lastTick = -1, timeUpDone = "", stageTimers = [];
   function later(fn, ms) { stageTimers.push(setTimeout(fn, ms)); }
   function clearStage() { stageTimers.forEach(clearTimeout); stageTimers = []; cancelAnimationFrame(timerRaf); }
-  function isLong(q) { return q.q.length > 110 || q.choices.some(function (c) { return c.length > 40; }); }
+  function isLong(q) { return q.q.length > 110 || (q.choices || []).some(function (c) { return c.length > 40; }); }
+  // question « à taper » : en attendant les choix, on invite à taper sur le téléphone
+  function typingSlot(q) {
+    return '<div class="qz-typing" id="qz-slot"><p class="qz-typing__t"><span aria-hidden="true">⌨️</span> Tapez votre réponse sur votre téléphone&nbsp;!</p>' +
+      '<p class="qz-typing__s">Jusqu\'à 1&nbsp;000 points… les 4 choix arrivent dans <b id="qz-hint">' + Math.max(0, Math.ceil((q.hintAt - now()) / 1000)) + "</b>&nbsp;s</p></div>";
+  }
+  function showChoicesIfReady() {
+    var slot = document.getElementById("qz-slot"), q = quiz.question;
+    if (!slot || !q || !q.choices) return;
+    slot.outerHTML = tiles(q).replace('class="qz-grid"', 'class="qz-grid is-arriving"');
+    Sound.whoosh();
+  }
 
   function tiles(q) {
     return '<div class="qz-grid">' + q.choices.map(function (c, i) {
@@ -376,7 +387,7 @@
         ? '<span class="qz-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><b>Écoutez&nbsp;!</b>'
         : '<b>🔇 Son coupé</b><small>cliquez sur « Activer le son »</small>') + "</div>" : "") +
       '<div class="qz-answers"><b id="qz-answered">' + (quiz.answered || 0) + '</b><span>réponses<br>sur ' + playersCount() + "</span></div></div>" +
-      tiles(q) + "</section>";
+      (q.choices ? tiles(q) : typingSlot(q)) + "</section>";
     if (q.audio) {
       // l'extrait démarre au top départ (ou là où il en est si l'écran vient d'être rechargé)
       Sound.stop();
@@ -400,6 +411,8 @@
       if (left) left.textContent = rest > 0 ? sec : "0";
       if (box) box.classList.toggle("is-hurry", rest > 0 && rest <= 5000);
       if (rest > 0 && rest <= 5000 && sec !== lastTick && !quiz.question.audio) { lastTick = sec; Sound.tick(sec <= 1); }
+      var hs = document.getElementById("qz-hint");
+      if (hs && quiz.question.hintAt) hs.textContent = Math.max(0, Math.ceil((quiz.question.hintAt - now()) / 1000));
       if (rest <= 0) {
         var k = quiz.round + ":" + quiz.startedAt;
         if (timeUpDone !== k) {
@@ -421,6 +434,7 @@
     var max = Math.max.apply(null, counts.concat([1])), good = counts[quiz.correct] || 0;
     var pct = total ? Math.round(good / total * 100) : 0;
     var song = q.audio && q.audio.title;
+    if (q.mode === "type") return renderTypedReveal(q, song);
     stage.innerHTML = '<section class="slide quiz-slide2 is-reveal' + (isLong(q) ? " is-long" : "") + (song ? " is-song" : "") + '">' +
       '<div class="qz-head"><span class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + '</span><span class="qz-pct">' + pct + " % de bonnes réponses</span></div>" +
       (song
@@ -438,6 +452,25 @@
     }); });
     Sound.stop(); Sound.reveal();
     // la chanson repart pendant qu'on découvre la réponse
+    if (q.audio) later(function () { Music.resume(q.audio.url, q.audio.start, 0.6); }, 700);
+  }
+
+  function renderTypedReveal(q, song) {
+    var counts = quiz.counts || [], ty = quiz.typed || { ok: 0, ko: 0 };
+    var viaChoices = counts[quiz.correct] || 0, total = counts.reduce(function (a, b) { return a + b; }, 0) + ty.ok + ty.ko;
+    var pct = total ? Math.round((ty.ok + viaChoices) / total * 100) : 0, fun = (quiz.funnies || []).slice(0, 3);
+    stage.innerHTML = '<section class="slide quiz-slide2 is-reveal is-typed' + (song ? " is-song" : "") + '">' +
+      '<div class="qz-head"><span class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + '</span><span class="qz-pct">' + pct + " % de bonnes réponses</span></div>" +
+      (song
+        ? '<div class="qz-song">' + (q.audio.cover ? '<img src="' + esc(q.audio.cover) + '" alt="" />' : "") +
+          "<div><b>" + esc(q.audio.title) + "</b><span>" + esc(q.audio.artist) + (q.audio.year ? " · " + esc(q.audio.year) : "") + "</span></div></div>"
+        : '<p class="qz-question">' + esc(q.q) + '</p><p class="qz-answer">✓ ' + esc(q.choices[quiz.correct]) + "</p>") +
+      '<div class="qz-typedstats"><div><b>' + ty.ok + '</b><span>⌨️ trouvé au clavier</span></div><div><b>' + viaChoices + "</b><span>🎯 avec les choix</span></div></div>" +
+      (fun.length ? '<div class="qz-funny"><p class="qz-funny__t">😂 Les réponses les plus créatives</p><ul>' + fun.map(function (f, i) {
+        return '<li style="animation-delay:' + (1.2 + i * 0.7).toFixed(1) + 's">«&nbsp;' + esc(f.text) + "&nbsp;»<small>" + esc(f.name) + "</small></li>";
+      }).join("") + "</ul></div>" : "") +
+      "</section>";
+    Sound.stop(); Sound.reveal();
     if (q.audio) later(function () { Music.resume(q.audio.url, q.audio.start, 0.6); }, 700);
   }
 
@@ -501,12 +534,14 @@
     var waiting = quiz.phase === "question" && quiz.startedAt && now() < quiz.startedAt;
     var key = [quiz.phase, quiz.round, quiz.index, waiting ? "w" : "", quiz.scoring ? "s" : ""].join("|");
     // le classement change seulement entre deux questions : les nouvelles inscriptions n'y touchent pas
+    if (quiz.phase === "reveal") key += "|" + (quiz.funnies || []).length;
     if (quiz.phase === "board") key += "|" + (quiz.leaderboard || []).slice(0, 5).map(function (p) { return p.pub + p.score; }).join(",") + "|" + (quiz.teams || []).map(function (t) { return t.id + t.score; }).join(",");
     if (quiz.preload) Music.preload(quiz.preload);
     if (quiz.phase === "lobby") { if (quizKey.indexOf("lobby|") !== 0) { clearStage(); Music.stop(); quizKey = key; stage.innerHTML = ""; } renderLobby(); return; }
     if (key === quizKey) {
       if (quiz.phase === "question") {
         var a = document.getElementById("qz-answered"); if (a) a.textContent = quiz.answered || 0;
+        showChoicesIfReady();
       }
       return;
     }

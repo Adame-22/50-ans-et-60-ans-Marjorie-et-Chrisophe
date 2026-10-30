@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261110" />
-  <link rel="stylesheet" href="css/style.css?v=20261110" />
-  <link rel="stylesheet" href="css/admin.css?v=20261110" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261111" />
+  <link rel="stylesheet" href="css/style.css?v=20261111" />
+  <link rel="stylesheet" href="css/admin.css?v=20261111" />
 </head>
 <body class="admin">
 
@@ -458,7 +458,10 @@
         <div class="regie__q" id="qz-q" hidden>
           <p class="regie__qtext" id="qz-qtext"></p>
           <p class="regie__song" id="qz-song" hidden></p>
+          <p class="regie__mode" id="qz-modeinfo" hidden></p>
           <ul class="regie__choices" id="qz-choices"></ul>
+          <p class="regie__typed" id="qz-typed" hidden></p>
+          <div class="regie__funny" id="qz-funny" hidden></div>
         </div>
 
         <div class="regie__live" id="qz-live" hidden>
@@ -477,6 +480,7 @@
           <details class="regie__opts">
             <summary>Autres options</summary>
             <div class="regie__optsbody">
+              <label class="regie__check"><input type="checkbox" id="qz-funny-on" checked /> Afficher les réponses drôles sur l'écran géant (questions à taper)</label>
               <button type="button" class="btn btn--small btn--line" data-qz="podium" id="qz-podium" hidden>Arrêter et afficher le podium</button>
               <button type="button" class="btn btn--small btn--line" data-qz="lobby">Réouvrir l'accueil des joueurs</button>
               <button type="button" class="btn btn--small btn--line" data-qz="off">Fermer le quiz</button>
@@ -808,9 +812,9 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261110"></script>
+  <script src="js/graph.js?v=20261111"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261110"></script>
-  <script src="js/admin.js?v=20261110"></script>
+  <script src="js/xlsx.js?v=20261111"></script>
+  <script src="js/admin.js?v=20261111"></script>
 </body>
 </html>

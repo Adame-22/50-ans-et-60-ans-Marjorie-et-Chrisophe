@@ -2046,6 +2046,7 @@
     $("#qz-index").textContent = (game !== "Quiz de bord" ? game + " · " : "") + (st.index >= 0 ? "Question " + (st.index + 1) + " sur " + n : n + " questions prêtes") + (d.teams ? " · par équipes" : "");
     renderGames(d.games || [], st);
     $("#qz-by").textContent = st.by ? "Dernière action : " + st.by : "";
+    $("#qz-funny-on").checked = st.showFunny !== false;
     $("#qz-players").textContent = d.players;
     $("#qz-dots").innerHTML = d.questions.map(function (x, i) {
       var cls = i < st.index || (i === st.index && ["reveal", "board", "podium"].indexOf(st.phase) >= 0) || (st.phase === "podium") ? "is-done" : i === st.index && st.phase === "question" ? "is-now" : "";
@@ -2080,6 +2081,14 @@
     $("#qz-q").hidden = !showQ;
     if (showQ) {
       $("#qz-qtext").textContent = q.q;
+      $("#qz-modeinfo").hidden = q.mode !== "type";
+      if (q.mode === "type") $("#qz-modeinfo").textContent = "⌨️ Réponse à taper, les 4 choix apparaissent au bout de " + q.hintAt + " s" + (q.accept && q.accept.length ? " · aussi acceptées : " + q.accept.join(", ") : "");
+      var ty = st.typed, showTy = !!(ty && st.phase !== "question");
+      $("#qz-typed").hidden = !showTy;
+      if (showTy) $("#qz-typed").textContent = "⌨️ " + ty.ok + " trouvé(s) au clavier · " + ty.ko + " réponse(s) tapée(s) fausse(s) · 🎯 " + ((st.counts || [])[q.answer] || 0) + " avec les choix";
+      var fun = showTy ? st.funnies || [] : [];
+      $("#qz-funny").hidden = !fun.length;
+      if (fun.length) $("#qz-funny").innerHTML = "<b>😂 Réponses drôles" + (st.showFunny === false ? " (masquées sur l'écran)" : " affichées") + " :</b> " + fun.map(function (f) { return "«&nbsp;" + esc(f.text) + "&nbsp;» <small>" + esc(f.name) + "</small>"; }).join(" · ");
       $("#qz-song").hidden = !q.audio;
       if (q.audio) $("#qz-song").textContent = "🎵 " + q.audio.title + " · " + q.audio.artist + (q.audio.year ? " (" + q.audio.year + ")" : "");
       var counts = st.counts || [];
@@ -2144,6 +2153,9 @@
           return '<label class="qz-choice"><input type="radio" name="qz-ok-' + i + '" data-f="answer" value="' + j + '"' + (q.answer === j ? " checked" : "") + ' title="Bonne réponse" />' +
             '<input type="text" data-f="c' + j + '" value="' + esc(c) + '" placeholder="Réponse ' + "ABCD"[j] + '" maxlength="80" /></label>';
         }).join("") + "</div>" +
+        '<div class="qz-item__mode"><label>Réponse <select data-f="mode"><option value="">4 choix</option><option value="type"' + (q.mode === "type" ? " selected" : "") + ">À taper, puis 4 choix</option></select></label>" +
+          (q.mode === "type" ? '<label>choix au bout de <input type="number" data-f="hintAt" min="3" max="40" value="' + (q.hintAt || 10) + '" /> s</label>' +
+            '<label class="qz-item__accept">Autres réponses acceptées <input type="text" data-f="accept" value="' + esc((q.accept || []).join(", ")) + '" placeholder="ex. MJ, Jacko (séparées par des virgules)" maxlength="300" /></label>' : "") + "</div>" +
         (q.audio ? audioBlock(q.audio, i) : "") +
         '<div class="qz-item__actions"><button type="button" class="btn btn--small btn--line" data-launch="' + i + '">Lancer celle-ci</button>' +
         (q.audio ? "" : '<button type="button" class="btn btn--small btn--line" data-music="' + i + '">🎵 Ajouter un extrait</button>') +
@@ -2170,6 +2182,11 @@
       var kept = [], newAnswer = 0;
       choices.forEach(function (c, j) { if (c) { if (j === answer) newAnswer = kept.length; kept.push(c); } });
       var out = { q: get("q").trim(), choices: kept, answer: newAnswer, time: parseInt(get("time"), 10) || 20 };
+      if (get("mode") === "type") {
+        out.mode = "type";
+        out.hintAt = parseInt(get("hintAt"), 10) || 10;
+        out.accept = get("accept").split(",").map(function (a) { return a.trim(); }).filter(Boolean);
+      }
       var a = li.getAttribute("data-audio");
       if (a) { out.audio = JSON.parse(a); out.audio.start = Math.min(25, Math.max(0, parseInt(get("start"), 10) || 0)); }
       return out;
@@ -2177,6 +2194,14 @@
   }
 
   $("#qz-list").addEventListener("input", function () { qz.dirty = true; $("#qz-save-state").textContent = "Modifications non enregistrées"; });
+  // changement de mode de réponse : on affiche (ou retire) les réglages « à taper »
+  $("#qz-list").addEventListener("change", function (e) {
+    if (e.target.getAttribute("data-f") !== "mode") return;
+    var i = +e.target.closest(".qz-item").getAttribute("data-i");
+    qz.questions = readQuizList();
+    if (qz.questions[i].mode === "type" && qz.questions[i].time < 20) qz.questions[i].time = 25;
+    qz.dirty = true; renderQuizList();
+  });
   $("#qz-list").addEventListener("click", function (e) {
     var del = e.target.getAttribute("data-del-q"), launch = e.target.getAttribute("data-launch");
     var music = e.target.getAttribute("data-music"), unmusic = e.target.getAttribute("data-unmusic"), listen = e.target.getAttribute("data-listen");
@@ -2307,6 +2332,7 @@
     var good = (byArtist ? r.artist : r.title).slice(0, 80);
     var autoText = !q.q || /^🎵 (Quel est ce titre|Qui chante)/.test(q.q);
     if (autoText) q.q = byArtist ? "🎵 Qui chante cette chanson ?" : "🎵 Quel est ce titre ?";
+    if (autoText && !q.mode) { q.mode = "type"; q.hintAt = 10; q.time = 25; }
     // réponses : la bonne + des leurres pris dans les autres résultats (à vérifier), placée au hasard
     if (autoText || !q.choices.filter(Boolean).length) {
       var seen = {}; seen[normTxt(good)] = 1;
@@ -2383,6 +2409,11 @@
     })
       .catch(function (err) { qz.busy = false; $("#qz-next").disabled = false; toast(err.message, true); if (err.status === 409) startQuizAdmin(); });
   }
+  $("#qz-funny-on").addEventListener("change", function () {
+    api("/api/quiz", { method: "POST", body: withTest({ action: "funny", on: this.checked }) })
+      .then(function () { toast(this.checked ? "Réponses drôles affichées." : "Réponses drôles masquées."); startQuizAdmin(); }.bind(this))
+      .catch(function (err) { toast(err.message, true); });
+  });
   $all("[data-qz]").forEach(function (b) {
     b.addEventListener("click", function () { quizAction(b.getAttribute("data-qz")); });
   });
