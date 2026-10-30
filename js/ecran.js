@@ -234,9 +234,56 @@
       },
     };
   })();
+  /* ───────── Blind test : extraits de 30 s (aperçus iTunes), joués seulement ici ───────── */
+  var Music = (function () {
+    var pool = {}, cur = null, fadeT = 0;
+    function get(url) {
+      if (!pool[url]) { var a = new Audio(); a.preload = "auto"; a.src = url; pool[url] = a; }
+      return pool[url];
+    }
+    function fade(a, to, ms, done) {
+      clearInterval(fadeT);
+      var from = a.volume, t0 = Date.now();
+      fadeT = setInterval(function () {
+        var k = Math.min(1, (Date.now() - t0) / ms);
+        a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+        if (k >= 1) { clearInterval(fadeT); if (done) done(); }
+      }, 40);
+    }
+    return {
+      preload: function (url) { if (url) get(url); },
+      // joue l'extrait à partir de « pos » secondes
+      play: function (url, pos, vol) {
+        if (!Sound.on || !url) return;
+        var a = get(url);
+        if (cur && cur !== a) cur.pause();
+        cur = a;
+        var t0 = Date.now(), seek = function () {
+          // si le fichier arrive en retard, on rattrape le temps passé à l'attendre
+          var want = pos + (Date.now() - t0) / 1000;
+          try { if (Math.abs(a.currentTime - want) > 0.6) a.currentTime = want; } catch (e) { /* ignoré */ }
+        };
+        if (a.readyState >= 1) seek(); else a.addEventListener("loadedmetadata", seek, { once: true });
+        a.volume = 0;
+        var p = a.play();
+        if (p && p.catch) p.catch(function () {});
+        fade(a, vol || 1, 600);
+      },
+      resume: function (url, start, vol) {
+        if (!Sound.on || !url) return;
+        var a = get(url);
+        // l'aperçu fait 30 s : s'il est fini, on reprend au début de l'extrait
+        var pos = a.ended || a.currentTime >= 28 || a.currentTime < start ? start : a.currentTime;
+        this.play(url, pos, vol);
+      },
+      fadeOut: function (ms) { if (cur) { var a = cur; fade(a, 0, ms || 800, function () { a.pause(); }); } },
+      stop: function () { clearInterval(fadeT); if (cur) cur.pause(); cur = null; },
+    };
+  })();
+
   var soundBtn = document.getElementById("sc-sound");
   function soundLabel() { soundBtn.textContent = Sound.on ? "🔊 Son activé" : "🔇 Activer le son"; soundBtn.classList.toggle("is-on", Sound.on); }
-  soundBtn.addEventListener("click", function () { Sound.toggle(); soundLabel(); if (inQuiz) { quizKey = ""; renderQuiz(); } });
+  soundBtn.addEventListener("click", function () { Sound.toggle(); soundLabel(); if (!Sound.on) Music.stop(); if (inQuiz) { quizKey = ""; renderQuiz(); } });
   soundLabel();
   document.addEventListener("click", function () { Sound.wake(); }, { once: false });
 
@@ -263,12 +310,14 @@
 
   function renderLobby() {
     var lb = quiz.leaderboard || [];
-    if (!document.getElementById("lobby-n")) {
+    var game = quiz.game || "Quiz de bord", other = game !== "Quiz de bord";
+    if (!document.getElementById("lobby-n") || stage.getAttribute("data-game") !== game) {
       lobbySeen = {}; lobbyOrder = [];
+      stage.setAttribute("data-game", game);
       stage.innerHTML = '<section class="slide lobby-slide2">' +
         '<div class="lobby2__join"><div class="lobby2__qr">' + qr("/quiz") + '</div><p class="lobby2__url">' + esc(location.host) + "/quiz</p>" +
         '<p class="lobby2__how">Scannez avec l\'appareil photo<br>et entrez votre prénom</p></div>' +
-        '<div class="lobby2__side"><p class="eyebrow-xl">Quiz de bord</p><h2 class="lobby2__title">Connaissez-vous vos commandants de bord&nbsp;?</h2>' +
+        '<div class="lobby2__side"><p class="eyebrow-xl">' + (other ? "Nouveau jeu" : "Quiz de bord") + '</p><h2 class="lobby2__title">' + (other ? esc(game) : "Connaissez-vous vos commandants de bord&nbsp;?") + "</h2>" +
         '<p class="lobby2__count"><b id="lobby-n">0</b><span>joueurs à bord</span></p>' +
         '<div class="lobby2__names" id="lobby-names"></div><p class="lobby2__more" id="lobby-more"></p>' +
         '<div class="lobby-teams" id="lobby-teams"></div></div></section>';
@@ -293,8 +342,10 @@
     var q = quiz.question;
     stage.innerHTML = '<section class="slide quiz-intro"><p class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + "</p>" +
       '<p class="qz-question qz-question--intro' + (isLong(q) ? " is-long" : "") + '">' + esc(q.q) + "</p>" +
+      (q.audio ? '<p class="qz-intro-music">🎵 Blind test : ouvrez grand les oreilles&nbsp;!</p>' : "") +
       '<div class="qz-intro-count"><span id="qz-count">3</span></div></section>';
-    Sound.stop();
+    Sound.stop(); Music.stop();
+    if (q.audio) Music.preload(q.audio.url);
     var last = -1;
     (function tick() {
       var rest = quiz.startedAt - now(), el = document.getElementById("qz-count");
@@ -312,10 +363,20 @@
       '<div class="qz-head"><span class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + "</span></div>" +
       '<p class="qz-question">' + esc(q.q) + "</p>" +
       '<div class="qz-mid"><div class="qz-clock" id="qz-clock"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" class="qz-clock__bg"/><circle cx="50" cy="50" r="44" class="qz-clock__fg" id="qz-ring"/></svg><b id="qz-left"></b></div>' +
+      (q.audio ? '<div class="qz-listen">' + (Sound.on
+        ? '<span class="qz-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><b>Écoutez&nbsp;!</b>'
+        : '<b>🔇 Son coupé</b><small>cliquez sur « Activer le son »</small>') + "</div>" : "") +
       '<div class="qz-answers"><b id="qz-answered">' + (quiz.answered || 0) + '</b><span>réponses<br>sur ' + playersCount() + "</span></div></div>" +
       tiles(q) + "</section>";
-    Sound.loop("think");
-    Sound.go();
+    if (q.audio) {
+      // l'extrait démarre au top départ (ou là où il en est si l'écran vient d'être rechargé)
+      Sound.stop();
+      Music.play(q.audio.url, q.audio.start + Math.max(0, now() - quiz.startedAt) / 1000, 1);
+    } else {
+      Music.stop();
+      Sound.loop("think");
+      Sound.go();
+    }
     lastTick = -1;
     runTimer();
   }
@@ -329,12 +390,12 @@
       if (ring) ring.style.strokeDashoffset = C * (1 - rest / total);
       if (left) left.textContent = rest > 0 ? sec : "0";
       if (box) box.classList.toggle("is-hurry", rest > 0 && rest <= 5000);
-      if (rest > 0 && rest <= 5000 && sec !== lastTick) { lastTick = sec; Sound.tick(sec <= 1); }
+      if (rest > 0 && rest <= 5000 && sec !== lastTick && !quiz.question.audio) { lastTick = sec; Sound.tick(sec <= 1); }
       if (rest <= 0) {
         var k = quiz.round + ":" + quiz.startedAt;
         if (timeUpDone !== k) {
           timeUpDone = k;
-          Sound.stop(); Sound.gong();
+          Sound.stop(); Music.fadeOut(700); Sound.gong();
           var sl = stage.querySelector(".quiz-slide2");
           if (sl) sl.classList.add("is-timeup");
           var head = stage.querySelector(".qz-head");
@@ -350,9 +411,13 @@
     var q = quiz.question, counts = quiz.counts || [], total = counts.reduce(function (a, b) { return a + b; }, 0);
     var max = Math.max.apply(null, counts.concat([1])), good = counts[quiz.correct] || 0;
     var pct = total ? Math.round(good / total * 100) : 0;
-    stage.innerHTML = '<section class="slide quiz-slide2 is-reveal' + (isLong(q) ? " is-long" : "") + '">' +
+    var song = q.audio && q.audio.title;
+    stage.innerHTML = '<section class="slide quiz-slide2 is-reveal' + (isLong(q) ? " is-long" : "") + (song ? " is-song" : "") + '">' +
       '<div class="qz-head"><span class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + '</span><span class="qz-pct">' + pct + " % de bonnes réponses</span></div>" +
-      '<p class="qz-question">' + esc(q.q) + "</p>" +
+      (song
+        ? '<div class="qz-song">' + (q.audio.cover ? '<img src="' + esc(q.audio.cover) + '" alt="" />' : "") +
+          "<div><b>" + esc(q.audio.title) + "</b><span>" + esc(q.audio.artist) + (q.audio.year ? " · " + esc(q.audio.year) : "") + "</span></div></div>"
+        : '<p class="qz-question">' + esc(q.q) + "</p>") +
       '<div class="qz-hist">' + q.choices.map(function (c, i) {
         return '<div class="qz-col k' + i + (i === quiz.correct ? " is-correct" : "") + '"><span class="qz-col__n">' + (counts[i] || 0) + "</span>" +
           '<i class="qz-col__bar" data-h="' + Math.round((counts[i] || 0) / max * 100) + '"></i><span class="qz-col__shape">' + SHAPES[i] + (i === quiz.correct ? " ✓" : "") + "</span></div>";
@@ -363,6 +428,8 @@
       stage.querySelectorAll(".qz-col__bar").forEach(function (b) { b.style.height = Math.max(3, +b.getAttribute("data-h")) + "%"; });
     }); });
     Sound.stop(); Sound.reveal();
+    // la chanson repart pendant qu'on découvre la réponse
+    if (q.audio) later(function () { Music.resume(q.audio.url, q.audio.start, 0.85); }, 700);
   }
 
   function renderBoard() {
@@ -386,6 +453,7 @@
             return '<li style="--team:' + esc(t.color) + ";animation-delay:" + i * 0.12 + 's"><b><i></i>' + esc(t.name) + " <small>" + t.players + "</small></b><span>" + t.score + "</span></li>";
           }).join("") + '</ol></div><div><p class="eyebrow-xl">Joueurs</p>' + players + "</div></div>"
         : players) + "</section>";
+    Music.fadeOut(2500);
     Sound.whoosh();
   }
 
@@ -409,7 +477,7 @@
     var show = function (r) { var s = stage.querySelector('.podium__step[data-rank="' + r + '"]'); if (s) s.classList.add("is-shown"); };
     if (podiumDone === pk) { show(3); show(2); show(1); var b = document.getElementById("podium-best"); if (b) b.classList.add("is-shown"); return; }
     podiumDone = pk;
-    Sound.stop();
+    Sound.stop(); Music.fadeOut(1500);
     later(function () { show(3); Sound.reveal(); }, 1200);
     later(function () { show(2); Sound.reveal(); }, 3400);
     later(function () { Sound.drumroll(2.6); }, 5000);
@@ -425,7 +493,8 @@
     var key = [quiz.phase, quiz.round, quiz.index, waiting ? "w" : "", quiz.scoring ? "s" : ""].join("|");
     // le classement change seulement entre deux questions : les nouvelles inscriptions n'y touchent pas
     if (quiz.phase === "board") key += "|" + (quiz.leaderboard || []).slice(0, 5).map(function (p) { return p.pub + p.score; }).join(",") + "|" + (quiz.teams || []).map(function (t) { return t.id + t.score; }).join(",");
-    if (quiz.phase === "lobby") { if (quizKey.indexOf("lobby|") !== 0) { clearStage(); quizKey = key; stage.innerHTML = ""; } renderLobby(); return; }
+    if (quiz.preload) Music.preload(quiz.preload);
+    if (quiz.phase === "lobby") { if (quizKey.indexOf("lobby|") !== 0) { clearStage(); Music.stop(); quizKey = key; stage.innerHTML = ""; } renderLobby(); return; }
     if (key === quizKey) {
       if (quiz.phase === "question") {
         var a = document.getElementById("qz-answered"); if (a) a.textContent = quiz.answered || 0;
@@ -458,7 +527,7 @@
         if (!inQuiz) { inQuiz = true; clearTimeout(slideTimer); quizKey = ""; }
         renderQuiz();
       } else if (inQuiz) {
-        inQuiz = false; clearStage(); Sound.stop(); quizKey = ""; nextSlide();
+        inQuiz = false; clearStage(); Sound.stop(); Music.stop(); quizKey = ""; nextSlide();
       }
     }).catch(function () { /* on garde l'affichage en cours et on réessaie */ })
       .then(function () { setTimeout(pollQuiz, 1000); });

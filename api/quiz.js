@@ -12,8 +12,12 @@
  * contient aussi teams (moyenne des points par équipe) et teamOf (joueur → équipe).
  *
  * Équipage (connecté) :
- *   GET  ?view=admin                       → questions complètes + réponses reçues
- *   PUT  { questions: [...] }              → remplace les questions
+ *   GET  ?view=admin                       → questions complètes + réponses reçues + jeux enregistrés
+ *   GET  ?view=music&q=…                   → recherche d'extraits (30 s, catalogue iTunes, gratuit)
+ *   PUT  { questions: [...] }              → remplace les questions (et les garde dans le jeu en cours)
+ *   POST { action: "game", name, create? } → change de jeu (ex. « Quiz de bord » → « Blind test ») :
+ *        les joueurs restent connectés, les scores repartent de zéro
+ *   POST { action: "game-delete", name }
  *   POST { action: "lobby" | "start" | "reveal" | "board" | "podium" | "off" | "reset", from? }
  *        from = { phase, round, index } vu par l'animateur : si le quiz a déjà avancé (deux animateurs,
  *        double appui, réseau qui renvoie), l'action est refusée au lieu de sauter une question.
@@ -28,7 +32,10 @@ const K = {
   players: "mc:quiz:players",
   answers: (round) => "mc:quiz:ans:" + round,
   locks: "mc:quiz:locks", // une seule révélation / un seul lancement par manche
+  games: "mc:quiz:games", // jeux enregistrés : nom → { questions }
 };
+const DEFAULT_GAME = "Quiz de bord";
+const MAX_GAMES = 8;
 
 // Questions de départ : « Qui de… » (réponse à régler dans l'admin selon la vérité !) et culture des années 66 / 76
 const QUI = ["Marjorie", "Christophe", "Les deux", "Aucun des deux"];
@@ -73,14 +80,62 @@ function leaderboard(players) {
   return list;
 }
 
+// Extrait musical : aperçu de 30 s servi par Apple (lien direct, rien n'est stocké chez nous)
+function sanitizeAudio(a) {
+  if (!a || typeof a !== "object") return null;
+  const url = L.str(a.url, 500);
+  if (!/^https:\/\/[a-z0-9.-]+\.(apple\.com|mzstatic\.com)\//i.test(url)) return null;
+  const cover = L.str(a.cover, 500);
+  return {
+    url,
+    start: Math.min(25, Math.max(0, Math.round(Number(a.start) || 0))),
+    title: L.str(a.title, 120), artist: L.str(a.artist, 120), year: L.str(a.year, 4),
+    cover: /^https:\/\/[a-z0-9.-]+\.mzstatic\.com\//i.test(cover) ? cover : "",
+  };
+}
+
 function sanitizeQuestions(list) {
   if (!Array.isArray(list) || list.length > 60) throw new L.HttpError(400, "Liste de questions invalide.");
   return list.map((x) => {
     const choices = (Array.isArray(x.choices) ? x.choices : []).map((c) => L.str(c, 80)).filter(Boolean).slice(0, 4);
     if (choices.length < 2) throw new L.HttpError(400, "Chaque question doit avoir au moins 2 réponses.");
     const answer = Math.min(choices.length - 1, Math.max(0, parseInt(x.answer, 10) || 0));
-    return { q: L.str(x.q, 200) || "Question", choices, answer, time: Math.min(60, Math.max(5, parseInt(x.time, 10) || 20)) };
+    const out = { q: L.str(x.q, 200) || "Question", choices, answer, time: Math.min(60, Math.max(5, parseInt(x.time, 10) || 20)) };
+    const audio = sanitizeAudio(x.audio);
+    if (audio) out.audio = audio;
+    return out;
   });
+}
+
+async function gameList(state, questions) {
+  const all = await L.hgetallJson(K.games);
+  const cur = state.game || DEFAULT_GAME;
+  all[cur] = { questions };
+  return Object.keys(all).sort((a, b) => (b === cur) - (a === cur) || a.localeCompare(b, "fr")).map((name) => {
+    const qs = all[name].questions || [];
+    return { name, count: qs.length, music: qs.filter((q) => q.audio).length, current: name === cur };
+  });
+}
+
+// Recherche d'extraits dans le catalogue iTunes (gratuit, sans clé)
+async function searchMusic(term) {
+  const url = "https://itunes.apple.com/search?" + new URLSearchParams({ term, country: "FR", media: "music", entity: "song", limit: "25" });
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 7000);
+  let d;
+  try {
+    const r = await fetch(url, { signal: ctl.signal, headers: { accept: "application/json" } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    d = await r.json();
+  } catch (e) {
+    throw new L.HttpError(502, "La recherche de musique ne répond pas, réessayez dans un instant.");
+  } finally { clearTimeout(t); }
+  const seen = new Set();
+  const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\(.*?\)|\[.*?\]|- (remaster|live|version).*$/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  return (d.results || []).filter((r) => r.previewUrl && r.trackName).map((r) => ({
+    title: r.trackName, artist: r.artistName, year: String(r.releaseDate || "").slice(0, 4), album: r.collectionName || "",
+    url: r.previewUrl, cover: String(r.artworkUrl100 || "").replace(/\/\d+x\d+bb\./, "/600x600bb."),
+  })).filter((r) => { const k = norm(r.title) + "|" + norm(r.artist); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 12);
 }
 
 module.exports = L.handler(async (req, res) => {
@@ -100,18 +155,32 @@ module.exports = L.handler(async (req, res) => {
       const tq = await TM.quizTeams(all);
       // le top 10 (et les équipes si le jeu est par équipe) pour que l'animateur annonce les bons gagnants
       return L.send(res, 200, { state, questions, answered, players: all.length, top: leaderboard(all).slice(0, 10),
-        teams: tq ? tq.teams.slice(0, 10) : null, serverNow: Date.now() });
+        teams: tq ? tq.teams.slice(0, 10) : null, games: await gameList(state, questions), serverNow: Date.now() });
+    }
+
+    if (view === "music") {
+      L.noSpoil(await L.requireUser(req));
+      await L.rateLimit(req, "quiz-music", 60, 60);
+      const term = L.str(params.get("q"), 100);
+      if (term.length < 2) throw new L.HttpError(400, "Tapez au moins 2 lettres.");
+      return L.send(res, 200, { results: await searchMusic(term) });
     }
 
     const out = { phase: state.phase, index: state.index, total: questions.length, serverNow: Date.now() };
     if (cur && ["question", "reveal", "board"].includes(state.phase)) {
       out.question = { q: cur.q, choices: cur.choices, time: cur.time };
+      // l'écran géant joue l'extrait ; le titre n'est donné qu'à la révélation
+      if (cur.audio) out.question.audio = state.phase === "question" ? { url: cur.audio.url, start: cur.audio.start } : cur.audio;
       out.round = state.round;
       out.startedAt = state.startedAt;
       out.endsAt = state.endsAt;
     }
     if (state.phase === "question") out.answered = await L.redis(["HLEN", K.answers(state.round)]);
     out.done = !!state.done;
+    out.game = state.game || DEFAULT_GAME;
+    // l'écran géant charge à l'avance l'extrait de la question suivante
+    const next = ["lobby", "reveal", "board"].includes(state.phase) ? questions[state.index + 1] : null;
+    if (next && next.audio) out.preload = next.audio.url;
     if (["reveal", "board"].includes(state.phase)) {
       out.correct = cur ? cur.answer : null;
       out.counts = state.counts || [];
@@ -197,7 +266,9 @@ module.exports = L.handler(async (req, res) => {
 
   if (req.method === "PUT") {
     const questions = sanitizeQuestions(body.questions);
+    const state = await getState();
     await setJson(K.questions, questions);
+    await L.redis(["HSET", K.games, state.game || DEFAULT_GAME, JSON.stringify({ questions })]);
     return L.send(res, 200, { questions });
   }
 
@@ -273,6 +344,42 @@ module.exports = L.handler(async (req, res) => {
       case "off":
         Object.assign(state, { phase: "off" });
         break;
+
+      case "game": { // changer de jeu : les joueurs restent, les scores repartent de zéro
+        const name = L.str(body.name, 40);
+        if (!name) throw new L.HttpError(400, "Donnez un nom au jeu.");
+        if (["question", "reveal"].includes(state.phase) || (state.phase === "board" && !state.done)) {
+          throw new L.HttpError(409, "Une partie est en cours : terminez-la (podium) ou fermez le quiz avant de changer de jeu.");
+        }
+        const cur = state.game || DEFAULT_GAME;
+        const games = await L.hgetallJson(K.games);
+        let next;
+        if (body.create) {
+          if (games[name] || name === cur) throw new L.HttpError(409, "Un jeu porte déjà ce nom.");
+          if (Object.keys(games).length + (games[cur] ? 0 : 1) >= MAX_GAMES) throw new L.HttpError(409, "Il y a déjà " + MAX_GAMES + " jeux : supprimez-en un.");
+          next = [];
+        } else {
+          if (name === cur) throw new L.HttpError(409, "Ce jeu est déjà chargé.");
+          if (!games[name]) throw new L.HttpError(404, "Jeu introuvable.");
+          next = games[name].questions || [];
+        }
+        await L.redis(["HSET", K.games, cur, JSON.stringify({ questions }), name, JSON.stringify({ questions: next })]);
+        await setJson(K.questions, next);
+        // scores à zéro, joueurs gardés (ils n'ont pas à se réinscrire)
+        const players = await L.hgetallJson(K.players);
+        const writes = [];
+        for (const [pid, p] of Object.entries(players)) { p.score = 0; p.played = 0; writes.push(pid, JSON.stringify(p)); }
+        if (writes.length) await L.redis(["HSET", K.players].concat(writes));
+        Object.assign(state, { game: name, phase: state.phase === "off" ? "off" : "lobby", index: -1, counts: null, gains: null, done: false });
+        break;
+      }
+
+      case "game-delete": {
+        const name = L.str(body.name, 40);
+        if (name === (state.game || DEFAULT_GAME)) throw new L.HttpError(409, "On ne peut pas supprimer le jeu chargé.");
+        await L.redis(["HDEL", K.games, name]);
+        return L.send(res, 200, { ok: true });
+      }
 
       case "reset": {
         for (let r = 1; r <= (state.round || 0); r++) await L.redis(["DEL", K.answers(r)]);

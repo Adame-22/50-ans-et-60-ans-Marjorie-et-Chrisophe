@@ -895,3 +895,37 @@ body.admin { font-variant-numeric: lining-nums; }
 .regie__by { margin: -6px 0 0; text-align: center; }
 .regie__by:empty { display: none; }
 .qz-item__secs { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--muted); white-space: nowrap; }
+
+/* Quiz : les jeux (quiz de la famille, blind test…) */
+.qz-games__list { display: grid; gap: 8px; margin-top: .8rem; }
+.qz-game { display: flex; align-items: center; gap: .6rem; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; }
+.qz-game > div { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.qz-game small { color: var(--muted, #6b6b80); }
+.qz-game.is-current { border-color: var(--gold); background: #fffaf2; }
+
+/* Quiz : extrait musical d'une question */
+.qz-item.is-music { border-left: 4px solid var(--gold); }
+.qz-audio { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; padding: 8px; border-radius: 10px; background: #fff; border: 1px dashed var(--line); }
+.qz-audio img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex: none; }
+.qz-audio__txt { flex: 1 1 180px; display: grid; gap: 2px; min-width: 0; }
+.qz-audio__txt span { color: var(--muted, #6b6b80); font-size: .9rem; }
+.qz-audio__start { display: flex; align-items: center; gap: .3rem; white-space: nowrap; font-size: .9rem; }
+.qz-audio__start input { width: 4.2em !important; }
+.regie__song { margin: .2rem 0 .6rem; font-weight: 700; color: var(--gold); }
+
+/* Fenêtre « choisir un extrait » */
+.ms-search { display: flex; gap: .5rem; }
+.ms-search input { flex: 1; min-width: 0; font: inherit; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 10px; }
+.ms-mode { display: flex; flex-wrap: wrap; gap: .4rem 1rem; border: 0; padding: 0; margin: .8rem 0 .4rem; }
+.ms-mode legend { float: left; width: 100%; margin-bottom: .2rem; font-weight: 600; }
+.ms-mode label { display: inline-flex; align-items: center; gap: .3rem; }
+.ms-ideas { display: flex; flex-wrap: wrap; gap: 6px; margin: .4rem 0; }
+.ms-ideas .hint { flex-basis: 100%; margin: 0; }
+.ms-ideas .chip { font: inherit; font-size: .85rem; padding: .3rem .7rem; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--navy); cursor: pointer; }
+.ms-ideas .chip:hover, .ms-ideas .chip:focus-visible { border-color: var(--gold); outline: 0; }
+.ms-list { display: grid; gap: 8px; margin-top: .4rem; }
+.ms-item { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto auto; align-items: center; gap: .6rem; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.ms-item img, .ms-item > span { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; background: #eee; }
+.ms-item__txt { display: grid; gap: 2px; min-width: 0; }
+.ms-item__txt b, .ms-item__txt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-item__txt span { color: var(--muted, #6b6b80); font-size: .9rem; }

@@ -1954,6 +1954,7 @@
   // Régie : d'après l'étape en cours, ce que fait le gros bouton et ce que l'animateur annonce
   function nextStep(st, n) {
     var last = st.index >= n - 1;
+    if (!n && (st.phase === "off" || st.phase === "lobby")) return { label: "Ajoutez d'abord des questions (plus bas)", action: null };
     switch (st.phase) {
       case "lobby": return last ? { label: "Afficher le podium final", action: "podium" } : { label: "Lancer la question " + (st.index + 2), action: "start" };
       case "question": return { label: "Révéler la réponse", action: "reveal" };
@@ -1972,7 +1973,9 @@
     qz.d = d;
     $("#qz-phase").textContent = PHASES[st.phase] || st.phase;
     $("#qz-phase").className = "regie__phase regie__phase--" + st.phase;
-    $("#qz-index").textContent = (st.index >= 0 ? "Question " + (st.index + 1) + " sur " + n : n + " questions prêtes") + (d.teams ? " · par équipes" : "");
+    var game = st.game || "Quiz de bord";
+    $("#qz-index").textContent = (game !== "Quiz de bord" ? game + " · " : "") + (st.index >= 0 ? "Question " + (st.index + 1) + " sur " + n : n + " questions prêtes") + (d.teams ? " · par équipes" : "");
+    renderGames(d.games || [], st);
     $("#qz-by").textContent = st.by ? "Dernière action : " + st.by : "";
     $("#qz-players").textContent = d.players;
     $("#qz-dots").innerHTML = d.questions.map(function (x, i) {
@@ -1995,7 +1998,9 @@
           ? "Le quiz est en pause (arrêté après la question " + (st.index + 1) + "). « Reprendre le quiz » continue là où vous en étiez ; pour tout recommencer : « Autres options » puis « Tout remettre à zéro »."
           : "Avant de commencer : affichez l'écran géant sur le vidéoprojecteur (bouton en haut). Puis appuyez sur le gros bouton : l'écran montre le QR code pour rejoindre.",
       lobby: "Annoncez : « Sortez vos téléphones, scannez le QR code à l'écran et entrez votre prénom ! » " + plural(d.players, "joueur est", "joueurs sont") + " déjà là. Quand tout le monde est prêt, lancez la question.",
-      question: "Lisez la question à voix haute. Les invités répondent sur leur téléphone. Révélez la réponse quand le chrono est fini (ou quand tout le monde a répondu).",
+      question: q && q.audio
+        ? "🎵 Blind test : l'extrait passe sur l'écran géant (le son de l'écran doit être activé). Les invités répondent sur leur téléphone. Révélez la réponse quand le chrono est fini : la chanson repart avec sa pochette."
+        : "Lisez la question à voix haute. Les invités répondent sur leur téléphone. Révélez la réponse quand le chrono est fini (ou quand tout le monde a répondu).",
       reveal: q ? "Annoncez la bonne réponse : « " + LETTERS[q.answer] + " · " + q.choices[q.answer] + " ». " + plural(correct, "joueur a trouvé", "joueurs ont trouvé") + " sur " + total + "." : "",
       board: "Annoncez les leaders : " + podium + ". Puis passez à la suite.",
       podium: "Applaudissements pour le podium ! " + podium + ".",
@@ -2006,6 +2011,8 @@
     $("#qz-q").hidden = !showQ;
     if (showQ) {
       $("#qz-qtext").textContent = q.q;
+      $("#qz-song").hidden = !q.audio;
+      if (q.audio) $("#qz-song").textContent = "🎵 " + q.audio.title + " · " + q.audio.artist + (q.audio.year ? " (" + q.audio.year + ")" : "");
       var counts = st.counts || [];
       $("#qz-choices").innerHTML = q.choices.map(function (c, i) {
         var ok = i === q.answer, cnt = st.phase !== "question" && counts.length ? counts[i] || 0 : null;
@@ -2061,16 +2068,27 @@
   function renderQuizList() {
     $("#qz-list").innerHTML = qz.questions.map(function (q, i) {
       var ch = q.choices.concat(["", "", "", ""]).slice(0, 4);
-      return '<li class="qz-item" data-i="' + i + '">' +
+      return '<li class="qz-item' + (q.audio ? " is-music" : "") + '" data-i="' + i + '"' + (q.audio ? ' data-audio="' + esc(JSON.stringify(q.audio)) + '"' : "") + ">" +
         '<div class="qz-item__head"><input type="text" class="qz-item__q" data-f="q" value="' + esc(q.q) + '" placeholder="Question" maxlength="200" />' +
         '<label class="qz-item__secs"><input type="number" class="qz-item__time" data-f="time" min="5" max="60" value="' + q.time + '" aria-label="Durée en secondes" /> s</label></div>' +
         '<div class="qz-choices">' + ch.map(function (c, j) {
           return '<label class="qz-choice"><input type="radio" name="qz-ok-' + i + '" data-f="answer" value="' + j + '"' + (q.answer === j ? " checked" : "") + ' title="Bonne réponse" />' +
             '<input type="text" data-f="c' + j + '" value="' + esc(c) + '" placeholder="Réponse ' + "ABCD"[j] + '" maxlength="80" /></label>';
         }).join("") + "</div>" +
+        (q.audio ? audioBlock(q.audio, i) : "") +
         '<div class="qz-item__actions"><button type="button" class="btn btn--small btn--line" data-launch="' + i + '">Lancer celle-ci</button>' +
+        (q.audio ? "" : '<button type="button" class="btn btn--small btn--line" data-music="' + i + '">🎵 Ajouter un extrait</button>') +
         '<button type="button" class="btn btn--small btn--line btn--danger" data-del-q="' + i + '">Supprimer</button></div></li>';
     }).join("");
+  }
+
+  function audioBlock(a, i) {
+    return '<div class="qz-audio">' + (a.cover ? '<img src="' + esc(a.cover) + '" alt="" loading="lazy" />' : "") +
+      '<div class="qz-audio__txt"><b>🎵 ' + esc(a.title) + "</b><span>" + esc(a.artist) + (a.year ? " · " + esc(a.year) : "") + "</span></div>" +
+      '<label class="qz-audio__start">Début à <input type="number" data-f="start" min="0" max="25" value="' + (a.start || 0) + '" aria-label="Début de l\'extrait en secondes" /> s</label>' +
+      '<button type="button" class="btn btn--small btn--line" data-listen="' + i + '">▶ Écouter</button>' +
+      '<button type="button" class="btn btn--small btn--line" data-music="' + i + '">Changer</button>' +
+      '<button type="button" class="btn btn--small btn--line btn--danger" data-unmusic="' + i + '">Retirer</button></div>';
   }
 
   function readQuizList() {
@@ -2082,13 +2100,26 @@
       // On retire les réponses vides en gardant l'index de la bonne réponse cohérent
       var kept = [], newAnswer = 0;
       choices.forEach(function (c, j) { if (c) { if (j === answer) newAnswer = kept.length; kept.push(c); } });
-      return { q: get("q").trim(), choices: kept, answer: newAnswer, time: parseInt(get("time"), 10) || 20 };
+      var out = { q: get("q").trim(), choices: kept, answer: newAnswer, time: parseInt(get("time"), 10) || 20 };
+      var a = li.getAttribute("data-audio");
+      if (a) { out.audio = JSON.parse(a); out.audio.start = Math.min(25, Math.max(0, parseInt(get("start"), 10) || 0)); }
+      return out;
     });
   }
 
   $("#qz-list").addEventListener("input", function () { qz.dirty = true; $("#qz-save-state").textContent = "Modifications non enregistrées"; });
   $("#qz-list").addEventListener("click", function (e) {
     var del = e.target.getAttribute("data-del-q"), launch = e.target.getAttribute("data-launch");
+    var music = e.target.getAttribute("data-music"), unmusic = e.target.getAttribute("data-unmusic"), listen = e.target.getAttribute("data-listen");
+    if (music !== null) openMusic(parseInt(music, 10));
+    if (unmusic !== null) {
+      qz.questions = readQuizList(); delete qz.questions[parseInt(unmusic, 10)].audio; qz.dirty = true; renderQuizList();
+      $("#qz-save-state").textContent = "Modifications non enregistrées";
+    }
+    if (listen !== null) {
+      var it = readQuizList()[parseInt(listen, 10)];
+      if (it && it.audio) preview(it.audio.url, it.audio.start, e.target);
+    }
     if (del !== null) {
       if (!confirm("Supprimer la question " + (parseInt(del, 10) + 1) + " ? (Elle ne sera vraiment supprimée qu'en cliquant sur « Enregistrer les questions ».)")) return;
       qz.questions = readQuizList(); qz.questions.splice(parseInt(del, 10), 1); qz.dirty = true; renderQuizList();
@@ -2115,6 +2146,9 @@
       return v ? null : i + 1;
     }).filter(Boolean);
     if (bad.length) return toast("Question " + bad.join(", ") + " : la bonne réponse cochée est vide.", true);
+    // l'extrait dure 30 s : début + durée de la question ne doivent pas dépasser
+    var long = readQuizList().map(function (x, i) { return x.audio && x.audio.start + x.time > 30 ? i + 1 : null; }).filter(Boolean);
+    if (long.length) return toast("Question " + long.join(", ") + " : l'extrait ne dure que 30 s. Baissez le début ou la durée (début + durée ≤ 30).", true);
     var cur = qz.d && qz.d.state;
     if (cur && cur.phase !== "off" && !confirm("Le quiz est en cours. Enregistrer quand même ? (Ne supprimez pas ou ne déplacez pas les questions déjà jouées.)")) return;
     var list = readQuizList();
@@ -2122,6 +2156,147 @@
       qz.questions = d.questions; qz.qsig = JSON.stringify(d.questions); qz.dirty = false; renderQuizList();
       $("#qz-save-state").textContent = "Enregistré ✓"; toast("Questions enregistrées.");
     }).catch(function (err) { toast(err.message, true); });
+  });
+
+  $("#qz-add-music").addEventListener("click", function () {
+    qz.questions = readQuizList().concat([{ q: "", choices: ["", "", "", ""], answer: 0, time: 20 }]);
+    qz.dirty = true; renderQuizList();
+    $("#qz-save-state").textContent = "Modifications non enregistrées";
+    openMusic(qz.questions.length - 1);
+  });
+
+  /* Blind test : écouter un extrait dans l'admin */
+  var previewAudio = null, previewBtn = null;
+  function preview(url, start, btn) {
+    if (!previewAudio) previewAudio = new Audio();
+    var same = previewBtn === btn && !previewAudio.paused;
+    previewAudio.pause();
+    if (previewBtn) previewBtn.textContent = previewBtn.getAttribute("data-label") || "▶ Écouter";
+    previewBtn = null;
+    if (same || !url) return;
+    if (!btn.getAttribute("data-label")) btn.setAttribute("data-label", btn.textContent);
+    previewBtn = btn;
+    btn.textContent = "■ Stop";
+    if (previewAudio.src !== url) previewAudio.src = url;
+    var go = function () { try { previewAudio.currentTime = start || 0; } catch (e) { /* ignoré */ } previewAudio.play().catch(function () { toast("Impossible de lire l'extrait.", true); }); };
+    if (previewAudio.readyState >= 1) go(); else previewAudio.addEventListener("loadedmetadata", go, { once: true });
+    previewAudio.onended = function () { if (previewBtn === btn) { btn.textContent = btn.getAttribute("data-label"); previewBtn = null; } };
+  }
+  function stopPreview() { if (previewAudio) previewAudio.pause(); if (previewBtn) previewBtn.textContent = previewBtn.getAttribute("data-label") || "▶ Écouter"; previewBtn = null; }
+
+  /* Blind test : chercher et choisir un extrait */
+  var ms = { index: -1, results: [] };
+  function openMusic(i) {
+    ms.index = i;
+    var q = readQuizList()[i] || {};
+    $("#ms-title").textContent = "Question " + (i + 1) + " : choisir un extrait";
+    $("#ms-list").innerHTML = "";
+    $("#ms-state").textContent = "";
+    $("#ms-q").value = q.audio ? q.audio.title + " " + q.audio.artist : "";
+    $("#music-sheet").showModal();
+    $("#ms-q").focus();
+    // idées : les chansons proposées par les invités sur la page Radio
+    api("/api/radio").then(function (d) {
+      var songs = (d.songs || []).slice(0, 12);
+      $("#ms-ideas").innerHTML = songs.length ? '<p class="hint hint--tiny">Idées proposées par les invités (page Radio) :</p>' + songs.map(function (x) {
+        return '<button type="button" class="chip" data-idea="' + esc(x.title + " " + (x.artist || "")) + '">' + esc(x.title) + (x.artist ? " · " + esc(x.artist) : "") + "</button>";
+      }).join("") : "";
+    }).catch(function () { $("#ms-ideas").innerHTML = ""; });
+  }
+  function searchMusic() {
+    var term = $("#ms-q").value.trim();
+    if (term.length < 2) return;
+    $("#ms-state").textContent = "Recherche…";
+    $("#ms-list").innerHTML = "";
+    api("/api/quiz?view=music&q=" + encodeURIComponent(term)).then(function (d) {
+      ms.results = d.results || [];
+      $("#ms-state").textContent = ms.results.length ? "Touchez ▶ pour écouter, puis « Choisir »." : "Aucun extrait trouvé. Essayez avec le nom du chanteur.";
+      $("#ms-list").innerHTML = ms.results.map(function (r, k) {
+        return '<div class="ms-item">' + (r.cover ? '<img src="' + esc(r.cover) + '" alt="" loading="lazy" />' : "<span></span>") +
+          '<div class="ms-item__txt"><b>' + esc(r.title) + "</b><span>" + esc(r.artist) + (r.year ? " · " + esc(r.year) : "") + "</span></div>" +
+          '<button type="button" class="btn btn--small btn--line" data-ms-play="' + k + '">▶</button>' +
+          '<button type="button" class="btn btn--small btn--gold" data-ms-pick="' + k + '">Choisir</button></div>';
+      }).join("");
+    }).catch(function (err) { $("#ms-state").textContent = err.message; });
+  }
+  $("#ms-form").addEventListener("submit", function (e) { e.preventDefault(); searchMusic(); });
+  $("#ms-ideas").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-idea]");
+    if (b) { $("#ms-q").value = b.getAttribute("data-idea"); searchMusic(); }
+  });
+  $all("[data-ms-close]").forEach(function (b) { b.addEventListener("click", function () { $("#music-sheet").close(); }); });
+  $("#music-sheet").addEventListener("close", stopPreview);
+  var normTxt = function (t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\(.*?\)|\[.*?\]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); };
+  $("#ms-list").addEventListener("click", function (e) {
+    var play = e.target.getAttribute("data-ms-play"), pick = e.target.getAttribute("data-ms-pick");
+    if (play !== null) preview(ms.results[+play].url, 0, e.target);
+    if (pick === null) return;
+    var r = ms.results[+pick], byArtist = $('[name="ms-mode"]:checked').value === "artist";
+    qz.questions = readQuizList();
+    var q = qz.questions[ms.index];
+    q.audio = { url: r.url, cover: r.cover, title: r.title, artist: r.artist, year: r.year, start: q.audio ? q.audio.start : 0 };
+    var good = (byArtist ? r.artist : r.title).slice(0, 80);
+    var autoText = !q.q || /^🎵 (Quel est ce titre|Qui chante)/.test(q.q);
+    if (autoText) q.q = byArtist ? "🎵 Qui chante cette chanson ?" : "🎵 Quel est ce titre ?";
+    // réponses : la bonne + des leurres pris dans les autres résultats (à vérifier), placée au hasard
+    if (autoText || !q.choices.filter(Boolean).length) {
+      var seen = {}; seen[normTxt(good)] = 1;
+      var decoys = ms.results.map(function (x) { return (byArtist ? x.artist : x.title).slice(0, 80); })
+        .filter(function (t) { var k = normTxt(t); if (!k || seen[k]) return false; seen[k] = 1; return true; }).slice(0, 3);
+      while (decoys.length < 3) decoys.push("");
+      var at = Math.floor(Math.random() * 4);
+      decoys.splice(at, 0, good);
+      q.choices = decoys; q.answer = at;
+    }
+    qz.dirty = true; renderQuizList();
+    $("#qz-save-state").textContent = "Modifications non enregistrées";
+    $("#music-sheet").close();
+    toast("Extrait ajouté. Vérifiez les 4 réponses, puis « Enregistrer les questions ».");
+    var li = $all(".qz-item")[ms.index];
+    if (li) li.scrollIntoView({ block: "center", behavior: "smooth" });
+  });
+
+  /* Les jeux : quiz de la famille, blind test… */
+  var gamesSig = "";
+  function renderGames(games, st) {
+    var sig = JSON.stringify(games) + st.phase + st.done;
+    if (sig === gamesSig) return;
+    gamesSig = sig;
+    var busy = ["question", "reveal"].indexOf(st.phase) >= 0 || (st.phase === "board" && !st.done);
+    $("#qz-list-title").textContent = "Les questions · " + (st.game || "Quiz de bord");
+    $("#qz-games").innerHTML = games.map(function (g) {
+      return '<div class="qz-game' + (g.current ? " is-current" : "") + '"><div><b>' + esc(g.name) + "</b><small>" + g.count + " question" + (g.count > 1 ? "s" : "") +
+        (g.music ? " · 🎵 " + g.music + " extrait" + (g.music > 1 ? "s" : "") : "") + "</small></div>" +
+        (g.current ? '<span class="pill">En cours</span>'
+          : '<button type="button" class="btn btn--small btn--gold" data-game="' + esc(g.name) + '"' + (busy ? " disabled title=\"Terminez d'abord la partie en cours\"" : "") + ">Jouer ce jeu</button>" +
+            '<button type="button" class="btn btn--small btn--line btn--danger" data-game-del="' + esc(g.name) + '" aria-label="Supprimer ' + esc(g.name) + '">×</button>') + "</div>";
+    }).join("");
+  }
+  function gameCall(body, msg) {
+    return api("/api/quiz", { method: "POST", body: body }).then(function () {
+      qz.questions = null; qz.qsig = ""; gamesSig = ""; qz.dirty = false;
+      $("#qz-save-state").textContent = "";
+      toast(msg); startQuizAdmin();
+    }).catch(function (err) { toast(err.message, true); });
+  }
+  $("#qz-games").addEventListener("click", function (e) {
+    var name = e.target.getAttribute("data-game"), del = e.target.getAttribute("data-game-del");
+    if (name !== null) {
+      if (qz.dirty) return toast("Enregistrez d'abord les questions.", true);
+      if (!confirm("Passer au jeu « " + name + " » ?\n\nLes invités restent connectés et tout le monde repart de zéro point. Les questions du jeu actuel sont gardées.")) return;
+      gameCall({ action: "game", name: name }, "Jeu « " + name + " » chargé.");
+    }
+    if (del !== null) {
+      if (!confirm("Supprimer le jeu « " + del + " » et toutes ses questions ?")) return;
+      api("/api/quiz", { method: "POST", body: { action: "game-delete", name: del } }).then(function () { gamesSig = ""; toast("Jeu supprimé."); startQuizAdmin(); })
+        .catch(function (err) { toast(err.message, true); });
+    }
+  });
+  $("#qz-game-new").addEventListener("click", function () {
+    if (qz.dirty) return toast("Enregistrez d'abord les questions.", true);
+    var name = (prompt("Nom du nouveau jeu ?", "Blind test") || "").trim();
+    if (!name) return;
+    gameCall({ action: "game", name: name, create: true }, "Jeu « " + name + " » créé : ajoutez ses questions.");
   });
 
   function quizAction(action, extra) {

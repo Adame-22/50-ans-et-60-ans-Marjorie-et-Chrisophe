@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261106" />
-  <link rel="stylesheet" href="css/style.css?v=20261106" />
-  <link rel="stylesheet" href="css/admin.css?v=20261106" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261107" />
+  <link rel="stylesheet" href="css/style.css?v=20261107" />
+  <link rel="stylesheet" href="css/admin.css?v=20261107" />
 </head>
 <body class="admin">
 
@@ -431,6 +431,7 @@
 
         <div class="regie__q" id="qz-q" hidden>
           <p class="regie__qtext" id="qz-qtext"></p>
+          <p class="regie__song" id="qz-song" hidden></p>
           <ul class="regie__choices" id="qz-choices"></ul>
         </div>
 
@@ -460,11 +461,22 @@
         </div>
       </div>
 
+      <div class="card qz-games">
+        <div class="toolbar">
+          <h3 style="margin:0">Les jeux</h3>
+          <span class="toolbar__grow"></span>
+          <button class="btn btn--small btn--line" id="qz-game-new" type="button">+ Nouveau jeu</button>
+        </div>
+        <p class="hint">Préparez plusieurs jeux : le quiz de la famille, un blind test… Pour passer à un autre jeu pendant la soirée, touchez « Jouer ce jeu » : les invités restent connectés et tout le monde repart de zéro point.</p>
+        <div class="qz-games__list" id="qz-games"></div>
+      </div>
+
       <div class="card">
         <div class="toolbar">
-          <h3 style="margin:0">Les questions</h3>
+          <h3 style="margin:0" id="qz-list-title">Les questions</h3>
           <span class="toolbar__grow"></span>
           <span class="save-state" id="qz-save-state"></span>
+          <button class="btn btn--small btn--line" id="qz-add-music" type="button">+ Question musicale</button>
           <button class="btn btn--small btn--line" id="qz-add" type="button">+ Ajouter une question</button>
           <button class="btn btn--small btn--gold" id="qz-save" type="button">Enregistrer les questions</button>
         </div>
@@ -721,6 +733,37 @@
     </form>
   </dialog>
 
+  <!-- Blind test : choisir un extrait -->
+  <dialog class="sheet" id="music-sheet" aria-labelledby="ms-title">
+    <form method="dialog" id="ms-form">
+      <header class="sheet__head">
+        <div>
+          <p class="sheet__kicker" id="ms-kicker">Blind test</p>
+          <h3 id="ms-title">Choisir un extrait</h3>
+        </div>
+        <button type="button" class="sheet__close" data-ms-close aria-label="Fermer">×</button>
+      </header>
+      <div class="sheet__body">
+        <div class="ms-search">
+          <input type="search" id="ms-q" placeholder="Titre et/ou chanteur, ex. Goldman Je te donne" autocomplete="off" />
+          <button type="submit" class="btn btn--small btn--gold">Chercher</button>
+        </div>
+        <fieldset class="ms-mode">
+          <legend>Les invités devinent :</legend>
+          <label><input type="radio" name="ms-mode" value="title" checked /> le titre</label>
+          <label><input type="radio" name="ms-mode" value="artist" /> le chanteur</label>
+        </fieldset>
+        <div class="ms-ideas" id="ms-ideas"></div>
+        <p class="hint hint--tiny" id="ms-state" role="status"></p>
+        <div class="ms-list" id="ms-list"></div>
+        <p class="hint hint--tiny">Extraits de 30 secondes fournis gratuitement par Apple (iTunes). Le soir, ils passent sur les haut-parleurs de l'écran géant.</p>
+      </div>
+      <footer class="sheet__foot">
+        <button type="button" class="btn btn--small btn--line" data-ms-close>Fermer</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog class="modal" id="code-modal">
     <p class="eyebrow">Code provisoire</p>
     <h3 id="code-title"></h3>
@@ -739,9 +782,9 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261106"></script>
+  <script src="js/graph.js?v=20261107"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261106"></script>
-  <script src="js/admin.js?v=20261106"></script>
+  <script src="js/xlsx.js?v=20261107"></script>
+  <script src="js/admin.js?v=20261107"></script>
 </body>
 </html>

@@ -186,7 +186,8 @@
       '<div class="ticket fx-rise">' +
       '<div class="ticket__head"><span>Vol MC 5060</span><span class="ticket__live"><i></i>Embarquement</span></div>' +
       '<div class="ticket__body"><p class="ticket__label">Passager</p><p class="ticket__name">' + esc(me.name) + "</p>" +
-      '<p class="ticket__text">Vous êtes à bord&nbsp;! Gardez cette page ouverte et les yeux sur l\'écran géant&nbsp;: les questions vont arriver.</p>' + extra + "</div>" +
+      '<p class="ticket__text">Vous êtes à bord&nbsp;! Gardez cette page ouverte et les yeux sur l\'écran géant&nbsp;: les questions vont arriver.</p>' +
+      (state.game && state.game !== "Quiz de bord" ? '<p class="ticket__text">Prochain jeu&nbsp;: <b>' + esc(state.game) + "</b>. Tout le monde repart de zéro point.</p>" : "") + extra + "</div>" +
       '<div class="ticket__stub"><span>Porte <b>A50</b></span><span>À bord <b>' + (n || 1) + '</b></span><span>Statut <b>Prêt</b></span></div></div>';
     var btn = document.getElementById("q-link");
     if (btn) btn.addEventListener("click", function () {
@@ -207,7 +208,7 @@
     var q = state.question;
     app.innerHTML =
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + "</span></div>" +
-      '<p class="q-text fx-rise">' + esc(q.q) + "</p>" +
+      '<p class="q-text fx-rise">' + esc(q.q) + "</p>" + (q.audio ? '<p class="q-music">🎵 Ouvrez grand les oreilles…</p>' : "") +
       '<div class="q-ready"><span id="q-count">3</span><p>Préparez-vous…</p></div>';
     clearTimeout(startTimer);
     (function tick() {
@@ -220,6 +221,17 @@
     })();
   }
 
+  // Blind test : la musique passe sur l'écran géant, pas sur les téléphones
+  function musicBanner(q) {
+    return q.audio ? '<p class="q-music"><span class="q-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Écoutez l\'extrait sur l\'écran géant</p>' : "";
+  }
+  function songCard(q) {
+    var a = q.audio;
+    if (!a || !a.title) return "";
+    return '<div class="q-song fx-rise">' + (a.cover ? '<img src="' + esc(a.cover) + '" alt="" loading="lazy" />' : "") +
+      "<div><b>" + esc(a.title) + "</b><span>" + esc(a.artist) + (a.year ? " · " + esc(a.year) : "") + "</span></div></div>";
+  }
+
   function renderQuestion() {
     var q = state.question, k = rk(), mine = mem.ans[k];
     if (mine !== undefined) return renderSent();
@@ -227,7 +239,7 @@
     app.innerHTML =
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
       '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
-      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" +
+      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) +
       '<div class="choices choices--kahoot" id="choices">' +
       q.choices.map(function (c, i) {
         return '<button class="choice-btn k' + i + '" data-i="' + i + '" style="animation-delay:' + (0.06 * i) + 's">' + badge(i) + '<span class="choice-btn__txt">' + esc(c) + "</span></button>";
@@ -277,7 +289,7 @@
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
       '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
       '<div class="sent k' + mine + ' fx-rise">' + badge(mine) + '<p class="sent__txt">' + esc(q.choices[mine]) + "</p></div>" +
-      '<p class="sent__title">Réponse envoyée&nbsp;!</p>' +
+      '<p class="sent__title">Réponse envoyée&nbsp;!</p>' + musicBanner(q) +
       '<p class="center muted" id="q-answered"></p>';
     updateAnswered();
     runTimer();
@@ -327,7 +339,7 @@
       '<p class="verdict-screen__title">' + (!answered ? "Pas de réponse" : ok ? "Bonne réponse&nbsp;!" : "Raté&nbsp;!") + "</p>" +
       '<p class="verdict-screen__pts">' + (ok ? "+" + gain + " points" : answered ? "C'était : " + esc(q.choices[state.correct]) : "La bonne réponse : " + esc(q.choices[state.correct])) + "</p>" +
       (ok && s >= 2 ? '<p class="verdict-screen__streak">🔥 ' + s + " bonnes réponses d'affilée&nbsp;!</p>" : "") +
-      "</div>" +
+      "</div>" + songCard(q) +
       (r ? '<div class="rankline"><span>' + ord(r.rank) + " sur " + r.total + (move > 0 ? ' <em class="up">▲ ' + move + "</em>" : move < 0 ? ' <em class="down">▼ ' + (-move) + "</em>" : "") + "</span><span><b>" + r.score + "</b> pts</span></div>" +
         (r.ahead ? '<p class="gap">à ' + (r.ahead.score - r.score) + " pts de " + esc(r.ahead.name) + "</p>" : r.rank === 1 && r.score > 0 ? '<p class="gap">Vous êtes en tête&nbsp;!</p>' : "") : "") +
       (t ? '<div class="rankline rankline--team" style="--team:' + esc(t.color) + '"><span>Équipe ' + esc(t.name) + " · " + ord(t.rank) + "</span><span>" + t.score + " pts</span></div>" : "") +
@@ -377,7 +389,7 @@
     var t = myTeam(), k = rk();
     // Pas encore inscrit : on ne redessine pas le formulaire pendant qu'il tape son prénom
     var key = !me ? (state.phase === "off" ? "off" : "join")
-      : [state.phase, k, state.index, me.pid, mem.ans[k], t ? t.id : "", state.teamMode ? 1 : 0, state.scoring ? 1 : 0, state.done ? 1 : 0].join("|");
+      : [state.phase, k, state.index, me.pid, mem.ans[k], t ? t.id : "", state.teamMode ? 1 : 0, state.scoring ? 1 : 0, state.done ? 1 : 0, state.game || ""].join("|");
     if (me && state.phase === "question" && state.startedAt && now() < state.startedAt) key += "|wait";
     if (me && (state.phase === "reveal" || state.phase === "board" || state.phase === "podium")) key += "|" + JSON.stringify(myRank()) + JSON.stringify(t) + (state.teams ? state.teams.length : 0);
     if (key === viewKey) {
