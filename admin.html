@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261102" />
-  <link rel="stylesheet" href="css/style.css?v=20261102" />
-  <link rel="stylesheet" href="css/admin.css?v=20261102" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261103" />
+  <link rel="stylesheet" href="css/style.css?v=20261103" />
+  <link rel="stylesheet" href="css/admin.css?v=20261103" />
 </head>
 <body class="admin">
 
@@ -77,6 +77,7 @@
       <button role="tab" data-tab="liste">Liste prévue</button>
       <button role="tab" data-tab="cabine">Tables</button>
       <button role="tab" data-tab="envois">Messages</button>
+      <button role="tab" data-tab="discussion">Discussion <span class="tab-badge" id="ch-badge" hidden></span></button>
       <button role="tab" data-tab="partager" data-more>Partager le site</button>
       <button role="tab" data-tab="equipes" data-more>Équipes</button>
       <button role="tab" data-tab="quiz" data-more data-nospoil>Quiz</button>
@@ -116,6 +117,30 @@
         <button type="button" class="home__act" data-go="envois"><i aria-hidden="true">✉</i><b>Prévenir les invités</b><small>le rappel avant la fête, un message à tous</small></button>
         <button type="button" class="home__act" data-go="partager"><i aria-hidden="true">↗</i><b>Envoyer le lien du site</b><small>à quelqu'un qui ne l'a pas reçu</small></button>
       </div>
+
+      <div class="card home__exports">
+        <h3>Télécharger pour Excel</h3>
+        <p class="hint">Les fichiers s'ouvrent dans Excel, Numbers ou Google Sheets, sur ordinateur comme sur téléphone.</p>
+        <div class="home__dl">
+          <button type="button" class="home__file" data-export="invites"><b>La liste des invités</b><small>une ligne par personne : midi, soir, régime, table</small></button>
+          <button type="button" class="home__file" data-export="traiteur"><b>Pour le traiteur</b><small>les totaux midi et soir, les régimes et allergies</small></button>
+          <button type="button" class="home__file" data-export="tables"><b>Le plan de table</b><small>qui est à quelle table</small></button>
+          <button type="button" class="home__file" data-export="liste"><b>Ma liste à jour</b><small>votre fichier, avec qui est inscrit</small></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Discussion de l'équipe -->
+    <section class="panel" id="tab-discussion" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>Discussion</h2><p>Pour s'organiser entre vous : une question, une info, un « c'est fait ».</p></div>
+      <p class="alert chat__warn" data-not-host>Marjorie et Christophe lisent aussi cette discussion : <b>pas de surprises ici !</b></p>
+      <div class="card chat">
+        <div class="chat__list" id="ch-list" aria-live="polite"><p class="chat__empty">Chargement…</p></div>
+        <form class="chat__form" id="ch-form" novalidate>
+          <textarea id="ch-text" rows="2" maxlength="1000" placeholder="Votre message…" aria-label="Votre message"></textarea>
+          <button class="btn btn--gold" type="submit">Envoyer</button>
+        </form>
+      </div>
     </section>
 
     <!-- Manifeste -->
@@ -142,7 +167,7 @@
         <input type="search" id="m-search" placeholder="Rechercher un nom, un e-mail…" aria-label="Rechercher un invité" />
         <div class="guest-tools__actions">
           <button class="btn btn--small btn--gold" id="m-add" type="button">+ Ajouter une inscription</button>
-          <button class="btn btn--small btn--line" id="m-export" type="button">Exporter (Excel)</button>
+          <button class="btn btn--small btn--line" id="m-export" type="button">Télécharger (Excel)</button>
           <a class="btn btn--small btn--line" id="m-backup" data-nospoil href="/api/backup" download title="Réponses, tables, équipes, quiz, messages, radio et comptes (sans mots de passe) dans un fichier">Sauvegarde</a>
         </div>
       </div>
@@ -179,7 +204,7 @@
           <label class="btn btn--small btn--gold" for="l-file">Choisir le fichier Excel</label>
           <input id="l-file" type="file" accept=".xlsx,.csv,.txt" hidden />
           <button class="btn btn--small btn--line" id="l-paste-btn" type="button">Coller depuis Excel</button>
-          <button class="btn btn--small btn--line" id="l-export" type="button" hidden>Télécharger la liste à jour</button>
+          <button class="btn btn--small btn--line" id="l-export" type="button" hidden>Télécharger la liste à jour (Excel)</button>
         </div>
         <form class="liste-paste" id="l-paste" hidden novalidate>
           <textarea id="l-paste-text" rows="6" placeholder="Dans Excel : sélectionnez le tableau (avec la ligne des titres), Copier, puis Coller ici."></textarea>
@@ -295,8 +320,8 @@
 
     <!-- Plan de cabine -->
     <section class="panel" id="tab-cabine" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>Les tables</h2><p>Le jour J, chacun scanne le QR code de sa table et le plan se remplit tout seul. Pour déplacer quelqu'un, <b>faites glisser son nom</b> sur une autre table.</p></div>
       <div class="toolbar">
-        <p class="hint">Les invités s'installent où ils veulent et le déclarent en scannant le QR code de leur table&nbsp;: le plan se remplit tout seul, en direct. Vous pouvez corriger en faisant glisser un passager.</p>
         <span class="toolbar__grow"></span>
         <span class="save-state" id="c-state"></span>
         <a class="btn btn--small btn--line" href="/qr" target="_blank" rel="noopener">QR codes des tables</a>
@@ -322,6 +347,7 @@
 
     <!-- Constellation (graphe façon Obsidian) -->
     <section class="panel" id="tab-constellation" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>Vue d'ensemble</h2><p>Tous les invités d'un coup d'œil. Touchez un nom pour voir le détail.</p></div>
       <div class="toolbar">
         <div class="seg" role="group" aria-label="Regrouper par">
           <button type="button" data-group="table" aria-pressed="true">Par table</button>
@@ -348,6 +374,7 @@
 
     <!-- Équipes -->
     <section class="panel" id="tab-equipes" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>Les équipes</h2><p>Pour le quiz du jour J. Rien à faire avant : par défaut, chaque table forme une équipe.</p></div>
       <div class="card teams-setup">
         <div class="teams-setup__row">
           <div class="seg seg--wrap" role="group" aria-label="Façon de former les équipes">
@@ -375,6 +402,7 @@
 
     <!-- Quiz -->
     <section class="panel" id="tab-quiz" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>Le quiz</h2><p>À lancer pendant la fête : suivez les boutons dans l'ordre, de 1 à 4.</p></div>
       <div class="card quiz-host">
         <div class="quiz-host__status">
           <div><span>Phase</span><strong id="qz-phase">–</strong></div>
@@ -410,8 +438,8 @@
 
     <!-- Boîte noire (modération) -->
     <section class="panel" id="tab-boite" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>La Boîte noire</h2><p>Les messages et photos laissés par les invités. Supprimez ce qui ne doit pas passer sur l'écran de la soirée.</p></div>
       <div class="toolbar">
-        <p class="hint">Messages et photos laissés par les invités sur <a href="/boite" target="_blank" rel="noopener">/boite</a>. Supprimez ce qui ne doit pas apparaître sur l'écran géant.</p>
         <span class="toolbar__grow"></span>
         <span class="pill" id="bn-count">0</span>
       </div>
@@ -438,11 +466,12 @@
 
     <!-- Radio de bord (vue DJ) -->
     <section class="panel" id="tab-radio" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>La radio</h2><p>Les chansons proposées par les invités, les plus votées en premier.</p></div>
       <div class="toolbar">
-        <p class="hint">Propositions des invités sur <a href="/radio" target="_blank" rel="noopener">/radio</a>, les plus votées en premier. Actualisation automatique. Playlist : <a href="https://open.spotify.com/playlist/4uputorzDEUxb8xpZmzif9" target="_blank" rel="noopener">ouvrir dans Spotify</a>.</p>
+        <p class="hint">Les invités proposent et votent sur la page <a href="/radio" target="_blank" rel="noopener">Radio</a> du site. <a href="https://open.spotify.com/playlist/4uputorzDEUxb8xpZmzif9" target="_blank" rel="noopener">Ouvrir la playlist Spotify</a>.</p>
       </div>
       <div class="card table-wrap">
-        <table class="table" id="radio-table">
+        <table class="table table--stack" id="radio-table">
           <thead><tr><th>Votes</th><th>Titre</th><th>Artiste</th><th>Proposée</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
@@ -452,6 +481,7 @@
 
     <!-- Comptes -->
     <section class="panel" id="tab-comptes" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>Les comptes</h2><p>Qui peut se connecter à cet espace, et ce que chacun peut faire.</p></div>
       <form class="card" id="acc-form" novalidate>
         <h3>Créer un compte</h3>
         <div class="grid-4">
@@ -459,7 +489,7 @@
           <div class="field"><label for="acc-user">Identifiant</label><input id="acc-user" name="username" autocapitalize="none" spellcheck="false" placeholder="auto" /></div>
           <div class="field"><label for="acc-role">Rôle</label>
             <select id="acc-role" name="role">
-              <option value="equipage">Équipage : manifeste et plan</option>
+              <option value="equipage">Équipage : les invités et les tables</option>
               <option value="admin">Commandant : tout, y compris les comptes</option>
               <option value="hote">Fêté·e : Marjorie ou Christophe, tout sauf les surprises</option>
             </select></div>
@@ -469,7 +499,7 @@
       </form>
 
       <div class="card table-wrap">
-        <table class="table" id="acc-table">
+        <table class="table table--stack" id="acc-table">
           <thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
@@ -478,6 +508,7 @@
 
     <!-- Partager le site -->
     <section class="panel" id="tab-partager" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>Partager le site</h2><p>Montrez ce QR code ou envoyez le lien à un invité qui ne l'a pas reçu.</p></div>
       <div class="card share">
         <div class="share__qr" id="sh-qr" aria-label="QR code du site"></div>
         <div class="share__info">
@@ -511,6 +542,7 @@
 
     <!-- Mon compte -->
     <section class="panel" id="tab-moi" role="tabpanel" hidden>
+      <div class="panel__intro"><h2>Mon compte</h2><p>Votre mot de passe, et des codes de secours en cas d'oubli.</p></div>
       <form class="card narrow" id="pass-form" novalidate>
         <h3>Changer mon mot de passe</h3>
         <div class="field"><label for="p-current">Mot de passe actuel</label><input id="p-current" name="current" type="password" autocomplete="current-password" required /></div>
@@ -652,8 +684,9 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261102"></script>
+  <script src="js/graph.js?v=20261103"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261102"></script>
+  <script src="js/xlsx.js?v=20261103"></script>
+  <script src="js/admin.js?v=20261103"></script>
 </body>
 </html>

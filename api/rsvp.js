@@ -109,6 +109,7 @@ function report(all) {
 }
 
 const K_LISTE = "mc:liste";
+const K_CHAT = "mc:chat"; // discussion de l'équipe dans l'admin (les fêtés la voient aussi)
 
 module.exports = L.handler(async (req, res) => {
   const q = L.query(req);
@@ -150,6 +151,26 @@ module.exports = L.handler(async (req, res) => {
         if (g.length > 1) { await mergeGroup(g); merged += g.length - 1; }
       }
       return L.send(res, 200, { ok: true, merged });
+    }
+    // Discussion de l'équipe : écrire, ou effacer son propre message (le super admin peut tout effacer)
+    if (b.action === "chat-post" || b.action === "chat-del") {
+      const me = await L.requireUser(req);
+      const raw = await L.redis(["GET", K_CHAT]);
+      let msgs = raw ? JSON.parse(raw) : [];
+      if (b.action === "chat-post") {
+        await L.rateLimit(req, "chat", 30, 60);
+        const text = L.str(b.text, 1000);
+        if (!text) throw new L.HttpError(400, "Écrivez un message.");
+        msgs.push({ id: crypto.randomBytes(6).toString("hex"), user: me.username, by: me.name || me.username, text, at: new Date().toISOString() });
+        msgs = msgs.slice(-500);
+      } else {
+        const m = msgs.find((x) => x.id === L.str(b.id, 20));
+        if (!m) throw new L.HttpError(404, "Message introuvable.");
+        if (m.user !== me.username && me.role !== "superadmin") throw new L.HttpError(403, "Vous ne pouvez effacer que vos messages.");
+        msgs = msgs.filter((x) => x !== m);
+      }
+      await L.redis(["SET", K_CHAT, JSON.stringify(msgs)]);
+      return L.send(res, 200, { messages: msgs, me: me.username });
     }
     // Liste prévue (fichier Excel des familles invitées), croisée avec les inscriptions dans l'admin
     if (b.action === "liste-save") {
@@ -266,6 +287,11 @@ module.exports = L.handler(async (req, res) => {
   }
 
   const me = await L.requireUser(req);
+
+  if (req.method === "GET" && q.get("view") === "chat") {
+    const raw = await L.redis(["GET", K_CHAT]);
+    return L.send(res, 200, { messages: raw ? JSON.parse(raw) : [], me: me.username });
+  }
 
   if (req.method === "GET" && q.get("view") === "liste") {
     const raw = await L.redis(["GET", K_LISTE]);

@@ -108,6 +108,7 @@
     var host = user.role === "hote";
     document.body.classList.toggle("is-host", host);
     $all("[data-nospoil]").forEach(function (el) { el.hidden = host; });
+    $all("[data-not-host]").forEach(function (el) { el.hidden = host; });
     if (user.role === "superadmin" && $("#bk-left")) $("#bk-left").textContent = user.backupLeft ? user.backupLeft + " code(s) de secours encore valable(s)." : "Aucun code de secours pour l'instant.";
   }
 
@@ -116,6 +117,7 @@
     if (user.mustChange) return showView("password");
     showView("app");
     selectTab(location.hash.slice(1) || "accueil");
+    pollChat();
   }
 
   /* ───────── Connexion ───────── */
@@ -172,6 +174,7 @@
     $all(".panel").forEach(function (p) { p.hidden = p.id !== "tab-" + name; });
     history.replaceState(null, "", "#" + name);
     if (name === "accueil") loadHome();
+    if (name === "discussion") startChat(); else stopChat();
     if (name === "manifeste") { loadRsvps(); loadNotify(); }
     if (name === "envois") { loadRsvps(); loadNotify(); loadAnnounce(); }
     if (name === "liste") { loadListe(); loadNotify(); }
@@ -199,7 +202,7 @@
   }
   function loadHome() {
     $("#h-countdown").textContent = countdown();
-    Promise.all([api("/api/rsvp"), api("/api/rsvp?view=liste").catch(function () { return { rows: [] }; }), api("/api/rsvp?view=notify").catch(function () { return notify; })])
+    Promise.all([api("/api/rsvp"), api("/api/rsvp?view=liste").catch(function () { return { rows: [] }; }), api("/api/rsvp?view=notify").catch(function () { return notify; }), fetchChat().catch(function () {})])
       .then(function (res) {
         state.rsvps = res[0].rsvps;
         liste = res[1];
@@ -230,6 +233,8 @@
       $("#h-fam-box").hidden = true;
       todo.push({ txt: "Importez votre liste Excel pour voir qui manque encore.", btn: "Importer", go: "liste" });
     }
+    var unread = unreadCount();
+    if (unread) todo.unshift({ txt: plural(unread, "nouveau message", "nouveaux messages") + " dans la discussion.", btn: "Lire", go: "discussion" });
     var today = new Date(), toRemind = yes.filter(function (r) { return r.email && !r.remindedAt; }).length;
     var noMail = yes.filter(function (r) { return !r.email; }).length;
     if (today >= REMIND_FROM && today < EVENT_DAY && toRemind) todo.push({ txt: "Envoyer le rappel avant la fête à " + plural(toRemind, "inscription", "inscriptions") + (noMail ? ", et prévenir par WhatsApp les " + noMail + " sans e-mail" : "") + ".", btn: "Envoyer", go: "envois", hot: true });
@@ -258,6 +263,84 @@
     $(".tabs").classList.toggle("is-more", open);
     this.setAttribute("aria-expanded", String(open));
     this.innerHTML = (open ? "Moins" : "Plus") + ' <span aria-hidden="true">' + (open ? "▴" : "▾") + "</span>";
+  });
+
+  /* ───────── Discussion de l'équipe ───────── */
+  var chat = { msgs: [], me: "", timer: null, bg: null };
+  function chatSeen() { try { return localStorage.getItem("mc-chat-seen") || ""; } catch (e) { return ""; } }
+  function setChatSeen(at) { try { localStorage.setItem("mc-chat-seen", at); } catch (e) { /* ignoré */ } }
+  function unreadCount() {
+    var seen = chatSeen();
+    return chat.msgs.filter(function (m) { return m.user !== chat.me && m.at > seen; }).length;
+  }
+  function updateChatBadge() {
+    var n = unreadCount(), b = $("#ch-badge");
+    b.hidden = !n || $('[data-tab="discussion"]').getAttribute("aria-selected") === "true";
+    b.textContent = n;
+  }
+  function fetchChat() {
+    return api("/api/rsvp?view=chat").then(function (d) { chat.msgs = d.messages; chat.me = d.me; });
+  }
+  // Toutes les minutes, même ailleurs dans l'admin : la pastille des messages non lus
+  function pollChat() {
+    clearInterval(chat.bg);
+    var tick = function () { if (!document.hidden) fetchChat().then(updateChatBadge).catch(function () {}); };
+    tick();
+    chat.bg = setInterval(tick, 60000);
+  }
+  function dayLabel(iso) {
+    var d = new Date(iso), t = new Date(); t.setHours(0, 0, 0, 0);
+    var diff = Math.round((t - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+    return diff === 0 ? "Aujourd'hui" : diff === 1 ? "Hier" : d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  }
+  function renderChat() {
+    var list = $("#ch-list"), atBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 60, day = "";
+    var canDel = function (m) { return m.user === chat.me || (state.me && state.me.role === "superadmin"); };
+    list.innerHTML = chat.msgs.length ? chat.msgs.map(function (m) {
+      var dl = dayLabel(m.at), head = dl !== day ? '<p class="chat__day">' + esc(dl) + "</p>" : "";
+      day = dl;
+      var mine = m.user === chat.me;
+      return head + '<div class="chat__msg' + (mine ? " chat__msg--me" : "") + (m.user === "claude" ? " chat__msg--ai" : "") + '">' +
+        '<p class="chat__meta"><b>' + esc(mine ? "Vous" : m.by) + "</b> · " + new Date(m.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) +
+        (canDel(m) ? ' <button type="button" class="chat__del" data-del="' + esc(m.id) + '" aria-label="Effacer ce message">effacer</button>' : "") + "</p>" +
+        '<p class="chat__text">' + esc(m.text).replace(/\n/g, "<br>") + "</p></div>";
+    }).join("") : '<p class="chat__empty">Aucun message pour l\'instant. Écrivez le premier !</p>';
+    if (atBottom || !chat.drawn) list.scrollTop = list.scrollHeight;
+    chat.drawn = true;
+    if (chat.msgs.length) setChatSeen(chat.msgs[chat.msgs.length - 1].at);
+    updateChatBadge();
+  }
+  function startChat() {
+    stopChat();
+    chat.drawn = false;
+    fetchChat().then(renderChat).catch(function (e) { if (!onAuthError(e)) toast(e.message, true); });
+    chat.timer = setInterval(function () {
+      if (document.hidden) return;
+      var n = chat.msgs.length, last = n ? chat.msgs[n - 1].id : "";
+      fetchChat().then(function () { var m = chat.msgs.length; if (m !== n || (m && chat.msgs[m - 1].id !== last)) renderChat(); }).catch(function () {});
+    }, 8000);
+  }
+  function stopChat() { clearInterval(chat.timer); chat.timer = null; }
+  $("#ch-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var ta = $("#ch-text"), text = ta.value.trim(), btn = this.querySelector("button");
+    if (!text) { ta.focus(); return; }
+    btn.disabled = true;
+    api("/api/rsvp", { method: "POST", body: { action: "chat-post", text: text } })
+      .then(function (d) { chat.msgs = d.messages; chat.me = d.me; ta.value = ""; chat.drawn = false; renderChat(); })
+      .catch(function (x) { toast(x.message, true); })
+      .then(function () { btn.disabled = false; ta.focus(); });
+  });
+  $("#ch-text").addEventListener("keydown", function (e) {
+    // Entrée envoie (Maj + Entrée pour aller à la ligne) ; sur téléphone, le bouton Envoyer
+    if (e.key === "Enter" && !e.shiftKey && !("ontouchstart" in window)) { e.preventDefault(); $("#ch-form").requestSubmit(); }
+  });
+  $("#ch-list").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-del]");
+    if (!b || !confirm("Effacer ce message ?")) return;
+    api("/api/rsvp", { method: "POST", body: { action: "chat-del", id: b.getAttribute("data-del") } })
+      .then(function (d) { chat.msgs = d.messages; renderChat(); })
+      .catch(function (x) { toast(x.message, true); });
   });
 
   /* ───────── Manifeste ───────── */
@@ -671,10 +754,6 @@
       .catch(function (err) { toast(err.message, true); });
   });
 
-  function csvCell(v) {
-    v = String(v == null ? "" : v);
-    return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-  }
 
   // Inscriptions en double (même personne qui a rempli le formulaire plusieurs fois) : la plus récente l'emporte
   $("#m-dedupe").addEventListener("click", function () {
@@ -691,24 +770,103 @@
   function exportCsv(plan) {
     var tableOf = {};
     plan.tables.forEach(function (t) { tableOf[t.id] = t.name; });
-    var head = ["Nom", "Prénom", "Nom de famille", "Téléphone", "Accompagnants", "Présence", "Billet", "Passagers", "Régime alimentaire", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
-    var lines = [head.join(";")].concat(state.rsvps.map(function (r) {
+    var head = ["Nom", "Prénom", "Nom de famille", "Téléphone", "Accompagnants", "Présence", "Billet", "Personnes", "Régime alimentaire", "Allergies", "E-mail", "Message", "Table", "Arrivé à", "Reçu le"];
+    var rows = state.rsvps.map(function (r) {
       var table = plan.assign[r.id] ? tableOf[plan.assign[r.id]] || "" : "";
       var fs = fares(r);
       return [r.nom, r.prenom || "", r.nomFamille || "", r.telephone || "", (r.accompagnants || []).map(function (n, i) { return n + " (" + FARE[fs[i + 1] || fs[0]][1] + ")"; }).join(", "), r.presence === "oui" ? "Vient" : "Ne vient pas", r.presence === "oui" ? FARE[fareOf(r)][1] : "", r.passagers, r.repas, r.allergies, r.email, r.message, table,
-        r.arrivedAt ? fmtDate(r.arrivedAt) : "", fmtDate(r.createdAt)]
-        .map(csvCell).join(";");
-    }));
-    // BOM pour qu'Excel lise correctement les accents
-    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "manifeste-MC5060.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+        r.arrivedAt ? fmtDate(r.arrivedAt) : "", fmtDate(r.createdAt)];
+    });
+    xlsx("Inscriptions (détail complet)", [{ name: "Inscriptions", rows: [head].concat(rows) }]);
   }
+
+  /* ───────── Exports Excel (accueil) ───────── */
+  function xlsx(title, sheets) {
+    var d = new Date();
+    // nom de fichier sans accents : certains téléphones et navigateurs les gèrent mal
+    var name = ("Vol MC 5060 - " + title + " (" + d.getDate() + "-" + (d.getMonth() + 1) + ")").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    McXlsx.download(name + ".xlsx", sheets);
+    toast("Fichier Excel téléchargé : regardez dans vos téléchargements.");
+  }
+  // Une ligne par personne : le répondant, puis ses accompagnants
+  function personRows(r) {
+    var names = [r.nom].concat(r.accompagnants || []), fs = fares(r);
+    if (r.presence !== "oui") return [{ nom: r.nom, r: r, fare: "" }];
+    return fs.map(function (f, i) { return { nom: names[i] || r.nom + " (+" + i + ")", r: r, fare: f }; });
+  }
+  function totals() {
+    var all = [];
+    state.rsvps.forEach(function (r) { all = all.concat(fares(r)); });
+    return { midi: all.filter(function (f) { return f !== "soir"; }).length, soir: all.filter(function (f) { return f !== "midi"; }).length, pax: all.length };
+  }
+  var EXPORTS = {
+    invites: function () {
+      return api("/api/seating").catch(function () { return { tables: [], assign: {} }; }).then(function (plan) {
+        var tableOf = {};
+        (plan.tables || []).forEach(function (t) { tableOf[t.id] = t.name; });
+        var rows = [];
+        state.rsvps.slice().sort(function (a, b) { return a.nom.localeCompare(b.nom, "fr"); }).forEach(function (r) {
+          personRows(r).forEach(function (p) {
+            rows.push([p.nom, r.nom, r.presence === "oui" ? "Oui" : "Non", p.fare && p.fare !== "soir" ? "Oui" : "", p.fare && p.fare !== "midi" ? "Oui" : "",
+              r.repas && r.repas !== "Standard" ? r.repas : "", r.allergies || "", plan.assign && plan.assign[r.id] ? tableOf[plan.assign[r.id]] || "" : "", r.email || "", r.telephone || ""]);
+          });
+        });
+        var t = totals();
+        xlsx("Liste des invités", [
+          { name: "Invités", rows: [["Nom", "Inscrit avec", "Vient", "Midi", "Soir", "Régime", "Allergies", "Table", "E-mail", "Téléphone"]].concat(rows) },
+          { name: "Totaux", rows: [["", "Nombre"], ["Au déjeuner (midi)", t.midi], ["Au dîner (soir)", t.soir], ["Personnes en tout", t.pax], ["Inscriptions", state.rsvps.length]] },
+        ]);
+      });
+    },
+    traiteur: function () {
+      var t = totals(), yes = state.rsvps.filter(function (r) { return r.presence === "oui"; });
+      var byRepas = {};
+      yes.forEach(function (r) {
+        var k = r.repas || "Standard", f = fares(r);
+        byRepas[k] = byRepas[k] || { midi: 0, soir: 0 };
+        byRepas[k].midi += f.filter(function (x) { return x !== "soir"; }).length;
+        byRepas[k].soir += f.filter(function (x) { return x !== "midi"; }).length;
+      });
+      var special = yes.filter(function (r) { return (r.repas && r.repas !== "Standard") || r.allergies; });
+      return Promise.resolve(xlsx("Pour le traiteur", [
+        { name: "Totaux", rows: [["Repas", "Midi", "Soir"], ["Tous les invités", t.midi, t.soir]].concat(Object.keys(byRepas).sort().map(function (k) { return ["dont " + k, byRepas[k].midi, byRepas[k].soir]; })) },
+        { name: "Régimes et allergies", rows: [["Inscription", "Personnes", "Régime", "Allergies / précisions", "Midi", "Soir"]].concat(special.map(function (r) {
+          var f = fares(r);
+          return [r.nom, r.passagers || 1, r.repas !== "Standard" ? r.repas : "", r.allergies || "", f.filter(function (x) { return x !== "soir"; }).length, f.filter(function (x) { return x !== "midi"; }).length];
+        })) },
+      ]));
+    },
+    tables: function () {
+      return api("/api/seating").then(function (plan) {
+        var rows = [], placed = {};
+        (plan.tables || []).forEach(function (t) {
+          state.rsvps.filter(function (r) { return r.presence === "oui" && plan.assign[r.id] === t.id; }).forEach(function (r) {
+            placed[r.id] = 1;
+            rows.push([t.name, r.nom, r.passagers || 1, [r.nom].concat(r.accompagnants || []).join(", ")]);
+          });
+        });
+        state.rsvps.filter(function (r) { return r.presence === "oui" && !placed[r.id]; }).forEach(function (r) {
+          rows.push(["Pas encore placé", r.nom, r.passagers || 1, [r.nom].concat(r.accompagnants || []).join(", ")]);
+        });
+        xlsx("Plan de table", [{ name: "Plan de table", rows: [["Table", "Inscription", "Personnes", "Noms"]].concat(rows) }]);
+      });
+    },
+    liste: function () {
+      return api("/api/rsvp?view=liste").then(function (l) {
+        liste = l;
+        if (!liste.rows || !liste.rows.length) { toast("Importez d'abord votre liste Excel dans « Liste prévue ».", true); return; }
+        listeExport();
+      });
+    },
+  };
+  function runExport(kind, btn) {
+    if (btn) btn.disabled = true;
+    (state.rsvps.length ? Promise.resolve() : api("/api/rsvp").then(function (d) { state.rsvps = d.rsvps; }))
+      .then(function () { return EXPORTS[kind](); })
+      .catch(function (e) { toast(e.message, true); })
+      .then(function () { if (btn) btn.disabled = false; });
+  }
+  $all("[data-export]").forEach(function (b) { b.addEventListener("click", function () { runExport(b.getAttribute("data-export"), b); }); });
 
   /* ───────── Liste prévue ─────────
      Le fichier Excel des familles invitées, croisé avec les inscriptions du site.
@@ -1137,23 +1295,21 @@
   });
 
   // La liste à jour, à renvoyer dans Excel
-  $("#l-export").addEventListener("click", function () {
-    var m = listeMatch || matchListe();
+  function listeExport() {
+    var m = matchListe();
     var head = ["Familles", "Enfants", "Adultes", "Envoi site", "Midi prévu", "Soir prévu", "Inscrite", "Personnes inscrites", "Midi inscrits", "Soir inscrits", "Écart", "Inscriptions"];
-    var lines = [head.join(";")].concat(m.rows.map(function (x) {
-      var r = x.row;
+    var rows = m.rows.map(function (x) {
+      var r = x.row, real = x.status === "ok" || x.status === "fetes";
       return [r.famille, r.enfants || "", r.adultes || "", r.envoi ? "V" : "", r.midi == null ? "" : r.midi, r.soir == null ? "" : r.soir,
-        LSTATUS[x.status][0].replace("✓ ", ""), x.status === "ok" ? x.real.pax : "", x.status === "ok" ? x.real.midi : "", x.status === "ok" ? x.real.soir : "",
-        x.ecart ? "oui" : "", x.regs.map(function (g) { return g.nom; }).join(", ")].map(csvCell).join(";");
-    }));
-    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "liste-prevue-a-jour.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  });
+        LSTATUS[x.status][0].replace(/^[✓★] /, ""), real ? x.real.pax : "", real ? x.real.midi : "", real ? x.real.soir : "",
+        x.ecart ? "oui" : "", x.regs.map(function (g) { return g.nom; }).join(", ")];
+    });
+    var sum = function (k) { return m.rows.reduce(function (n, x) { return n + (x.row[k] || 0); }, 0); };
+    var got = function (k) { return m.rows.reduce(function (n, x) { return n + x.real[k]; }, 0); };
+    rows.push(["Total", "", "", "", sum("midi"), sum("soir"), "", "", got("midi"), got("soir"), "", ""]);
+    xlsx("Liste prévue à jour", [{ name: "Liste prévue", rows: [head].concat(rows) }]);
+  }
+  $("#l-export").addEventListener("click", listeExport);
 
   /* ───────── Plan de cabine ─────────
      Les invités se placent eux-mêmes (page /table). Ici : vue en direct + corrections par glisser-déposer.
