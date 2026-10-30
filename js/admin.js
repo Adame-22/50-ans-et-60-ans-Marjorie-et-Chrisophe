@@ -830,7 +830,13 @@
     });
     rows.forEach(function (m, i) {
       m.host = isHostRow(m.row);
-      if (m.manual || m.host) return;
+      if (m.manual) return;
+      if (m.host) { // si les fêtés se sont inscrits eux-mêmes, l'inscription va sur leur ligne
+        state.rsvps.forEach(function (r) {
+          if (!owner[r.id] && /^(marjorie|christophe)$/.test(lnorm(r.prenom || r.nom).split(" ")[0])) { owner[r.id] = m.row.id; m.ids.push(r.id); }
+        });
+        return;
+      }
       var slots = rowSlots(m.row);
       m.covered = {};
       state.rsvps.forEach(function (r) {
