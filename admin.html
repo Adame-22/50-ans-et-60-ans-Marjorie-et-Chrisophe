@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261031" />
-  <link rel="stylesheet" href="css/style.css?v=20261031" />
-  <link rel="stylesheet" href="css/admin.css?v=20261031" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261101" />
+  <link rel="stylesheet" href="css/style.css?v=20261101" />
+  <link rel="stylesheet" href="css/admin.css?v=20261101" />
 </head>
 <body class="admin">
 
@@ -161,6 +161,10 @@
           <div class="kpi"><span>Midi</span><strong id="l-k-midi">–</strong><small id="l-k-midi-d"></small></div>
           <div class="kpi"><span>Soir</span><strong id="l-k-soir">–</strong><small id="l-k-soir-d"></small></div>
           <div class="kpi"><span>Lien à envoyer</span><strong id="l-k-envoi">–</strong><small>familles</small></div>
+        </div>
+        <div class="alert" id="l-missing" hidden>
+          <p><b id="l-missing-n"></b> Vous pouvez les inscrire d'un coup avec les nombres de l'Excel (prénoms de la liste, midi / soir prévus). Les fiches se corrigent ensuite dans <b>Invités</b>.</p>
+          <button class="btn btn--small btn--gold" id="l-inscribe" type="button">Inscrire ces familles</button>
         </div>
         <div class="chips" id="l-chips" role="group" aria-label="Filtrer la liste">
           <button type="button" data-f="" aria-pressed="true">Toutes</button>
@@ -586,6 +590,7 @@
           <div class="sheet__acts">
             <button type="button" class="act" id="ls-copy"><b>Copier l'invitation</b><small>message avec le lien, pour WhatsApp ou SMS</small></button>
             <button type="button" class="act" id="ls-auto"><b>Reconnaissance auto</b><small>laisser le site trouver tout seul</small></button>
+            <button type="button" class="act" id="ls-inscribe"><b>Inscrire cette famille</b><small>avec les nombres prévus dans l'Excel</small></button>
           </div>
         </div>
       </div>
@@ -614,8 +619,8 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261031"></script>
+  <script src="js/graph.js?v=20261101"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/admin.js?v=20261031"></script>
+  <script src="js/admin.js?v=20261101"></script>
 </body>
 </html>

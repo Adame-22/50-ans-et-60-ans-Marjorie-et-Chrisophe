@@ -910,6 +910,9 @@
     $("#l-k-midi-d").textContent = "inscrits · " + sum(function (m) { return m.row.midi || 0; }) + " prévus";
     $("#l-k-soir").textContent = sum(function (m) { return m.real.soir; });
     $("#l-k-soir-d").textContent = "inscrits · " + sum(function (m) { return m.row.soir || 0; }) + " prévus";
+    var todo = ms.filter(canInscribe);
+    $("#l-missing").hidden = !todo.length;
+    $("#l-missing-n").textContent = todo.length + " famille" + (todo.length > 1 ? "s" : "") + " de la liste ne " + (todo.length > 1 ? "sont" : "est") + " pas encore inscrite" + (todo.length > 1 ? "s" : "") + ".";
     $("#l-k-envoi").textContent = ms.filter(function (m) { return !m.row.envoi && m.status === "manque"; }).length;
 
     var show = ms.map(function (m, i) { m.i = i; return m; }).filter(function (m) {
@@ -952,6 +955,50 @@
     });
   });
 
+  /* Inscrire une famille de la liste avec ses nombres prévus (prénoms de la ligne, midi / soir de l'Excel) */
+  function capName(n) { return n.toLowerCase().replace(/(^|[\s-])(\S)/g, function (a, sp, c) { return sp + c.toUpperCase(); }); }
+  function planPeople(row) {
+    var midi = row.midi || 0, soir = row.soir || 0;
+    if (!midi && !soir) return null; // midi / soir pas indiqués : à compléter à la main
+    var both = Math.min(midi, soir), f = [];
+    for (var i = 0; i < both; i++) f.push("journee");
+    for (i = both; i < midi; i++) f.push("midi");
+    for (i = both; i < soir; i++) f.push("soir");
+    var names = row.famille.split(/\/|,|&|\bet\b/i).map(function (x) { return x.trim(); })
+      .filter(function (x) { return x && !/^moi$/i.test(x); }).map(capName);
+    if (!names.length) names = [capName(row.famille)];
+    return f.map(function (fare, k) { return { nom: names[k] || "Personne " + (k + 1) + " · " + names[0], creneau: fare }; });
+  }
+  function canInscribe(m) { return m.status === "manque" && !m.host && !!planPeople(m.row); }
+  function inscribe(m) {
+    var people = planPeople(m.row);
+    return api("/api/rsvp", { method: "POST", body: {
+      source: "equipage", nom: people[0].nom, presence: "oui", passagers: people.length, creneau: people[0].creneau,
+      accompagnants: people.slice(1).map(function (p) { return p.nom; }), creneauxAcc: people.slice(1).map(function (p) { return p.creneau; }),
+    } }).then(function (d) { m.row.links = [d.id]; });
+  }
+  function inscribeAll(list) {
+    return list.reduce(function (p, m) { return p.then(function () { return inscribe(m); }); }, Promise.resolve())
+      .then(function () { return saveListe(list.length + " famille" + (list.length > 1 ? "s" : "") + " inscrite" + (list.length > 1 ? "s" : "") + "."); })
+      .then(loadListe)
+      .catch(function (e) { toast(e.message, true); loadListe(); });
+  }
+  $("#l-inscribe").addEventListener("click", function () {
+    var ms = listeMatch.rows, ok = ms.filter(canInscribe);
+    var skip = ms.filter(function (m) { return m.status === "manque" && !m.host && !planPeople(m.row); });
+    if (!ok.length || !confirm("Inscrire ces " + ok.length + " familles avec les nombres de l'Excel ?\n\n" +
+      ok.map(function (m) { var p = planPeople(m.row); return "• " + m.row.famille + " : " + p.length + " pers."; }).join("\n") +
+      (skip.length ? "\n\nPas inscrites (midi / soir pas indiqués dans l'Excel) : " + skip.map(function (m) { return m.row.famille; }).join(", ") : ""))) return;
+    this.disabled = true;
+    inscribeAll(ok).then(function () { $("#l-inscribe").disabled = false; });
+  });
+  $("#ls-inscribe").addEventListener("click", function () {
+    var m = listeMatch.rows[lsIndex];
+    if (!canInscribe(m) || !confirm("Inscrire « " + m.row.famille + " » (" + planPeople(m.row).length + " pers.) avec les nombres de l'Excel ?")) return;
+    $("#liste-sheet").close();
+    inscribeAll([m]);
+  });
+
   /* Fiche d'une famille : corriger les inscriptions rattachées, noter l'envoi du lien */
   function openListeSheet(i) {
     lsIndex = i;
@@ -970,6 +1017,7 @@
     $("#ls-envoi").checked = !!row.envoi;
     $("#ls-alias").value = row.alias || "";
     $("#ls-auto").hidden = !m.manual;
+    $("#ls-inscribe").hidden = !canInscribe(m);
     $("#liste-sheet").showModal();
   }
   $("#ls-search").addEventListener("input", function () {
