@@ -929,3 +929,17 @@ body.admin { font-variant-numeric: lining-nums; }
 .ms-item__txt { display: grid; gap: 2px; min-width: 0; }
 .ms-item__txt b, .ms-item__txt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ms-item__txt span { color: var(--muted, #6b6b80); font-size: .9rem; }
+
+/* Quiz : soirée / répétition privée */
+.qz-mode { display: inline-flex; gap: 4px; padding: 4px; margin: 0 0 12px; border-radius: 999px; background: #efe6da; }
+.qz-mode button { font: inherit; font-weight: 600; padding: .5rem 1rem; border: 0; border-radius: 999px; background: transparent; color: var(--navy); cursor: pointer; }
+.qz-mode button.is-on { background: var(--navy); color: var(--gold-light); }
+.qz-test { border: 2px dashed #7b5cd6; background: #f6f2ff; }
+.qz-test p { margin: 0 0 .6rem; }
+.qz-test__badge { font-weight: 700; color: #5a3fb8; }
+.qz-test__row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.qz-test__row select { font: inherit; padding: .5rem .7rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; max-width: 100%; }
+.qz-test__link { font-family: var(--mono); font-size: .9rem; word-break: break-all; padding: .5rem .7rem; border-radius: 8px; background: #fff; border: 1px solid #d8ccf5; }
+#tab-quiz.is-test .regie { border-color: #7b5cd6; box-shadow: 0 0 0 3px rgba(123, 92, 214, .15); }
+.qt-check { display: inline-flex; align-items: center; gap: .3rem; cursor: pointer; }
+.qt-check input { width: 1.2rem; height: 1.2rem; }

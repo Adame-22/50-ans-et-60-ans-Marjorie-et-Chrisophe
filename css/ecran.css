@@ -448,3 +448,6 @@ body.is-fullscreen #sc-sound { display: inline-block; }
 .qz-song b { font-family: var(--serif); font-size: min(3.6vw, 6vh); line-height: 1.05; }
 .qz-song span { font-size: min(2vw, 3.4vh); color: var(--gold-light); font-weight: 600; }
 .quiz-slide2.is-song .qz-hist { height: min(16vw, 22vh); }
+
+/* Répétition privée : bandeau bien visible */
+body.is-test .screen__now::before { content: "🧪 RÉPÉTITION · "; color: #b9a4ff; }

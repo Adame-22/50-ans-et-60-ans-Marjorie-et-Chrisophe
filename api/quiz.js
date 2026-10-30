@@ -21,19 +21,33 @@
  *   POST { action: "lobby" | "start" | "reveal" | "board" | "podium" | "off" | "reset", from? }
  *        from = { phase, round, index } vu par l'animateur : si le quiz a déjà avancé (deux animateurs,
  *        double appui, réseau qui renvoie), l'action est refusée au lieu de sauter une question.
+ *
+ * Répétition privée (super admin et comptes autorisés, invisible pour les invités) :
+ *   même API avec ?test=1 / { test: true } côté équipage, et ?test=<code> / { test: "<code>" } côté joueurs
+ *   et écran géant (lien secret /quiz?test=<code>, /ecran?test=<code>). Joueurs, scores et état séparés ;
+ *   les questions sont celles du jeu choisi (modifiables pendant la répétition).
+ *   POST { action: "test-open", game?, test: true } → ouvre une répétition (nouveau code)
+ *   POST { action: "test-close", test: true }       → la termine (le lien ne marche plus)
  */
 const crypto = require("crypto");
 const L = require("./_lib");
 const TM = require("./_teams");
 
-const K = {
-  questions: "mc:quiz:questions",
-  state: "mc:quiz:state",
-  players: "mc:quiz:players",
-  answers: (round) => "mc:quiz:ans:" + round,
-  locks: "mc:quiz:locks", // une seule révélation / un seul lancement par manche
-  games: "mc:quiz:games", // jeux enregistrés : nom → { questions }
-};
+function keysFor(test) {
+  const p = test ? "mc:quiz:test:" : "mc:quiz:";
+  return {
+    test: !!test,
+    questions: p + "questions",
+    state: p + "state",
+    players: p + "players",
+    answers: (round) => p + "ans:" + round,
+    locks: p + "locks", // une seule révélation / un seul lancement par manche
+    games: "mc:quiz:games", // jeux enregistrés : nom → { questions } (communs à la soirée et aux répétitions)
+  };
+}
+const REAL = keysFor(false);
+const TEST = keysFor(true);
+const TEST_META = "mc:quiz:test:meta"; // { code, game, by, openedAt }
 const DEFAULT_GAME = "Quiz de bord";
 const MAX_GAMES = 8;
 
@@ -61,14 +75,38 @@ async function getJson(key, fallback) {
 }
 const setJson = (key, v) => L.redis(["SET", key, JSON.stringify(v)]);
 
-async function getQuestions() {
-  return getJson(K.questions, DEFAULT_QUESTIONS);
-}
-async function getState() {
+async function getState(K) {
   return getJson(K.state, { phase: "off", index: -1, round: 0 });
 }
+// questions d'un jeu : celles en cours pour le jeu chargé, sinon celles enregistrées
+async function gameQuestions(name) {
+  const real = await getState(REAL);
+  if (name === (real.game || DEFAULT_GAME)) return getJson(REAL.questions, DEFAULT_QUESTIONS);
+  const raw = await L.redis(["HGET", REAL.games, name]);
+  return raw ? JSON.parse(raw).questions || [] : null;
+}
+async function getQuestions(K) {
+  if (!K.test) return getJson(REAL.questions, DEFAULT_QUESTIONS);
+  const meta = await getJson(TEST_META, null);
+  return (meta && (await gameQuestions(meta.game))) || [];
+}
+// lien de répétition : un code faux ou périmé ne donne accès à rien
+async function testGate(code) {
+  const meta = await getJson(TEST_META, null);
+  if (!meta || !code || String(code) !== meta.code) throw new L.HttpError(404, "Cette répétition est terminée (ou le lien n'est pas le bon).");
+  return meta;
+}
+// qui peut faire des répétitions (affiché dans la régie)
+async function testers() {
+  return Object.values(await L.hgetallJson(L.K.users)).filter((u) => L.canTestQuiz(u)).map((u) => u.name).sort((a, b) => a.localeCompare(b, "fr"));
+}
+async function wipe(K, state) {
+  for (let r = 1; r <= (state.round || 0); r++) await L.redis(["DEL", K.answers(r)]);
+  await L.redis(["DEL", K.players]);
+  await L.redis(["DEL", K.locks]);
+}
 
-async function allPlayers() {
+async function allPlayers(K) {
   return Object.values(await L.hgetallJson(K.players));
 }
 function leaderboard(players) {
@@ -107,8 +145,14 @@ function sanitizeQuestions(list) {
   });
 }
 
+async function testGames(game, questions) {
+  const real = await getState(REAL);
+  return (await gameList(real, await getQuestions(REAL))).map((g) => Object.assign(g, { current: g.name === game },
+    g.name === game ? { count: questions.length, music: questions.filter((q) => q.audio).length } : {}));
+}
+
 async function gameList(state, questions) {
-  const all = await L.hgetallJson(K.games);
+  const all = await L.hgetallJson(REAL.games);
   const cur = state.game || DEFAULT_GAME;
   all[cur] = { questions };
   return Object.keys(all).sort((a, b) => (b === cur) - (a === cur) || a.localeCompare(b, "fr")).map((name) => {
@@ -145,17 +189,35 @@ module.exports = L.handler(async (req, res) => {
   /* ───────── Lecture ───────── */
   if (req.method === "GET") {
     const view = params.get("view") || "public";
-    const [state, questions] = await Promise.all([getState(), getQuestions()]);
+    let K = REAL, meta = null;
+    if (view === "admin" && params.get("test")) {
+      const me = await L.requireUser(req);
+      L.noSpoil(me);
+      if (!L.canTestQuiz(me)) throw new L.HttpError(403, "Les répétitions sont réservées aux comptes autorisés par le super admin.");
+      K = TEST;
+      meta = await getJson(TEST_META, null);
+      if (!meta) {
+        const real = await getState(REAL);
+        return L.send(res, 200, { test: null, testers: await testers(), games: await gameList(real, await getQuestions(REAL)), serverNow: Date.now() });
+      }
+    } else if (view !== "admin" && view !== "music" && params.get("test")) {
+      meta = await testGate(params.get("test"));
+      K = TEST;
+    }
+    const [state, questions] = await Promise.all([getState(K), getQuestions(K)]);
     const cur = questions[state.index];
 
     if (view === "admin") {
-      L.noSpoil(await L.requireUser(req)); // questions et réponses : surprise pour les fêtés
+      if (!K.test) L.noSpoil(await L.requireUser(req)); // questions et réponses : surprise pour les fêtés
       const answered = state.round ? await L.redis(["HLEN", K.answers(state.round)]) : 0;
-      const all = await allPlayers();
-      const tq = await TM.quizTeams(all);
+      const all = await allPlayers(K);
+      const tq = K.test ? null : await TM.quizTeams(all);
       // le top 10 (et les équipes si le jeu est par équipe) pour que l'animateur annonce les bons gagnants
       return L.send(res, 200, { state, questions, answered, players: all.length, top: leaderboard(all).slice(0, 10),
-        teams: tq ? tq.teams.slice(0, 10) : null, games: await gameList(state, questions), serverNow: Date.now() });
+        teams: tq ? tq.teams.slice(0, 10) : null, serverNow: Date.now(),
+        games: K.test ? await testGames(meta.game, questions) : await gameList(state, questions),
+        test: K.test ? { code: meta.code, game: meta.game, by: meta.by, openedAt: meta.openedAt } : undefined,
+        testers: K.test ? await testers() : undefined });
     }
 
     if (view === "music") {
@@ -167,6 +229,7 @@ module.exports = L.handler(async (req, res) => {
     }
 
     const out = { phase: state.phase, index: state.index, total: questions.length, serverNow: Date.now() };
+    if (K.test) out.test = true;
     if (cur && ["question", "reveal", "board"].includes(state.phase)) {
       out.question = { q: cur.q, choices: cur.choices, time: cur.time };
       // l'écran géant joue l'extrait ; le titre n'est donné qu'à la révélation
@@ -189,26 +252,30 @@ module.exports = L.handler(async (req, res) => {
       out.scoring = !!state.scoring; // points en cours de calcul (moins d'une seconde)
     }
     if (["lobby", "reveal", "board", "podium"].includes(state.phase)) {
-      const players = await allPlayers();
+      const players = await allPlayers(K);
       out.leaderboard = leaderboard(players);
-      const tq = state.phase !== "off" ? await TM.quizTeams(players) : null;
+      const tq = state.phase !== "off" && !K.test ? await TM.quizTeams(players) : null;
       if (tq) Object.assign(out, { teamMode: true, teams: tq.teams, teamOf: tq.teamOf, teamTables: tq.mode === "mix" ? [] : tq.tables });
     } else {
       out.players = await L.redis(["HLEN", K.players]);
     }
-    return L.send(res, 200, out, { "Cache-Control": "public, max-age=0, s-maxage=1, stale-while-revalidate=1" });
+    // la répétition n'est pas mise en cache : le lien s'arrête dès qu'on la termine
+    return L.send(res, 200, out, { "Cache-Control": K.test ? "no-store" : "public, max-age=0, s-maxage=1, stale-while-revalidate=1" });
   }
 
   const body = await L.readBody(req);
+  const isPlayer = req.method === "POST" && ["join", "link", "answer"].includes(body.action);
+  let K = REAL;
+  if (isPlayer && body.test) { await testGate(body.test); K = TEST; }
 
   /* ───────── Joueurs ───────── */
   if (req.method === "POST" && body.action === "join") {
-    const state = await getState();
+    const state = await getState(K);
     if (state.phase === "off") throw new L.HttpError(409, "Le quiz n'a pas encore commencé.");
     const name = L.str(body.name, 24);
     if (!name) throw new L.HttpError(400, "Choisissez un pseudo.");
     await L.rateLimit(req, "quiz-join", 200, 60);
-    const players = await allPlayers();
+    const players = await allPlayers(K);
     if (players.length >= 300) throw new L.HttpError(409, "Le quiz est complet.");
     // deux « Papy » : le second devient « Papy 2 » pour qu'on les distingue au classement
     const taken = new Set(players.map((p) => p.name.toLowerCase()));
@@ -239,7 +306,7 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "POST" && body.action === "answer") {
     const pid = L.str(body.pid, 64);
     await L.rateLimit(req, "quiz-answer", 900, 60);
-    const [state, questions, player] = await Promise.all([getState(), getQuestions(), L.redis(["HGET", K.players, pid])]);
+    const [state, questions, player] = await Promise.all([getState(K), getQuestions(K), L.redis(["HGET", K.players, pid])]);
     if (!player) throw new L.HttpError(404, "Joueur inconnu, rejoignez à nouveau le quiz.");
     if (state.phase !== "question") throw new L.HttpError(409, "Les réponses sont fermées.");
     if (now < state.startedAt - 250) throw new L.HttpError(409, "Pas encore : attendez le top départ !");
@@ -263,18 +330,46 @@ module.exports = L.handler(async (req, res) => {
   /* ───────── Animateur ───────── */
   const me = await L.requireUser(req);
   L.noSpoil(me);
+  if (body.test) {
+    if (!L.canTestQuiz(me)) throw new L.HttpError(403, "Les répétitions sont réservées aux comptes autorisés par le super admin.");
+    K = TEST;
+  }
 
   if (req.method === "PUT") {
     const questions = sanitizeQuestions(body.questions);
-    const state = await getState();
-    await setJson(K.questions, questions);
-    await L.redis(["HSET", K.games, state.game || DEFAULT_GAME, JSON.stringify({ questions })]);
+    const real = await getState(REAL);
+    // en répétition, on modifie le jeu en cours de test (qui n'est pas forcément celui de la soirée)
+    const meta = K.test ? await getJson(TEST_META, null) : null;
+    if (K.test && !meta) throw new L.HttpError(409, "Aucune répétition en cours.");
+    const name = meta ? meta.game : real.game || DEFAULT_GAME;
+    if (name === (real.game || DEFAULT_GAME)) await setJson(REAL.questions, questions);
+    await L.redis(["HSET", REAL.games, name, JSON.stringify({ questions })]);
     return L.send(res, 200, { questions });
   }
 
+  if (req.method === "POST" && K.test && (body.action === "test-open" || body.action === "test-close")) {
+    const state = await getState(TEST);
+    await wipe(TEST, state);
+    if (body.action === "test-close") {
+      await L.redis(["DEL", TEST_META]);
+      await L.redis(["DEL", TEST.state]);
+      return L.send(res, 200, { test: null });
+    }
+    const real = await getState(REAL);
+    const game = L.str(body.game, 40) || real.game || DEFAULT_GAME;
+    if (!(await gameQuestions(game))) throw new L.HttpError(404, "Jeu introuvable.");
+    const meta = { code: crypto.randomBytes(5).toString("hex"), game, by: me.name, openedAt: now };
+    await setJson(TEST_META, meta);
+    const fresh = { phase: "lobby", index: -1, round: 0, game, by: me.name, done: false };
+    await setJson(TEST.state, fresh);
+    return L.send(res, 200, { test: meta, state: fresh });
+  }
+
   if (req.method === "POST") {
-    const state = await getState();
-    const questions = await getQuestions();
+    const state = await getState(K);
+    const questions = await getQuestions(K);
+    const testMeta = K.test ? await getJson(TEST_META, null) : null;
+    if (K.test && !testMeta) throw new L.HttpError(409, "Aucune répétition en cours : ouvrez-en une.");
     const from = body.from && typeof body.from === "object" ? body.from : null;
     if (from && ["start", "reveal", "board", "podium"].includes(body.action) &&
       (from.phase !== state.phase || (from.round || 0) !== (state.round || 0))) {
@@ -351,8 +446,16 @@ module.exports = L.handler(async (req, res) => {
         if (["question", "reveal"].includes(state.phase) || (state.phase === "board" && !state.done)) {
           throw new L.HttpError(409, "Une partie est en cours : terminez-la (podium) ou fermez le quiz avant de changer de jeu.");
         }
+        if (K.test) { // en répétition : on teste un autre jeu, la soirée n'est pas touchée
+          if (body.create || !(await gameQuestions(name))) throw new L.HttpError(404, "Jeu introuvable.");
+          testMeta.game = name;
+          await setJson(TEST_META, testMeta);
+          await wipe(TEST, state);
+          Object.assign(state, { game: name, phase: "lobby", index: -1, round: 0, counts: null, gains: null, done: false });
+          break;
+        }
         const cur = state.game || DEFAULT_GAME;
-        const games = await L.hgetallJson(K.games);
+        const games = await L.hgetallJson(REAL.games);
         let next;
         if (body.create) {
           if (games[name] || name === cur) throw new L.HttpError(409, "Un jeu porte déjà ce nom.");
@@ -363,8 +466,8 @@ module.exports = L.handler(async (req, res) => {
           if (!games[name]) throw new L.HttpError(404, "Jeu introuvable.");
           next = games[name].questions || [];
         }
-        await L.redis(["HSET", K.games, cur, JSON.stringify({ questions }), name, JSON.stringify({ questions: next })]);
-        await setJson(K.questions, next);
+        await L.redis(["HSET", REAL.games, cur, JSON.stringify({ questions }), name, JSON.stringify({ questions: next })]);
+        await setJson(REAL.questions, next);
         // scores à zéro, joueurs gardés (ils n'ont pas à se réinscrire)
         const players = await L.hgetallJson(K.players);
         const writes = [];
@@ -376,15 +479,14 @@ module.exports = L.handler(async (req, res) => {
 
       case "game-delete": {
         const name = L.str(body.name, 40);
-        if (name === (state.game || DEFAULT_GAME)) throw new L.HttpError(409, "On ne peut pas supprimer le jeu chargé.");
-        await L.redis(["HDEL", K.games, name]);
+        const real = K.test ? await getState(REAL) : state;
+        if (name === (real.game || DEFAULT_GAME) || (testMeta && name === testMeta.game)) throw new L.HttpError(409, "On ne peut pas supprimer un jeu chargé.");
+        await L.redis(["HDEL", REAL.games, name]);
         return L.send(res, 200, { ok: true });
       }
 
       case "reset": {
-        for (let r = 1; r <= (state.round || 0); r++) await L.redis(["DEL", K.answers(r)]);
-        await L.redis(["DEL", K.players]);
-        await L.redis(["DEL", K.locks]);
+        await wipe(K, state);
         Object.assign(state, { phase: "off", index: -1, round: 0, counts: null, gains: null, done: false });
         break;
       }

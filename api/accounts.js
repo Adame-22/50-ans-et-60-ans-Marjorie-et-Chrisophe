@@ -2,7 +2,8 @@
  * /api/accounts — gestion des comptes (administrateurs uniquement)
  *   GET                                           → liste des comptes
  *   POST   { username, name, role }               → crée un compte, renvoie un code provisoire
- *   PATCH  { username, name?, role?, resetPassword? } → modifie / réinitialise (renvoie un code)
+ *   PATCH  { username, name?, role?, resetPassword?, quizTest? } → modifie / réinitialise (renvoie un code)
+ *          quizTest : droit aux répétitions privées du quiz (donné par le super admin)
  *   DELETE ?username=…                            → supprime
  */
 const L = require("./_lib");
@@ -76,6 +77,12 @@ module.exports = L.handler(async (req, res) => {
       if (body.role === "superadmin" && me.role !== "superadmin") throw new L.HttpError(403, "Seul un super admin peut nommer un super admin.");
       if (L.isAdmin(user) && !L.isAdmin({ role: body.role })) await assertAnotherAdmin(user.username);
       user.role = body.role;
+    }
+    // répétitions privées du quiz : seul le super admin les donne ou les retire
+    if (body.quizTest !== undefined) {
+      if (me.role !== "superadmin") throw new L.HttpError(403, "Seul le super admin donne l'accès aux répétitions du quiz.");
+      if (L.isHost(user)) throw new L.HttpError(400, "Les fêtés ne voient pas le quiz : c'est une surprise.");
+      user.quizTest = !!body.quizTest;
     }
     let code;
     if (body.resetPassword) {

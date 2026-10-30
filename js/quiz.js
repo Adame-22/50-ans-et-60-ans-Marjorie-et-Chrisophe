@@ -11,8 +11,11 @@
   function badge(i) { return '<span class="shape" aria-hidden="true"><i>' + SHAPES[i] + "</i><b>" + LETTERS[i] + "</b></span>"; }
   var app = document.getElementById("app");
   var meTag = document.getElementById("q-me");
-  var me = load("mc-quiz");          // { pid, pub, name, at, rid, table }
-  var mem = load("mc-quiz-mem") || { ans: {}, gains: {}, rank: {} }; // réponses, points et rangs par manche
+  // Répétition privée (lien /quiz?test=code) : joueurs à part, rien n'est mélangé avec la soirée
+  var TEST = (new URLSearchParams(location.search).get("test") || "").replace(/[^a-z0-9]/gi, "").slice(0, 20);
+  var SUFFIX = TEST ? "-test" : "";
+  var me = load("mc-quiz" + SUFFIX);          // { pid, pub, name, at, rid, table }
+  var mem = load("mc-quiz-mem" + SUFFIX) || { ans: {}, gains: {}, rank: {} }; // réponses, points et rangs par manche
   var state = null;                  // dernier état public reçu
   var offsets = [];                  // mesures « heure serveur − heure locale »
   var offset = 0;
@@ -28,8 +31,8 @@
   function store(k, v) {
     try { v ? localStorage.setItem(k, JSON.stringify(v)) : localStorage.removeItem(k); } catch (e) { /* ignoré */ }
   }
-  function save(v) { store("mc-quiz", v); }
-  function saveMem() { store("mc-quiz-mem", mem); }
+  function save(v) { store("mc-quiz" + SUFFIX, v); }
+  function saveMem() { store("mc-quiz-mem" + SUFFIX, mem); }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -56,6 +59,7 @@
     });
   }
   function post(body, ms) {
+    if (TEST) body.test = TEST;
     return request("/api/quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, ms);
   }
   function ord(n) { return n === 1 ? "1<sup>er</sup>" : n + "<sup>e</sup>"; }
@@ -424,17 +428,22 @@
   var pollTimer = 0;
   function poll() {
     clearTimeout(pollTimer);
-    request("/api/quiz?view=public", null, 4000).then(function (d) {
+    request("/api/quiz?view=public" + (TEST ? "&test=" + TEST : ""), null, 4000).then(function (d) {
       clock(d);
       state = d;
       if (state.teamMode) syncSeat();
       render();
-    }).catch(function () { /* réseau capricieux : on réessaie au prochain tour */ })
+    }).catch(function (err) {
+      // répétition terminée (ou mauvais lien)
+      if (TEST && err.status === 404) { viewKey = "test-end"; app.innerHTML = '<div class="live-card center"><p class="live__tag">🧪 Répétition</p><h2>Cette répétition est terminée</h2><p class="muted">Merci d\'avoir testé&nbsp;! Le vrai quiz aura lieu pendant la fête.</p></div>'; }
+      /* sinon réseau capricieux : on réessaie au prochain tour */
+    })
       .then(function () { pollTimer = setTimeout(poll, document.hidden ? 4000 : 1500); });
   }
   // retour sur la page (téléphone rallumé) : mise à jour immédiate
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible") { lock = null; poll(); if (state) keepAwake(state.phase !== "off"); }
   });
+  if (TEST) { document.body.classList.add("is-test"); if (meTag) meTag.insertAdjacentHTML("beforebegin", '<span class="live__tag live__tag--test">🧪 Répétition</span>'); }
   poll();
 })();

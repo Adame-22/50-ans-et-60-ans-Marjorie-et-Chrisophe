@@ -15,6 +15,12 @@
   var only = new URLSearchParams(location.search).get("vue");
   if (only && ["info", "tables", "entry", "teams", "radio"].indexOf(only) !== -1) ROTATION = [only];
   var slideTimer = 0, slideIdx = 0, bnIdx = 0, inQuiz = false;
+  // Répétition privée (/ecran?test=code) : seulement le quiz de test, pas le diaporama de la soirée
+  var TEST = (new URLSearchParams(location.search).get("test") || "").replace(/[^a-z0-9]/gi, "").slice(0, 20);
+  var QUIZ_PATH = "/quiz" + (TEST ? "?test=" + TEST : "");
+  function testIdle(msg) {
+    stage.innerHTML = '<section class="slide quiz-intro"><p class="eyebrow-xl">🧪 Répétition privée</p><h2 class="title-xl">' + msg + "</h2></section>";
+  }
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -120,6 +126,7 @@
   }
 
   function nextSlide() {
+    if (TEST) return testIdle("En attente de l'animateur…");
     clearTimeout(slideTimer);
     if (inQuiz) return;
     var html = "", dur = 9000;
@@ -315,7 +322,7 @@
       lobbySeen = {}; lobbyOrder = [];
       stage.setAttribute("data-game", game);
       stage.innerHTML = '<section class="slide lobby-slide2">' +
-        '<div class="lobby2__join"><div class="lobby2__qr">' + qr("/quiz") + '</div><p class="lobby2__url">' + esc(location.host) + "/quiz</p>" +
+        '<div class="lobby2__join"><div class="lobby2__qr">' + qr(QUIZ_PATH) + '</div><p class="lobby2__url">' + esc(location.host + (TEST ? "/quiz?test=…" : "/quiz")) + "</p>" +
         '<p class="lobby2__how">Scannez avec l\'appareil photo<br>et entrez votre prénom</p></div>' +
         '<div class="lobby2__side"><p class="eyebrow-xl">' + (other ? "Nouveau jeu" : "Quiz de bord") + '</p><h2 class="lobby2__title">' + (other ? esc(game) : "Connaissez-vous vos commandants de bord&nbsp;?") + "</h2>" +
         '<p class="lobby2__count"><b id="lobby-n">0</b><span>joueurs à bord</span></p>' +
@@ -513,7 +520,8 @@
   }
 
   function pollQuiz() {
-    fetch("/api/quiz?view=public").then(function (r) {
+    fetch("/api/quiz?view=public" + (TEST ? "&test=" + TEST : "")).then(function (r) {
+      if (TEST && r.status === 404) { inQuiz = false; clearStage(); Sound.stop(); Music.stop(); quizKey = ""; testIdle("Cette répétition est terminée"); throw new Error("fin"); }
       // une erreur passagère de la base ne doit pas faire quitter le quiz
       if (!r.ok) throw new Error("HTTP " + r.status);
       var age = parseFloat(r.headers.get("Age")) || 0;
@@ -563,5 +571,6 @@
   loadTables();
   loadTeams();
   pollQuiz();
+  if (TEST) document.body.classList.add("is-test");
   setTimeout(function () { if (!inQuiz) nextSlide(); }, 400);
 })();

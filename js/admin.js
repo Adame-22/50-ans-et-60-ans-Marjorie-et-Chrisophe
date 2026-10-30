@@ -1915,16 +1915,85 @@
 
   /* ───────── Quiz (animateur) ───────── */
   var PHASES = { off: "Fermé", lobby: "Embarquement", question: "Question", reveal: "Réponse", board: "Classement", podium: "Podium" };
-  var qz = { timer: 0, questions: null, state: null, offset: 0, dirty: false, raf: 0, gen: 0, lastOk: 0, qsig: "" };
+  var qz = { timer: 0, questions: null, state: null, offset: 0, dirty: false, raf: 0, gen: 0, lastOk: 0, qsig: "", test: false };
+  try { qz.test = localStorage.getItem("mc-qz-mode") === "test"; } catch (e) { /* ignoré */ }
+
+  /* Répétition privée : même régie, mais sur un quiz à part (lien secret) */
+  function canTest() { return !!(state.me && state.me.quizTest); }
+  function testMode() { return qz.test && canTest(); }
+  function withTest(body) { if (testMode()) body.test = true; return body; }
+  function setQuizMode(test) {
+    if (qz.dirty && !confirm("Des questions ne sont pas enregistrées. Changer quand même ?")) return;
+    qz.test = test;
+    try { localStorage.setItem("mc-qz-mode", test ? "test" : "real"); } catch (e) { /* ignoré */ }
+    qz.questions = null; qz.qsig = ""; qz.dirty = false; qz.d = null; gamesSig = ""; testSig = "";
+    $("#qz-save-state").textContent = "";
+    startQuizAdmin();
+  }
+  $all("[data-qz-mode]").forEach(function (b) {
+    b.addEventListener("click", function () { var t = b.getAttribute("data-qz-mode") === "test"; if (t !== testMode()) setQuizMode(t); });
+  });
+  var testSig = "";
+  function renderTestPanel(d) {
+    var test = testMode(), t = d.test;
+    $("#qz-mode").hidden = !canTest();
+    $all("[data-qz-mode]").forEach(function (b) { b.classList.toggle("is-on", (b.getAttribute("data-qz-mode") === "test") === test); });
+    $("#tab-quiz").classList.toggle("is-test", test);
+    $("#qz-test").hidden = !test;
+    var open = !test || !!t;
+    $("#qz-regie").hidden = !open;
+    $("#qz-list").closest(".card").hidden = !open;
+    $(".qz-games").hidden = test && !t;
+    $("#qz-game-new").hidden = test;
+    var link = t ? location.origin + "/quiz?test=" + t.code : "";
+    $("#qz-screen-link").href = t && test ? "/ecran?test=" + t.code : "/ecran";
+    $("#qz-player-link").href = t && test ? "/quiz?test=" + t.code : "/quiz";
+    $("#qz-screen-url").textContent = location.host + (t && test ? "/ecran?test=" + t.code : "/ecran");
+    if (!test) return;
+    var sig = JSON.stringify([t, d.testers, d.games && d.games.map(function (g) { return g.name; })]);
+    if (sig === testSig) return;
+    testSig = sig;
+    $("#qz-testers").textContent = d.testers ? "Peuvent faire des répétitions : " + d.testers.join(", ") + (state.me.role === "superadmin" ? " (à régler dans « Comptes »)." : ".") : "";
+    $("#qz-test-off").hidden = !!t;
+    $("#qz-test-on").hidden = !t;
+    if (t) {
+      $("#qz-test-link").textContent = link;
+      $("#qz-test-screen").href = "/ecran?test=" + t.code;
+      $("#qz-test-info").textContent = "Jeu testé : « " + t.game + " » · ouverte par " + t.by + ". Pour tester un autre jeu : « Tester ce jeu » dans la liste des jeux. Les questions modifiées ici sont celles du vrai jeu.";
+    } else {
+      $("#qz-test-game").innerHTML = (d.games || []).map(function (g) {
+        return '<option value="' + esc(g.name) + '">' + esc(g.name) + " · " + g.count + " question" + (g.count > 1 ? "s" : "") + "</option>";
+      }).join("");
+    }
+  }
+  $("#qz-test-open").addEventListener("click", function () {
+    api("/api/quiz", { method: "POST", body: { action: "test-open", test: true, game: $("#qz-test-game").value } })
+      .then(function () { qz.questions = null; qz.qsig = ""; testSig = ""; toast("Répétition ouverte : envoyez le lien à vos testeurs."); startQuizAdmin(); })
+      .catch(function (err) { toast(err.message, true); });
+  });
+  $("#qz-test-close").addEventListener("click", function () {
+    if (!confirm("Terminer la répétition ? Le lien ne marchera plus et les scores de test sont effacés.")) return;
+    api("/api/quiz", { method: "POST", body: { action: "test-close", test: true } })
+      .then(function () { qz.questions = null; qz.qsig = ""; testSig = ""; toast("Répétition terminée."); startQuizAdmin(); })
+      .catch(function (err) { toast(err.message, true); });
+  });
+  $("#qz-test-share").addEventListener("click", function () {
+    var url = $("#qz-test-link").textContent;
+    var text = "🧪 Répétition du quiz de la fête (un test, pas le vrai !) : rejoins avec ce lien, entre ton prénom et réponds sur ton téléphone.";
+    if (navigator.share) return navigator.share({ title: "Répétition du quiz", text: text, url: url }).catch(function () {});
+    navigator.clipboard.writeText(text + "\n" + url).then(function () { toast("Lien copié : collez-le dans WhatsApp ou par SMS."); }, function () { toast("Copiez le lien à la main.", true); });
+  });
 
   function startQuizAdmin() {
     stopQuizAdmin();
     var gen = ++qz.gen; // une réponse d'une ancienne boucle est ignorée
     quizWake(true);
     (function poll() {
-      api("/api/quiz?view=admin").then(function (d) {
+      api("/api/quiz?view=admin" + (testMode() ? "&test=1" : "")).then(function (d) {
         if (gen !== qz.gen) return;
         qz.lastOk = Date.now();
+        renderTestPanel(d);
+        if (!d.state) return; // répétition pas encore ouverte
         qz.state = d.state; qz.offset = d.serverNow - Date.now();
         // l'éditeur n'est redessiné que si les questions ont changé et que personne n'est en train d'y écrire
         var sig = JSON.stringify(d.questions), typing = $("#qz-list").contains(document.activeElement);
@@ -2152,7 +2221,7 @@
     var cur = qz.d && qz.d.state;
     if (cur && cur.phase !== "off" && !confirm("Le quiz est en cours. Enregistrer quand même ? (Ne supprimez pas ou ne déplacez pas les questions déjà jouées.)")) return;
     var list = readQuizList();
-    api("/api/quiz", { method: "PUT", body: { questions: list } }).then(function (d) {
+    api("/api/quiz", { method: "PUT", body: withTest({ questions: list }) }).then(function (d) {
       qz.questions = d.questions; qz.qsig = JSON.stringify(d.questions); qz.dirty = false; renderQuizList();
       $("#qz-save-state").textContent = "Enregistré ✓"; toast("Questions enregistrées.");
     }).catch(function (err) { toast(err.message, true); });
@@ -2259,22 +2328,22 @@
   /* Les jeux : quiz de la famille, blind test… */
   var gamesSig = "";
   function renderGames(games, st) {
-    var sig = JSON.stringify(games) + st.phase + st.done;
+    var sig = JSON.stringify(games) + st.phase + st.done + testMode();
     if (sig === gamesSig) return;
     gamesSig = sig;
     var busy = ["question", "reveal"].indexOf(st.phase) >= 0 || (st.phase === "board" && !st.done);
-    $("#qz-list-title").textContent = "Les questions · " + (st.game || "Quiz de bord");
+    $("#qz-list-title").textContent = "Les questions · " + (st.game || "Quiz de bord") + (testMode() ? " (répétition)" : "");
     $("#qz-games").innerHTML = games.map(function (g) {
       return '<div class="qz-game' + (g.current ? " is-current" : "") + '"><div><b>' + esc(g.name) + "</b><small>" + g.count + " question" + (g.count > 1 ? "s" : "") +
         (g.music ? " · 🎵 " + g.music + " extrait" + (g.music > 1 ? "s" : "") : "") + "</small></div>" +
         (g.current ? '<span class="pill">En cours</span>'
-          : '<button type="button" class="btn btn--small btn--gold" data-game="' + esc(g.name) + '"' + (busy ? " disabled title=\"Terminez d'abord la partie en cours\"" : "") + ">Jouer ce jeu</button>" +
+          : '<button type="button" class="btn btn--small btn--gold" data-game="' + esc(g.name) + '"' + (busy ? " disabled title=\"Terminez d'abord la partie en cours\"" : "") + ">" + (testMode() ? "Tester ce jeu" : "Jouer ce jeu") + "</button>" +
             '<button type="button" class="btn btn--small btn--line btn--danger" data-game-del="' + esc(g.name) + '" aria-label="Supprimer ' + esc(g.name) + '">×</button>') + "</div>";
     }).join("");
   }
   function gameCall(body, msg) {
-    return api("/api/quiz", { method: "POST", body: body }).then(function () {
-      qz.questions = null; qz.qsig = ""; gamesSig = ""; qz.dirty = false;
+    return api("/api/quiz", { method: "POST", body: withTest(body) }).then(function () {
+      qz.questions = null; qz.qsig = ""; gamesSig = ""; testSig = ""; qz.dirty = false;
       $("#qz-save-state").textContent = "";
       toast(msg); startQuizAdmin();
     }).catch(function (err) { toast(err.message, true); });
@@ -2283,12 +2352,13 @@
     var name = e.target.getAttribute("data-game"), del = e.target.getAttribute("data-game-del");
     if (name !== null) {
       if (qz.dirty) return toast("Enregistrez d'abord les questions.", true);
-      if (!confirm("Passer au jeu « " + name + " » ?\n\nLes invités restent connectés et tout le monde repart de zéro point. Les questions du jeu actuel sont gardées.")) return;
+      if (!confirm(testMode() ? "Tester le jeu « " + name + " » ? (Répétition : la soirée n'est pas touchée, les scores de test repartent de zéro.)"
+        : "Passer au jeu « " + name + " » ?\n\nLes invités restent connectés et tout le monde repart de zéro point. Les questions du jeu actuel sont gardées.")) return;
       gameCall({ action: "game", name: name }, "Jeu « " + name + " » chargé.");
     }
     if (del !== null) {
       if (!confirm("Supprimer le jeu « " + del + " » et toutes ses questions ?")) return;
-      api("/api/quiz", { method: "POST", body: { action: "game-delete", name: del } }).then(function () { gamesSig = ""; toast("Jeu supprimé."); startQuizAdmin(); })
+      api("/api/quiz", { method: "POST", body: withTest({ action: "game-delete", name: del }) }).then(function () { gamesSig = ""; toast("Jeu supprimé."); startQuizAdmin(); })
         .catch(function (err) { toast(err.message, true); });
     }
   });
@@ -2304,7 +2374,7 @@
     if (action === "off" && qz.d && qz.d.state.phase !== "podium" && qz.d.state.phase !== "off" && !confirm("Fermer le quiz maintenant ? Les joueurs verront « quiz fermé ».")) return;
     if (qz.busy) return;
     var st = qz.d && qz.d.state;
-    var body = Object.assign({ action: action }, st ? { from: { phase: st.phase, round: st.round || 0, index: st.index } } : {}, extra || {});
+    var body = withTest(Object.assign({ action: action }, st ? { from: { phase: st.phase, round: st.round || 0, index: st.index } } : {}, extra || {}));
     qz.busy = true;
     $("#qz-next").disabled = true;
     api("/api/quiz", { method: "POST", body: body }).then(function () {
@@ -2594,6 +2664,7 @@
         "<td><b>" + esc(u.name) + "</b>" + (self ? " <small>(vous)</small>" : "") + "</td>" +
         "<td><code>" + esc(u.username) + "</code></td>" +
         "<td>" + roleSel + "</td>" +
+        "<td>" + quizTestCell(u, iAmSuper) + "</td>" +
         "<td>" + (u.mustChange ? '<span class="tag tag--gold">Code provisoire</span>' : '<span class="tag tag--ok">Actif</span>') + "</td>" +
         "<td>" + fmtDate(u.lastLogin) + "</td>" +
         '<td class="actions">' + (locked ? (self ? "" : '<small class="hint">Compte protégé</small>') :
@@ -2601,6 +2672,14 @@
           '<button class="btn btn--small btn--line btn--danger" data-remove="' + esc(u.username) + '">Supprimer</button>') +
         "</td></tr>";
     }).join("");
+  }
+
+  // Répétitions du quiz : seul le super admin coche ; lui l'a toujours, les fêtés jamais (surprise)
+  function quizTestCell(u, iAmSuper) {
+    if (u.role === "superadmin") return '<span class="tag tag--ok">Toujours</span>';
+    if (u.role === "hote") return '<small class="hint">Non (surprise)</small>';
+    if (!iAmSuper) return u.quizTest ? "🧪 Oui" : "–";
+    return '<label class="qt-check"><input type="checkbox" data-qtest="' + esc(u.username) + '"' + (u.quizTest ? " checked" : "") + " /> 🧪</label>";
   }
 
   function showCode(user, code) {
@@ -2641,6 +2720,12 @@
   });
 
   $("#acc-table").addEventListener("change", function (e) {
+    var qt = e.target.getAttribute("data-qtest");
+    if (qt) {
+      return api("/api/accounts", { method: "PATCH", body: { username: qt, quizTest: e.target.checked } })
+        .then(function () { toast(e.target.checked ? "Répétitions du quiz autorisées." : "Répétitions du quiz retirées."); loadUsers(); })
+        .catch(function (err) { toast(err.message, true); loadUsers(); });
+    }
     var username = e.target.getAttribute("data-role");
     if (!username) return;
     api("/api/accounts", { method: "PATCH", body: { username: username, role: e.target.value } })

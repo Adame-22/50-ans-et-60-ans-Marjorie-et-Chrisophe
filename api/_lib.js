@@ -115,6 +115,7 @@ const EXTRA_ACCOUNTS = [
   { username: "anthony", name: "Anthony", role: "admin", hash: "fcefbe8db4380726ec28a0b702cceba0:ca47af3e8803dc4e88881aca09ca5d1d71fd749a5dc29b875984c5750baf3f7957e366458e87783bcff19556364d644c59418c65c919f6b03345f658f611ae3d" },
 ];
 const SUPERADMINS = ["adame"]; // au-dessus de tous les comptes ; seul un super admin peut le modifier
+const QUIZ_TESTERS = ["lucie"]; // répétitions privées du quiz, données d'office une fois (le super admin peut les retirer)
 const HOSTS = ["marjorie", "christophe"]; // les fêtés : rôle « hote », sans les surprises (forcé à chaque démarrage)
 
 // « hote » : Marjorie et Christophe. Accès commandant, sans rien de ce qui doit rester une surprise
@@ -122,6 +123,8 @@ const HOSTS = ["marjorie", "christophe"]; // les fêtés : rôle « hote », san
 function isHost(user) { return !!user && user.role === "hote"; }
 function isAdmin(user) { return !!user && (user.role === "admin" || user.role === "superadmin" || user.role === "hote"); }
 // Refuse l'accès aux surprises pour les fêtés
+// Répétitions privées du quiz : le super admin, et les comptes à qui il l'a donné (jamais les fêtés)
+function canTestQuiz(user) { return !!user && !isHost(user) && (user.role === "superadmin" || !!user.quizTest || !!user.agent); }
 function noSpoil(user) { if (isHost(user)) throw new HttpError(403, "Surprise ! Cette partie est réservée à l'équipage."); }
 // La Boîte noire publique est scellée jusqu'au jour de la fête (heure de Paris)
 const EVENT_DAY = process.env.MC_EVENT_DAY || "2026-11-07";
@@ -140,6 +143,11 @@ async function migrateAccounts() {
     const raw = await redis(["HGET", K.users, name]);
     const user = raw && JSON.parse(raw);
     if (user && user.role !== "hote") { user.role = "hote"; await redis(["HSET", K.users, name, JSON.stringify(user)]); }
+  }
+  for (const name of QUIZ_TESTERS) {
+    const raw = await redis(["HGET", K.users, name]);
+    const user = raw && JSON.parse(raw);
+    if (user && user.quizTest === undefined) { user.quizTest = true; await redis(["HSET", K.users, name, JSON.stringify(user)]); }
   }
   for (const name of SUPERADMINS) {
     const raw = await redis(["HGET", K.users, name]);
@@ -185,7 +193,7 @@ async function saveUser(user) {
 
 function publicUser(u) {
   return { username: u.username, name: u.name, role: u.role, mustChange: !!u.mustChange, createdAt: u.createdAt, lastLogin: u.lastLogin || null,
-    backupLeft: Array.isArray(u.backup) ? u.backup.length : 0 };
+    backupLeft: Array.isArray(u.backup) ? u.backup.length : 0, quizTest: canTestQuiz(u) };
 }
 
 /* ───────── Sessions (cookie signé HMAC) ───────── */
@@ -308,6 +316,6 @@ function str(v, max) {
 
 module.exports = {
   K, HttpError, redis, hgetallJson, hashPassword, verifyPassword, tempCode,
-  ensureSeed, getUser, isAdmin, noAgent, isHost, HOSTS, noSpoil, boiteSealed, readSession, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
+  ensureSeed, getUser, isAdmin, noAgent, isHost, HOSTS, noSpoil, canTestQuiz, boiteSealed, readSession, backupCodes, useBackupCode, saveUser, publicUser, signSession, sessionCookie, requireUser,
   readBody, send, handler, query, str, clientIp, rateLimit,
 };

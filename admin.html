@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261107" />
-  <link rel="stylesheet" href="css/style.css?v=20261107" />
-  <link rel="stylesheet" href="css/admin.css?v=20261107" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261108" />
+  <link rel="stylesheet" href="css/style.css?v=20261108" />
+  <link rel="stylesheet" href="css/admin.css?v=20261108" />
 </head>
 <body class="admin">
 
@@ -416,12 +416,38 @@
     <section class="panel" id="tab-quiz" role="tabpanel" hidden>
       <div class="panel__intro"><h2>Le quiz</h2><p>Votre régie pour animer : <b>un seul gros bouton</b> fait avancer le quiz, et le texte en dessous vous dit quoi annoncer.</p></div>
 
+      <div class="qz-mode" id="qz-mode" role="group" aria-label="Soirée ou répétition" hidden>
+        <button type="button" data-qz-mode="real">🎉 La soirée</button>
+        <button type="button" data-qz-mode="test">🧪 Répétition privée</button>
+      </div>
+      <div class="card qz-test" id="qz-test" hidden>
+        <p class="qz-test__badge">🧪 Mode répétition : invisible pour les invités, la soirée n'est pas touchée.</p>
+        <div id="qz-test-off">
+          <p>Choisissez le jeu à tester, puis ouvrez la répétition : vous aurez un <b>lien secret</b> à envoyer seulement aux personnes que vous invitez.</p>
+          <div class="qz-test__row">
+            <select id="qz-test-game" aria-label="Jeu à tester"></select>
+            <button type="button" class="btn btn--small btn--gold" id="qz-test-open">Ouvrir une répétition</button>
+          </div>
+        </div>
+        <div id="qz-test-on" hidden>
+          <p>Lien à envoyer aux joueurs invités&nbsp;:</p>
+          <p class="qz-test__link" id="qz-test-link"></p>
+          <div class="qz-test__row">
+            <button type="button" class="btn btn--small btn--gold" id="qz-test-share">Envoyer le lien</button>
+            <a class="btn btn--small btn--line" id="qz-test-screen" href="#" target="_blank" rel="noopener">Ouvrir l'écran de test</a>
+            <button type="button" class="btn btn--small btn--line btn--danger" id="qz-test-close">Terminer la répétition</button>
+          </div>
+          <p class="hint hint--tiny" id="qz-test-info"></p>
+        </div>
+        <p class="hint hint--tiny" id="qz-testers"></p>
+      </div>
+
       <div class="card regie" id="qz-regie">
         <div class="regie__top">
           <span class="regie__phase" id="qz-phase">–</span>
           <span class="regie__step" id="qz-index"></span>
           <span class="toolbar__grow"></span>
-          <a class="btn btn--small btn--line" href="/ecran" target="_blank" rel="noopener">Ouvrir l'écran géant</a>
+          <a class="btn btn--small btn--line" id="qz-screen-link" href="/ecran" target="_blank" rel="noopener">Ouvrir l'écran géant</a>
         </div>
         <p class="regie__lost" id="qz-lost" role="alert" hidden></p>
         <p class="hint hint--tiny regie__screen">Écran géant : sur l'ordinateur relié au vidéoprojecteur, ouvrez <b id="qz-screen-url"></b>, puis « Activer le son » et « Plein écran ».</p>
@@ -455,7 +481,7 @@
               <button type="button" class="btn btn--small btn--line" data-qz="lobby">Réouvrir l'accueil des joueurs</button>
               <button type="button" class="btn btn--small btn--line" data-qz="off">Fermer le quiz</button>
               <button type="button" class="btn btn--small btn--line btn--danger" data-qz="reset">Tout remettre à zéro</button>
-              <p class="hint hint--tiny">Joueurs : <a href="/quiz" target="_blank" rel="noopener">page du quiz</a> · <span id="qz-players">0</span> inscrit(s).</p>
+              <p class="hint hint--tiny">Joueurs : <a href="/quiz" id="qz-player-link" target="_blank" rel="noopener">page du quiz</a> · <span id="qz-players">0</span> inscrit(s).</p>
             </div>
           </details>
         </div>
@@ -548,7 +574,7 @@
 
       <div class="card table-wrap">
         <table class="table table--stack" id="acc-table">
-          <thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead>
+          <thead><tr><th>Nom</th><th>Identifiant</th><th>Rôle</th><th title="Peut faire des répétitions privées du quiz">Répétitions quiz</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -782,9 +808,9 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261107"></script>
+  <script src="js/graph.js?v=20261108"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261107"></script>
-  <script src="js/admin.js?v=20261107"></script>
+  <script src="js/xlsx.js?v=20261108"></script>
+  <script src="js/admin.js?v=20261108"></script>
 </body>
 </html>

@@ -656,3 +656,6 @@ body.live::before {
 .q-song b { font-size: 1.05rem; line-height: 1.25; }
 .q-song span { color: rgba(255, 251, 254, .75); font-size: .9rem; }
 @media (prefers-reduced-motion: reduce) { .q-eq i { animation: none; transform: scaleY(.7); } }
+
+/* Répétition privée */
+.live__tag--test { background: #7b5cd6; color: #fff; padding: .15rem .6rem; border-radius: 999px; margin-right: auto; margin-left: .6rem; }
