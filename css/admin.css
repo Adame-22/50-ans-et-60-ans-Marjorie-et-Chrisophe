@@ -845,3 +845,46 @@ body.admin { font-variant-numeric: lining-nums; }
 .bd-reg__meal { grid-column: 1 / -1; font-size: .82rem; color: #8a5a00; }
 .bd-empty { margin: 8px 4px; color: #b7b0a2; font-size: .9rem; }
 .graph-wrap[hidden] { display: none; }
+
+/* ───────── Quiz : la régie de l'animateur ───────── */
+.regie { display: grid; gap: 14px; }
+.regie__top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.regie__phase { padding: .3rem .8rem; border-radius: 999px; background: #eee; color: #5d6061; font-weight: 700; font-size: .9rem; }
+.regie__phase--lobby { background: #e3e7fb; color: #26307e; }
+.regie__phase--question { background: #e0473a; color: #fff; }
+.regie__phase--reveal { background: #dff7e9; color: #146c3c; }
+.regie__phase--board, .regie__phase--podium { background: var(--navy); color: var(--gold-light); }
+.regie__step { font-weight: 600; color: var(--navy); }
+.regie__dots { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.regie__dots li { width: 22px; height: 6px; border-radius: 999px; background: #e7e0d6; }
+.regie__dots li.is-done { background: var(--gold); }
+.regie__dots li.is-now { background: #e0473a; }
+.regie__say { margin: 0; padding: 14px 16px; border-radius: 14px; background: #fff6e5; border: 1px solid #f3d29a; font-size: 1.08rem; line-height: 1.5; color: #4a3a1c; }
+.regie__say::before { content: "À dire · "; font-weight: 700; color: #8a5a00; }
+.regie__q { display: grid; gap: 10px; }
+.regie__q[hidden], .regie__live[hidden], .regie__top10[hidden] { display: none; }
+.regie__qtext { margin: 0; font-family: var(--serif); font-size: clamp(1.4rem, 4vw, 1.9rem); line-height: 1.2; color: var(--navy); }
+.regie__choices { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.regie__choice { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; border: 1.5px solid #e2d6c6; background: #fff; font-size: 1.02rem; }
+.regie__choice.is-ok { border-color: #3ccf7a; background: #effaf3; }
+.regie__letter { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--navy); color: var(--gold-light); font-weight: 700; flex: none; }
+.regie__good { flex-basis: 100%; font-style: normal; font-size: .8rem; font-weight: 700; color: #146c3c; padding-left: 40px; }
+.regie__cnt { margin-left: auto; font-size: 1.1rem; color: var(--navy); }
+.regie__live p { margin: 6px 0 0; font-size: 1rem; }
+.regie__meter { height: 10px; border-radius: 999px; background: #eee6da; overflow: hidden; }
+.regie__meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--gold-light)); transition: width .4s; }
+.regie.is-timeup .regie__next { animation: regie-pulse 1.2s ease-in-out infinite; }
+@keyframes regie-pulse { 50% { box-shadow: 0 0 0 8px rgba(255, 177, 0, .35); } }
+.regie__top10 { margin: 0; padding: 0; list-style: none; counter-reset: rk; display: grid; gap: 6px; }
+.regie__top10 li { counter-increment: rk; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: #faf6f0; font-size: 1.02rem; }
+.regie__top10 li::before { content: counter(rk); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: var(--gold-light); font-weight: 700; font-size: .85rem; }
+.regie__top10 li b { margin-left: auto; color: var(--gold); }
+.regie__next { width: 100%; min-height: 64px; font-size: 1.2rem; }
+.regie__next[disabled] { opacity: .55; }
+.regie__kbd { margin: -6px 0 0; text-align: center; }
+@media (hover: none) { .regie__kbd { display: none; } }
+.regie__more { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.regie__opts { flex-basis: 100%; }
+.regie__opts summary { cursor: pointer; font-weight: 600; color: var(--navy); padding: 6px 0; }
+.regie__optsbody { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 6px; }
+.regie__optsbody .hint { flex-basis: 100%; margin: 0; }

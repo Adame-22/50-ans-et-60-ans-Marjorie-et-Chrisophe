@@ -113,8 +113,9 @@ module.exports = L.handler(async (req, res) => {
     if (view === "admin") {
       L.noSpoil(await L.requireUser(req)); // questions et réponses : surprise pour les fêtés
       const answered = state.round ? await L.redis(["HLEN", K.answers(state.round)]) : 0;
-      const players = await L.redis(["HLEN", K.players]);
-      return L.send(res, 200, { state, questions, answered, players, serverNow: Date.now() });
+      const all = await allPlayers();
+      // le top 10 pour que l'animateur puisse annoncer les leaders
+      return L.send(res, 200, { state, questions, answered, players: all.length, top: leaderboard(all).slice(0, 10), serverNow: Date.now() });
     }
 
     const out = { phase: state.phase, index: state.index, total: questions.length, serverNow: Date.now() };

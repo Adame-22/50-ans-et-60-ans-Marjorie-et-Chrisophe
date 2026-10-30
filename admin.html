@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261104" />
-  <link rel="stylesheet" href="css/style.css?v=20261104" />
-  <link rel="stylesheet" href="css/admin.css?v=20261104" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261105" />
+  <link rel="stylesheet" href="css/style.css?v=20261105" />
+  <link rel="stylesheet" href="css/admin.css?v=20261105" />
 </head>
 <body class="admin">
 
@@ -414,31 +414,52 @@
 
     <!-- Quiz -->
     <section class="panel" id="tab-quiz" role="tabpanel" hidden>
-      <div class="panel__intro"><h2>Le quiz</h2><p>À lancer pendant la fête : suivez les boutons dans l'ordre, de 1 à 4.</p></div>
-      <div class="card quiz-host">
-        <div class="quiz-host__status">
-          <div><span>Phase</span><strong id="qz-phase">–</strong></div>
-          <div><span>Question</span><strong id="qz-index">–</strong></div>
-          <div><span>Joueurs</span><strong id="qz-players">–</strong></div>
-          <div><span>Réponses</span><strong id="qz-answered">–</strong></div>
-          <div><span>Chrono</span><strong id="qz-left">–</strong></div>
+      <div class="panel__intro"><h2>Le quiz</h2><p>Votre régie pour animer : <b>un seul gros bouton</b> fait avancer le quiz, et le texte en dessous vous dit quoi annoncer.</p></div>
+
+      <div class="card regie" id="qz-regie">
+        <div class="regie__top">
+          <span class="regie__phase" id="qz-phase">–</span>
+          <span class="regie__step" id="qz-index"></span>
+          <span class="toolbar__grow"></span>
+          <a class="btn btn--small btn--line" href="/ecran" target="_blank" rel="noopener">Ouvrir l'écran géant</a>
         </div>
-        <p class="hint" id="qz-current"></p>
-        <div class="quiz-host__actions">
-          <button class="btn btn--small btn--line" data-qz="lobby">1 · Ouvrir l'embarquement</button>
-          <button class="btn btn--small btn--gold" data-qz="start">2 · Question suivante</button>
-          <button class="btn btn--small btn--line" data-qz="reveal">3 · Révéler la réponse</button>
-          <button class="btn btn--small btn--line" data-qz="board">4 · Classement</button>
-          <button class="btn btn--small btn--line" data-qz="podium">Podium final</button>
-          <button class="btn btn--small btn--line" data-qz="off">Fermer le quiz</button>
-          <button class="btn btn--small btn--line btn--danger" data-qz="reset">Tout remettre à zéro</button>
+        <ol class="regie__dots" id="qz-dots" aria-hidden="true"></ol>
+
+        <p class="regie__say" id="qz-say"></p>
+
+        <div class="regie__q" id="qz-q" hidden>
+          <p class="regie__qtext" id="qz-qtext"></p>
+          <ul class="regie__choices" id="qz-choices"></ul>
         </div>
-        <p class="hint">Joueurs : <a href="/quiz" target="_blank" rel="noopener">/quiz</a> · Écran géant : <a href="/ecran" target="_blank" rel="noopener">/ecran</a></p>
+
+        <div class="regie__live" id="qz-live" hidden>
+          <div class="regie__meter"><i id="qz-bar"></i></div>
+          <p><b id="qz-answered">0</b> réponse(s) sur <b id="qz-players2">0</b> joueurs · <b id="qz-left">–</b></p>
+        </div>
+
+        <ol class="regie__top10" id="qz-top" hidden></ol>
+
+        <button type="button" class="btn btn--gold regie__next" id="qz-next">…</button>
+        <p class="hint hint--tiny regie__kbd">Sur ordinateur : barre d'espace = étape suivante.</p>
+
+        <div class="regie__more">
+          <button type="button" class="btn btn--small btn--line" id="qz-skip" hidden>Passer le classement</button>
+          <details class="regie__opts">
+            <summary>Autres options</summary>
+            <div class="regie__optsbody">
+              <button type="button" class="btn btn--small btn--line" data-qz="podium" id="qz-podium" hidden>Arrêter et afficher le podium</button>
+              <button type="button" class="btn btn--small btn--line" data-qz="lobby">Réouvrir l'accueil des joueurs</button>
+              <button type="button" class="btn btn--small btn--line" data-qz="off">Fermer le quiz</button>
+              <button type="button" class="btn btn--small btn--line btn--danger" data-qz="reset">Tout remettre à zéro</button>
+              <p class="hint hint--tiny">Joueurs : <a href="/quiz" target="_blank" rel="noopener">page du quiz</a> · <span id="qz-players">0</span> inscrit(s).</p>
+            </div>
+          </details>
+        </div>
       </div>
 
       <div class="card">
         <div class="toolbar">
-          <h3 style="margin:0">Questions</h3>
+          <h3 style="margin:0">Les questions</h3>
           <span class="toolbar__grow"></span>
           <span class="save-state" id="qz-save-state"></span>
           <button class="btn btn--small btn--line" id="qz-add" type="button">+ Ajouter une question</button>
@@ -715,9 +736,9 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261104"></script>
+  <script src="js/graph.js?v=20261105"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261104"></script>
-  <script src="js/admin.js?v=20261104"></script>
+  <script src="js/xlsx.js?v=20261105"></script>
+  <script src="js/admin.js?v=20261105"></script>
 </body>
 </html>
