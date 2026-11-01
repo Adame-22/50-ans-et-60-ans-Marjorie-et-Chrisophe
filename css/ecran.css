@@ -483,3 +483,9 @@ body.is-test .screen__now::before { content: "🧪 RÉPÉTITION · "; color: #b9
 .ready-miss { margin: 0; max-width: 80vw; font-size: min(2.2vw, 3.8vh); line-height: 1.4; }
 .ready-miss b { color: var(--gold-light); }
 .ready-miss small { font-size: .8em; color: rgba(255, 251, 254, .75); }
+
+/* Anti-Shazam */
+.qz-noshazam { margin: .4vh 0 0; font-size: min(1.6vw, 2.7vh); font-weight: 700; color: #ff9c8f; }
+.qz-suspects { margin: 0; text-align: center; font-size: min(1.9vw, 3.2vh); animation: fx-pop .6s cubic-bezier(.3, 1.4, .5, 1) both .9s; }
+.qz-suspects b { color: #ff9c8f; }
+.qz-suspects small { font-size: .7em; color: rgba(255, 251, 254, .7); }

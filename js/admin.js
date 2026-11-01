@@ -2083,7 +2083,7 @@
       lobby: "Annoncez : « Sortez vos téléphones, scannez le QR code à l'écran et entrez votre prénom ! » " + plural(d.players, "joueur est", "joueurs sont") + " déjà là. Quand tout le monde est prêt, lancez la question (ou « Tout en automatique » : le quiz se déroule tout seul).",
       ready: "Vérification des joueurs : chacun garde le quiz ouvert sur son téléphone. La question part toute seule dès que tout le monde est là (10 secondes au plus).",
       question: q && q.audio
-        ? "🎵 Blind test : l'extrait passe sur l'écran géant (le son de l'écran doit être activé). Les invités répondent sur leur téléphone. Révélez la réponse quand le chrono est fini : la chanson repart avec sa pochette."
+        ? "🎵 Blind test : l'extrait passe sur l'écran géant (le son de l'écran doit être activé). Rappelez que Shazam est interdit : celui qui quitte la page du quiz pendant l'extrait est plafonné à 100 points… et affiché à l'écran ! Révélez la réponse quand le chrono est fini : la chanson repart avec sa pochette."
         : "Lisez la question à voix haute. Les invités répondent sur leur téléphone. Révélez la réponse quand le chrono est fini (ou quand tout le monde a répondu).",
       reveal: q ? "Annoncez la bonne réponse : « " + LETTERS[q.answer] + " · " + q.choices[q.answer] + " ». " + plural(correct, "joueur a trouvé", "joueurs ont trouvé") + " sur " + total + "." : "",
       board: "Annoncez les leaders : " + podium + ". Puis passez à la suite.",
@@ -2100,9 +2100,10 @@
       var ty = st.typed, showTy = !!(ty && st.phase !== "question");
       $("#qz-typed").hidden = !showTy;
       if (showTy) $("#qz-typed").textContent = "⌨️ " + ty.ok + " trouvé(s) au clavier · " + ty.ko + " réponse(s) tapée(s) fausse(s) · 🎯 " + ((st.counts || [])[q.answer] || 0) + " avec les choix";
-      var fun = showTy ? st.funnies || [] : [];
-      $("#qz-funny").hidden = !fun.length;
-      if (fun.length) $("#qz-funny").innerHTML = "<b>😂 Réponses drôles" + (st.showFunny === false ? " (masquées sur l'écran)" : " affichées") + " :</b> " + fun.map(function (f) { return "«&nbsp;" + esc(f.text) + "&nbsp;» <small>" + esc(f.name) + "</small>"; }).join(" · ");
+      var fun = showTy ? st.funnies || [] : [], sus = st.phase !== "question" ? st.suspects || [] : [];
+      $("#qz-funny").hidden = !fun.length && !sus.length;
+      $("#qz-funny").innerHTML = (fun.length ? "<b>😂 Réponses drôles" + (st.showFunny === false ? " (masquées sur l'écran)" : " affichées") + " :</b> " + fun.map(function (f) { return "«&nbsp;" + esc(f.text) + "&nbsp;» <small>" + esc(f.name) + "</small>"; }).join(" · ") : "") +
+        (sus.length ? (fun.length ? "<br>" : "") + "<b>🕵️ Sortis du quiz pendant l'extrait (100 pts max) :</b> " + sus.map(esc).join(", ") : "");
       $("#qz-song").hidden = !q.audio;
       if (q.audio) $("#qz-song").textContent = "🎵 " + q.audio.title + " · " + q.audio.artist + (q.audio.year ? " (" + q.audio.year + ")" : "");
       var counts = st.counts || [];

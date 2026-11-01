@@ -707,3 +707,6 @@ body.live.is-playing .q-status { margin-top: .6rem; }
 .ready-card__title { margin: 0; font-family: var(--serif); font-size: 1.9rem; }
 .ready-card__sub { margin: 0; color: rgba(255, 251, 254, .78); line-height: 1.5; }
 .ready-card__count { margin: .6rem 0 0; font-weight: 700; color: var(--gold-light); }
+
+/* Anti-Shazam */
+.q-noshazam { margin: -.1rem 0 .5rem; text-align: center; font-size: .82rem; font-weight: 700; color: #ff9c8f; }

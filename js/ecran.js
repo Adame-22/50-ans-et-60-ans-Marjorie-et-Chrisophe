@@ -312,7 +312,8 @@
   // question « à taper » : en attendant les choix, on invite à taper sur le téléphone
   function typingSlot(q) {
     return '<div class="qz-typing" id="qz-slot"><p class="qz-typing__t"><span aria-hidden="true">⌨️</span> Tapez votre réponse sur votre téléphone&nbsp;!</p>' +
-      '<p class="qz-typing__s">Jusqu\'à 1&nbsp;000 points… les 4 choix arrivent dans <b id="qz-hint">' + Math.max(0, Math.ceil((q.hintAt - now()) / 1000)) + "</b>&nbsp;s</p></div>";
+      '<p class="qz-typing__s">Jusqu\'à 1&nbsp;000 points… les 4 choix arrivent dans <b id="qz-hint">' + Math.max(0, Math.ceil((q.hintAt - now()) / 1000)) + "</b>&nbsp;s</p>" +
+      (q.audio ? '<p class="qz-noshazam">🚫 Shazam interdit&nbsp;: le téléphone voit si vous quittez le quiz</p>' : "") + "</div>";
   }
   function showChoicesIfReady() {
     var slot = document.getElementById("qz-slot"), q = quiz.question;
@@ -470,7 +471,7 @@
       '<div class="qz-hist">' + q.choices.map(function (c, i) {
         return '<div class="qz-col k' + i + (i === quiz.correct ? " is-correct" : "") + '"><span class="qz-col__n">' + (counts[i] || 0) + "</span>" +
           '<i class="qz-col__bar" data-h="' + Math.round((counts[i] || 0) / max * 100) + '"></i><span class="qz-col__shape">' + SHAPES[i] + (i === quiz.correct ? " ✓" : "") + "</span></div>";
-      }).join("") + "</div>" + tiles(q) + "</section>";
+      }).join("") + "</div>" + suspectsLine() + tiles(q) + "</section>";
     stage.querySelectorAll(".qz-tile").forEach(function (t) { t.classList.toggle("is-correct", +t.getAttribute("data-i") === quiz.correct); t.classList.toggle("is-wrong", +t.getAttribute("data-i") !== quiz.correct); });
     // les barres montent (au rendu suivant, pour que l'animation se joue)
     requestAnimationFrame(function () { requestAnimationFrame(function () {
@@ -481,6 +482,10 @@
     if (q.audio) later(function () { Music.resume(q.audio.url, q.audio.start, 0.6); }, 700);
   }
 
+  function suspectsLine() {
+    var s = quiz.suspects || [];
+    return s.length ? '<p class="qz-suspects">🕵️ Partis Shazamer&nbsp;? <b>' + s.map(esc).join(", ") + "</b> <small>(100 points maximum)</small></p>" : "";
+  }
   function renderTypedReveal(q, song) {
     var counts = quiz.counts || [], ty = quiz.typed || { ok: 0, ko: 0 };
     var viaChoices = counts[quiz.correct] || 0, total = counts.reduce(function (a, b) { return a + b; }, 0) + ty.ok + ty.ko;
@@ -491,7 +496,7 @@
         ? '<div class="qz-song">' + (q.audio.cover ? '<img src="' + esc(q.audio.cover) + '" alt="" />' : "") +
           "<div><b>" + esc(q.audio.title) + "</b><span>" + esc(q.audio.artist) + (q.audio.year ? " · " + esc(q.audio.year) : "") + "</span></div></div>"
         : '<p class="qz-question">' + esc(q.q) + '</p><p class="qz-answer">✓ ' + esc(q.choices[quiz.correct]) + "</p>") +
-      '<div class="qz-typedstats"><div><b>' + ty.ok + '</b><span>⌨️ trouvé au clavier</span></div><div><b>' + viaChoices + "</b><span>🎯 avec les choix</span></div></div>" +
+      '<div class="qz-typedstats"><div><b>' + ty.ok + '</b><span>⌨️ trouvé au clavier</span></div><div><b>' + viaChoices + "</b><span>🎯 avec les choix</span></div></div>" + suspectsLine() +
       (fun.length ? '<div class="qz-funny"><p class="qz-funny__t">😂 Les réponses les plus créatives</p><ul>' + fun.map(function (f, i) {
         return '<li style="animation-delay:' + (1.2 + i * 0.7).toFixed(1) + 's">«&nbsp;' + esc(f.text) + "&nbsp;»<small>" + esc(f.name) + "</small></li>";
       }).join("") + "</ul></div>" : "") +

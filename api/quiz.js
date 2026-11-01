@@ -14,6 +14,10 @@
  * (jusqu'à 1000 points, correction tolérante) ; ensuite les 4 choix apparaissent (400 points au plus).
  * À la révélation, l'écran montre quelques réponses fausses tapées (« réponses drôles », filtrées).
  *
+ * Anti-Shazam (questions avec extrait) : le téléphone dit combien de temps il a quitté la page avant de
+ * répondre (away, en ms). Au-delà de 2 s, la réponse rapporte 100 points au plus et le prénom s'affiche
+ * à la révélation (« Partis Shazamer ? »).
+ *
  * Quand l'équipage active « classement par équipe » (onglet Équipes), l'état public
  * contient aussi teams (moyenne des points par équipe) et teamOf (joueur → équipe).
  *
@@ -65,6 +69,7 @@ const TEST_META = "mc:quiz:test:meta"; // { code, game, by, openedAt }
 const DEFAULT_GAME = "Quiz de bord";
 const READY_MIN = 2500, READY_MAX = 10000; // vérification des joueurs : au moins 2,5 s à l'écran, 10 s au plus
 const BOARD_FOR = 5500;
+const AWAY_MAX = 2000; // au-delà de 2 s hors de la page pendant un extrait : réponse plafonnée
 const MAX_GAMES = 8;
 
 // Questions de départ : « Qui de… » (réponse à régler dans l'admin selon la vérité !) et culture des années 66 / 76
@@ -250,7 +255,7 @@ async function flow(K, state, questions, action, o) {
       }
       Object.assign(state, {
         phase: "question", index, round, done: false, present,
-        startedAt: now + 3000, endsAt: now + 3000 + q.time * 1000, counts: null, gains: null, typed: null, funnies: null, revealedAt: null,
+        startedAt: now + 3000, endsAt: now + 3000 + q.time * 1000, counts: null, gains: null, typed: null, funnies: null, suspects: null, revealedAt: null,
       });
       break;
     }
@@ -270,7 +275,7 @@ async function flow(K, state, questions, action, o) {
       const writes = [];
       const typing = q.mode === "type", T = q.time * 1000, H = typing ? q.hintAt * 1000 : 0;
       const targets = [q.choices[q.answer]].concat(q.accept || []);
-      const typed = { ok: 0, ko: 0 }, wrong = [];
+      const typed = { ok: 0, ko: 0 }, wrong = [], suspects = [];
       for (const [pid, a] of Object.entries(answers)) {
         const p = players[pid];
         let good;
@@ -291,6 +296,8 @@ async function flow(K, state, questions, action, o) {
         } else if (good) {
           pts = Math.round(400 * (1 - Math.min(1, Math.max(0, a.ms - H) / Math.max(1, T - H)) / 2)); // avec les choix : 400 → 200
         }
+        // a quitté la page du quiz pendant l'extrait (Shazam ?) : 100 points au plus
+        if (q.audio && a.away >= AWAY_MAX) { pts = Math.min(pts, 100); suspects.push(p.name); }
         gains[p.pub] = pts;
         p.score = (p.score || 0) + pts;
         p.played = (p.played || 0) + 1;
@@ -298,7 +305,7 @@ async function flow(K, state, questions, action, o) {
       }
       // tous les scores en une seule écriture (rapide même avec 70 joueurs)
       if (writes.length) await L.redis(["HSET", K.players].concat(writes));
-      Object.assign(state, { counts, gains, scoring: false, revealedAt: Date.now(), typed: typing ? typed : null, funnies: typing ? TY.funny(wrong, 4) : null });
+      Object.assign(state, { counts, gains, scoring: false, revealedAt: Date.now(), typed: typing ? typed : null, funnies: typing ? TY.funny(wrong, 4) : null, suspects: suspects.slice(0, 8) });
       break;
     }
 
@@ -431,6 +438,7 @@ module.exports = L.handler(async (req, res) => {
       out.counts = state.counts || [];
       out.answered = (state.counts || []).reduce((a, b) => a + b, 0) + (state.typed ? state.typed.ok + state.typed.ko : 0);
       if (state.typed) { out.typed = state.typed; out.funnies = state.showFunny === false ? [] : state.funnies || []; }
+      if (state.suspects && state.suspects.length && state.showFunny !== false) out.suspects = state.suspects;
       out.gains = state.gains || {};
       out.scoring = !!state.scoring; // points en cours de calcul (moins d'une seconde)
     }
@@ -525,6 +533,8 @@ module.exports = L.handler(async (req, res) => {
     const clientMs = Number(body.elapsed);
     const ms = Number.isFinite(clientMs) ? Math.round(Math.min(serverMs, Math.max(serverMs - 2500, clientMs))) : serverMs;
     rec.ms = ms;
+    const away = Math.round(Number(body.away));
+    if (away > 0) rec.away = Math.min(600000, away); // temps passé hors de la page du quiz pendant l'extrait
     const ok = await L.redis(["HSETNX", K.answers(state.round), pid, JSON.stringify(rec)]);
     if (!ok) {
       const prev = JSON.parse((await L.redis(["HGET", K.answers(state.round), pid])) || "{}");

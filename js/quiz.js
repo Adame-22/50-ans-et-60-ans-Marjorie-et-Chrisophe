@@ -28,6 +28,21 @@
   var hintPolled = "";
   var hereSent = "", hereOk = "";      // vérification avant chaque question : « je suis là » envoyé / confirmé
 
+  // Anti-Shazam : temps passé hors de la page du quiz pendant un extrait, avant d'avoir répondu
+  // (gardé en mémoire : recharger la page ne l'efface pas)
+  var AWAY_MAX = 2000;
+  mem.away = mem.away || {};
+  if (mem.awayAt) { mem.away[mem.awayAt.k] = (mem.away[mem.awayAt.k] || 0) + Math.max(0, Date.now() - mem.awayAt.t); mem.awayAt = null; saveMem(); }
+  function watched() { return !!(state && me && state.phase === "question" && state.question && state.question.audio && mem.ans[rk()] === undefined && Date.now() + offset >= state.startedAt); }
+  function leave() { if (!mem.awayAt && watched()) { mem.awayAt = { k: rk(), t: Date.now() }; saveMem(); } }
+  function back() { mem.away = mem.away || {}; if (mem.awayAt) { mem.away[mem.awayAt.k] = (mem.away[mem.awayAt.k] || 0) + (Date.now() - mem.awayAt.t); mem.awayAt = null; saveMem(); } }
+  function awayFor(k) { return ((mem.away || {})[k] || 0) + (mem.awayAt && mem.awayAt.k === k ? Date.now() - mem.awayAt.t : 0); }
+  document.addEventListener("visibilitychange", function () { if (document.hidden) leave(); else back(); });
+  window.addEventListener("blur", leave);
+  window.addEventListener("focus", back);
+  window.addEventListener("pagehide", leave);
+  function noShazam(q) { return q.audio ? '<p class="q-noshazam">🚫 Shazam interdit&nbsp;: quitter cette page pendant l\'extrait = 100 points maximum</p>' : ""; }
+
   function load(k) {
     try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; }
   }
@@ -293,7 +308,7 @@
     app.innerHTML =
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
       '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
-      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) +
+      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) + noShazam(q) +
       '<form class="q-type' + (hinted ? " is-small" : "") + '" id="q-type" novalidate autocomplete="off">' +
       '<input id="q-ans" maxlength="60" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" placeholder="' + (hinted ? "Ou tapez votre réponse…" : "Tapez votre réponse…") + '" aria-label="Votre réponse" />' +
       '<button class="btn btn--gold" type="submit">Valider</button></form>' +
@@ -323,7 +338,7 @@
     buzz(25);
     var elapsed = Math.max(0, Date.now() - Math.max(shownAt[k] || Date.now(), state.startedAt - offset));
     (function attempt(n) {
-      post({ action: "answer", pid: me.pid, text: text, elapsed: elapsed }, 5000).then(function (d) {
+      post({ action: "answer", pid: me.pid, text: text, elapsed: elapsed, away: Math.round(awayFor(k)) }, 5000).then(function (d) {
         sending = false;
         mem.ans[k] = d.choice !== undefined ? d.choice : { t: d.text || text }; saveMem();
         viewKey = ""; render();
@@ -349,7 +364,7 @@
     app.innerHTML =
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
       '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
-      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) + choicesHtml(q) +
+      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) + noShazam(q) + choicesHtml(q) +
       '<p class="center q-status" id="q-status" role="status"></p>';
     bindChoices();
     runTimer();
@@ -368,7 +383,7 @@
     buzz(25);
     var elapsed = Math.max(0, Date.now() - Math.max(shownAt[k] || Date.now(), state.startedAt - offset));
     (function attempt(n) {
-      post({ action: "answer", pid: me.pid, choice: i, elapsed: elapsed }, 5000).then(function (d) {
+      post({ action: "answer", pid: me.pid, choice: i, elapsed: elapsed, away: Math.round(awayFor(k)) }, 5000).then(function (d) {
         sending = false;
         mem.ans[k] = d.choice !== undefined ? d.choice : i; saveMem();
         viewKey = ""; render();
@@ -452,6 +467,7 @@
       '<div class="verdict-screen__icon" aria-hidden="true">' + (!answered ? "⏱" : ok ? "✓" : "✗") + "</div>" +
       '<p class="verdict-screen__title">' + (!answered ? "Pas de réponse" : ok ? (typedMine && gain >= 500 ? "Trouvé au clavier&nbsp;!" : "Bonne réponse&nbsp;!") : "Raté&nbsp;!") + "</p>" +
       (answered && !ok && typedMine ? '<p class="verdict-screen__typed">Vous avez tapé «&nbsp;' + esc(mine.t) + "&nbsp;»</p>" : "") +
+      (answered && q.audio && awayFor(k) >= AWAY_MAX ? '<p class="verdict-screen__typed">🕵️ Vous avez quitté le quiz pendant l\'extrait&nbsp;: 100 points maximum.</p>' : "") +
       '<p class="verdict-screen__pts">' + (ok ? "+" + gain + " points" : answered ? "C'était : " + esc(q.choices[state.correct]) : "La bonne réponse : " + esc(q.choices[state.correct])) + "</p>" +
       (ok && s >= 2 ? '<p class="verdict-screen__streak">🔥 ' + s + " bonnes réponses d'affilée&nbsp;!</p>" : "") +
       "</div>" + songCard(q) +
