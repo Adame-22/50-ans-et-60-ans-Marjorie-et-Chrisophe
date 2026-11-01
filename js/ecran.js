@@ -358,6 +358,32 @@
     }).join("") : "";
   }
 
+  // Vérification avant la question : qui est connecté, qui manque
+  var readyLast = 0;
+  function renderReady() {
+    var r = quiz.ready;
+    stage.innerHTML = '<section class="slide quiz-ready"><p class="qz-num">Question ' + (r.next + 1) + " sur " + quiz.total + "</p>" +
+      '<h2 class="title-xl">Tout le monde est prêt&nbsp;?</h2>' +
+      '<p class="ready-n"><b id="rd-n">0</b><span id="rd-t"></span></p><div class="ready-bar"><i id="rd-bar"></i></div>' +
+      '<p class="ready-miss" id="rd-miss"></p></section>';
+    Music.stop(); Sound.stop();
+    readyLast = 0;
+    updateReady();
+  }
+  function updateReady() {
+    var r = quiz.ready, n = document.getElementById("rd-n");
+    if (!r || !n) return;
+    if (r.count > readyLast && readyLast) Sound.join();
+    readyLast = r.count;
+    n.textContent = r.count;
+    document.getElementById("rd-t").textContent = " / " + r.expected + " joueurs connectés";
+    document.getElementById("rd-bar").style.width = (r.expected ? Math.min(100, Math.round(r.count / r.expected * 100)) : 0) + "%";
+    var miss = r.missing || [];
+    document.getElementById("rd-miss").innerHTML = miss.length
+      ? "On attend&nbsp;: <b>" + miss.map(esc).join(", ") + "</b>" + (r.more ? " et " + r.more + " autres" : "") + "<br><small>Rallumez votre téléphone sur la page du quiz&nbsp;!</small>"
+      : "<b>Tout le monde est là&nbsp;! C'est parti…</b>";
+  }
+
   function renderCountdown() {
     var q = quiz.question;
     stage.innerHTML = '<section class="slide quiz-intro"><p class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + "</p>" +
@@ -535,6 +561,7 @@
     var key = [quiz.phase, quiz.round, quiz.index, waiting ? "w" : "", quiz.scoring ? "s" : ""].join("|");
     // le classement change seulement entre deux questions : les nouvelles inscriptions n'y touchent pas
     if (quiz.phase === "reveal") key += "|" + (quiz.funnies || []).length;
+    if (quiz.phase === "ready" && quiz.ready) key += "|r" + quiz.ready.seq;
     if (quiz.phase === "board") key += "|" + (quiz.leaderboard || []).slice(0, 5).map(function (p) { return p.pub + p.score; }).join(",") + "|" + (quiz.teams || []).map(function (t) { return t.id + t.score; }).join(",");
     if (quiz.preload) Music.preload(quiz.preload);
     if (quiz.phase === "lobby") { if (quizKey.indexOf("lobby|") !== 0) { clearStage(); Music.stop(); quizKey = key; stage.innerHTML = ""; } renderLobby(); return; }
@@ -543,10 +570,12 @@
         var a = document.getElementById("qz-answered"); if (a) a.textContent = quiz.answered || 0;
         showChoicesIfReady();
       }
+      if (quiz.phase === "ready") updateReady();
       return;
     }
     quizKey = key;
     clearStage();
+    if (quiz.phase === "ready" && quiz.ready) return renderReady();
     if (quiz.phase === "question") return waiting ? renderCountdown() : renderQuestion();
     if (quiz.phase === "reveal") {
       if (quiz.scoring) { var sl = stage.querySelector(".quiz-slide2"); if (!sl) renderQuestion(); return; } // on attend la fin du calcul

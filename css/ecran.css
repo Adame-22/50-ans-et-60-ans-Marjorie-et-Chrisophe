@@ -473,3 +473,13 @@ body.is-test .screen__now::before { content: "🧪 RÉPÉTITION · "; color: #b9
 .qz-funny ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2vw; }
 .qz-funny li { display: grid; gap: .4vh; padding: 1.4vh 1.6vw; border-radius: 1.2vw; background: rgba(255, 251, 254, .1); font-family: var(--serif); font-size: min(2.4vw, 4vh); font-style: italic; animation: fx-pop .6s cubic-bezier(.3, 1.4, .5, 1) both; }
 .qz-funny li small { font-family: var(--sans); font-style: normal; font-size: min(1.4vw, 2.4vh); font-weight: 700; color: var(--gold-light); }
+
+/* Vérification avant chaque question */
+.quiz-ready { align-content: center; justify-items: center; gap: 3vh; text-align: center; }
+.ready-n { margin: 0; font-size: min(2.6vw, 4.4vh); font-weight: 700; }
+.ready-n b { font-size: min(9vw, 15vh); line-height: 1; color: var(--gold-light); margin-right: .2em; }
+.ready-bar { width: min(60vw, 100vh); height: 1.6vh; border-radius: 99px; background: rgba(255, 251, 254, .14); overflow: hidden; }
+.ready-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--gold), var(--gold-light)); transition: width .5s ease; }
+.ready-miss { margin: 0; max-width: 80vw; font-size: min(2.2vw, 3.8vh); line-height: 1.4; }
+.ready-miss b { color: var(--gold-light); }
+.ready-miss small { font-size: .8em; color: rgba(255, 251, 254, .75); }

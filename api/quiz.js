@@ -8,6 +8,7 @@
  *   POST { action: "link", pid, rid?, table? }  → rattache un joueur à sa table / son équipe
  *   POST { action: "answer", pid, choice }      → enregistre la réponse (une seule par question)
  *   POST { action: "answer", pid, text }        → réponse tapée (questions « à taper » : blind test)
+ *   POST { action: "here", pid, seq }           → « je suis là » pendant la vérification avant une question
  *
  * Question « à taper » (mode: "type") : pendant hintAt secondes, les joueurs tapent leur réponse
  * (jusqu'à 1000 points, correction tolérante) ; ensuite les 4 choix apparaissent (400 points au plus).
@@ -23,7 +24,12 @@
  *   POST { action: "game", name, create? } → change de jeu (ex. « Quiz de bord » → « Blind test ») :
  *        les joueurs restent connectés, les scores repartent de zéro
  *   POST { action: "game-delete", name }
- *   POST { action: "lobby" | "start" | "reveal" | "board" | "podium" | "off" | "reset", from? }
+ *   POST { action: "lobby" | "ready" | "start" | "go" | "reveal" | "board" | "podium" | "off" | "reset", from? }
+ *        ready : vérification des joueurs avant une question (« 58 / 62 connectés ») ; la question part toute
+ *        seule dès que tout le monde est là (10 s au plus) ; go : la lancer sans attendre.
+ *   POST { action: "auto", on, boardEvery? } → mode automatique : révélation au gong (ou quand tout le monde
+ *        a répondu), classement, question suivante, podium… sans toucher à rien. Les étapes sont faites
+ *        par le serveur au fil des lectures (l'écran géant lit l'état chaque seconde).
  *        from = { phase, round, index } vu par l'animateur : si le quiz a déjà avancé (deux animateurs,
  *        double appui, réseau qui renvoie), l'action est refusée au lieu de sauter une question.
  *
@@ -48,6 +54,8 @@ function keysFor(test) {
     players: p + "players",
     answers: (round) => p + "ans:" + round,
     locks: p + "locks", // une seule révélation / un seul lancement par manche
+    ready: (seq) => p + "ready:" + seq, // joueurs présents à la vérification n° seq
+    miss: p + "miss", // vérifications manquées d'affilée (2 = absent, on ne l'attend plus)
     games: "mc:quiz:games", // jeux enregistrés : nom → { questions } (communs à la soirée et aux répétitions)
   };
 }
@@ -55,6 +63,8 @@ const REAL = keysFor(false);
 const TEST = keysFor(true);
 const TEST_META = "mc:quiz:test:meta"; // { code, game, by, openedAt }
 const DEFAULT_GAME = "Quiz de bord";
+const READY_MIN = 2500, READY_MAX = 10000; // vérification des joueurs : au moins 2,5 s à l'écran, 10 s au plus
+const BOARD_FOR = 5500;
 const MAX_GAMES = 8;
 
 // Questions de départ : « Qui de… » (réponse à régler dans l'admin selon la vérité !) et culture des années 66 / 76
@@ -108,6 +118,8 @@ async function testers() {
 }
 async function wipe(K, state) {
   for (let r = 1; r <= (state.round || 0); r++) await L.redis(["DEL", K.answers(r)]);
+  for (let r = 1; r <= (state.readySeq || 0); r++) await L.redis(["DEL", K.ready(r)]);
+  await L.redis(["DEL", K.miss]);
   await L.redis(["DEL", K.players]);
   await L.redis(["DEL", K.locks]);
 }
@@ -194,6 +206,149 @@ async function searchMusic(term) {
   })).filter((r) => { const k = norm(r.title) + "|" + norm(r.artist); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 12);
 }
 
+/* ───────── Déroulé : étapes communes à l'animateur et au mode automatique ───────── */
+
+// qui est là pour la vérification en cours
+async function readyInfo(K, state) {
+  const [players, ready, miss] = await Promise.all([L.hgetallJson(K.players), L.hgetallJson(K.ready(state.readySeq)), L.hgetallJson(K.miss)]);
+  const missing = [], absent = [];
+  let expected = 0;
+  for (const [pid, p] of Object.entries(players)) {
+    if (ready[pid]) { expected++; continue; }
+    if ((miss[pid] || 0) >= 2) absent.push(p.name); else { expected++; missing.push(p.name); }
+  }
+  return { count: Object.keys(ready).length, expected, missing, absent, players, ready, miss };
+}
+
+async function flow(K, state, questions, action, o) {
+  const now = o.now;
+  switch (action) {
+    case "ready": { // vérification des joueurs avant la question
+      if (state.phase === "question") throw new L.HttpError(409, "Révélez d'abord la réponse de la question en cours.");
+      const index = o.index !== undefined ? parseInt(o.index, 10) : state.index + 1;
+      if (!questions[index]) throw new L.HttpError(400, "Il n'y a plus de question.");
+      const seq = (state.readySeq || 0) + 1;
+      if (!(await L.redis(["HSETNX", K.locks, "ready:" + seq, String(now)]))) throw new L.HttpError(409, "La vérification est déjà lancée.");
+      Object.assign(state, { phase: "ready", next: index, readySeq: seq, readyAt: now, readyMin: now + READY_MIN, readyEnd: now + READY_MAX, done: false });
+      break;
+    }
+
+    case "start": { // question suivante (ou celle demandée)
+      if (state.phase === "question") throw new L.HttpError(409, "Révélez d'abord la réponse de la question en cours.");
+      const index = o.index !== undefined ? parseInt(o.index, 10) : state.phase === "ready" ? state.next : state.index + 1;
+      const q = questions[index];
+      if (!q) throw new L.HttpError(400, "Il n'y a plus de question.");
+      const round = (state.round || 0) + 1;
+      if (!(await L.redis(["HSETNX", K.locks, "start:" + round, String(now)]))) throw new L.HttpError(409, "Cette question vient déjà d'être lancée.");
+      let present = 0;
+      if (state.phase === "ready") { // fin de la vérification : présents, et absences d'affilée
+        const r = await readyInfo(K, state);
+        present = r.count;
+        const writes = [];
+        for (const pid of Object.keys(r.players)) writes.push(pid, String(r.ready[pid] ? 0 : (r.miss[pid] || 0) + 1));
+        if (writes.length) await L.redis(["HSET", K.miss].concat(writes));
+      }
+      Object.assign(state, {
+        phase: "question", index, round, done: false, present,
+        startedAt: now + 3000, endsAt: now + 3000 + q.time * 1000, counts: null, gains: null, typed: null, funnies: null, revealedAt: null,
+      });
+      break;
+    }
+
+    case "reveal": {
+      if (state.phase !== "question") throw new L.HttpError(409, "Aucune question en cours.");
+      if (!(await L.redis(["HSETNX", K.locks, "reveal:" + state.round, String(now)]))) throw new L.HttpError(409, "La réponse est déjà en cours de révélation.");
+      const q = questions[state.index];
+      if (!q) throw new L.HttpError(409, "Cette question n'existe plus.");
+      // 1) on ferme les réponses tout de suite, 2) on laisse arriver celles déjà en route, 3) on compte
+      Object.assign(state, { phase: "reveal", scoring: true, endsAt: Math.min(state.endsAt, now), counts: q.choices.map(() => 0), gains: {}, by: o.by });
+      await setJson(K.state, state);
+      await new Promise((r) => setTimeout(r, 400));
+      const [answers, players] = await Promise.all([L.hgetallJson(K.answers(state.round)), L.hgetallJson(K.players)]);
+      const counts = q.choices.map(() => 0);
+      const gains = {};
+      const writes = [];
+      const typing = q.mode === "type", T = q.time * 1000, H = typing ? q.hintAt * 1000 : 0;
+      const targets = [q.choices[q.answer]].concat(q.accept || []);
+      const typed = { ok: 0, ko: 0 }, wrong = [];
+      for (const [pid, a] of Object.entries(answers)) {
+        const p = players[pid];
+        let good;
+        if (a.text !== undefined) {
+          good = TY.isRight(a.text, targets);
+          if (good) typed.ok++; else { typed.ko++; if (p) wrong.push({ name: p.name, text: a.text }); }
+        } else {
+          if (a.choice >= 0 && a.choice < counts.length) counts[a.choice]++;
+          good = a.choice === q.answer;
+        }
+        if (!p) continue;
+        let pts = 0;
+        if (good && !typing) {
+          const ratio = Math.min(1, a.ms / T);
+          pts = Math.round(1000 * (1 - ratio / 2)); // 1000 si instantané, 500 au gong
+        } else if (good && a.text !== undefined && a.ms <= H) {
+          pts = Math.round(1000 * (1 - Math.min(1, a.ms / H) / 2)); // trouvé au clavier : 1000 → 500
+        } else if (good) {
+          pts = Math.round(400 * (1 - Math.min(1, Math.max(0, a.ms - H) / Math.max(1, T - H)) / 2)); // avec les choix : 400 → 200
+        }
+        gains[p.pub] = pts;
+        p.score = (p.score || 0) + pts;
+        p.played = (p.played || 0) + 1;
+        writes.push(pid, JSON.stringify(p));
+      }
+      // tous les scores en une seule écriture (rapide même avec 70 joueurs)
+      if (writes.length) await L.redis(["HSET", K.players].concat(writes));
+      Object.assign(state, { counts, gains, scoring: false, revealedAt: Date.now(), typed: typing ? typed : null, funnies: typing ? TY.funny(wrong, 4) : null });
+      break;
+    }
+
+    case "board":
+      Object.assign(state, { phase: "board", boardAt: now });
+      break;
+
+    case "podium":
+      Object.assign(state, { phase: "podium", done: true });
+      break;
+
+    default:
+      throw new L.HttpError(400, "Action inconnue.");
+  }
+  return state;
+}
+
+// Prochaine étape automatique (et quand) : la vérification se termine toujours toute seule ;
+// le reste seulement en mode automatique.
+function autoPlan(state, questions) {
+  const q = questions[state.index], last = state.index >= questions.length - 1;
+  if (state.phase === "ready") return { action: "start", at: state.readyEnd, early: state.readyMin };
+  if (!state.auto || !state.auto.on) return null;
+  if (state.phase === "question" && q) return { action: "reveal", at: state.endsAt + 500, early: state.startedAt + 2000 };
+  if (state.phase === "reveal" && !state.scoring && state.revealedAt) {
+    const hold = q && (q.mode === "type" || q.audio) ? 9000 : 6500;
+    return { action: last ? "podium" : (state.index + 1) % (state.auto.boardEvery || 1) === 0 ? "board" : "ready", at: state.revealedAt + hold };
+  }
+  if (state.phase === "board" && state.boardAt) return { action: last ? "podium" : "ready", at: state.boardAt + BOARD_FOR };
+  return null;
+}
+
+async function autoStep(K, state, questions, now) {
+  const plan = autoPlan(state, questions);
+  if (!plan || now < (plan.early || plan.at)) return state;
+  if (now < plan.at) { // en avance : seulement si tout le monde est là / a répondu
+    if (state.phase === "ready") { const r = await readyInfo(K, state); if (!r.count || r.missing.length) return state; }
+    else if (state.phase === "question") { if (!state.present || (await L.redis(["HLEN", K.answers(state.round)])) < state.present) return state; }
+    else return state;
+  }
+  const stepKey = "auto:" + [state.phase, state.round || 0, state.index, state.readySeq || 0].join(":");
+  if (!(await L.redis(["HSETNX", K.locks, stepKey, String(now)]))) return state;
+  try {
+    await flow(K, state, questions, plan.action, { now, by: "Automatique" });
+    state.by = "Automatique";
+    await setJson(K.state, state);
+  } catch (e) { /* l'animateur a été plus rapide : rien à faire */ }
+  return getState(K);
+}
+
 module.exports = L.handler(async (req, res) => {
   const now = Date.now(); // pris tout de suite : la lenteur de la base ne doit pas coûter de points
   const params = L.query(req);
@@ -216,7 +371,8 @@ module.exports = L.handler(async (req, res) => {
       meta = await testGate(params.get("test"));
       K = TEST;
     }
-    const [state, questions] = await Promise.all([getState(K), getQuestions(K)]);
+    const [state0, questions] = await Promise.all([getState(K), getQuestions(K)]);
+    const state = ["ready", "question", "reveal", "board"].includes(state0.phase) ? await autoStep(K, state0, questions, now) : state0;
     const cur = questions[state.index];
 
     if (view === "admin") {
@@ -225,7 +381,11 @@ module.exports = L.handler(async (req, res) => {
       const all = await allPlayers(K);
       const tq = K.test ? null : await TM.quizTeams(all);
       // le top 10 (et les équipes si le jeu est par équipe) pour que l'animateur annonce les bons gagnants
+      const plan = autoPlan(state, questions);
+      const ready = state.phase === "ready" ? await readyInfo(K, state) : null;
       return L.send(res, 200, { state, questions, answered, players: all.length, top: leaderboard(all).slice(0, 10),
+        next: plan ? { action: plan.action, at: plan.at } : null,
+        ready: ready ? { count: ready.count, expected: ready.expected, missing: ready.missing, absent: ready.absent } : null,
         teams: tq ? tq.teams.slice(0, 10) : null, serverNow: Date.now(),
         games: K.test ? await testGames(meta.game, questions) : await gameList(state, questions),
         test: K.test ? { code: meta.code, game: meta.game, by: meta.by, openedAt: meta.openedAt } : undefined,
@@ -242,6 +402,11 @@ module.exports = L.handler(async (req, res) => {
 
     const out = { phase: state.phase, index: state.index, total: questions.length, serverNow: Date.now() };
     if (K.test) out.test = true;
+    out.auto = !!(state.auto && state.auto.on);
+    if (state.phase === "ready") {
+      const r = await readyInfo(K, state);
+      out.ready = { seq: state.readySeq, next: state.next, count: r.count, expected: r.expected, missing: r.missing.slice(0, 12), more: Math.max(0, r.missing.length - 12), endsAt: state.readyEnd };
+    }
     if (cur && ["question", "reveal", "board"].includes(state.phase)) {
       out.question = { q: cur.q, choices: cur.choices, time: cur.time };
       if (cur.mode === "type") {
@@ -259,7 +424,7 @@ module.exports = L.handler(async (req, res) => {
     out.done = !!state.done;
     out.game = state.game || DEFAULT_GAME;
     // l'écran géant charge à l'avance l'extrait de la question suivante
-    const next = ["lobby", "reveal", "board"].includes(state.phase) ? questions[state.index + 1] : null;
+    const next = ["lobby", "reveal", "board"].includes(state.phase) ? questions[state.index + 1] : state.phase === "ready" ? questions[state.next] : null;
     if (next && next.audio) out.preload = next.audio.url;
     if (["reveal", "board"].includes(state.phase)) {
       out.correct = cur ? cur.answer : null;
@@ -269,7 +434,7 @@ module.exports = L.handler(async (req, res) => {
       out.gains = state.gains || {};
       out.scoring = !!state.scoring; // points en cours de calcul (moins d'une seconde)
     }
-    if (["lobby", "reveal", "board", "podium"].includes(state.phase)) {
+    if (["lobby", "ready", "reveal", "board", "podium"].includes(state.phase)) {
       const players = await allPlayers(K);
       out.leaderboard = leaderboard(players);
       const tq = state.phase !== "off" && !K.test ? await TM.quizTeams(players) : null;
@@ -282,7 +447,7 @@ module.exports = L.handler(async (req, res) => {
   }
 
   const body = await L.readBody(req);
-  const isPlayer = req.method === "POST" && ["join", "link", "answer"].includes(body.action);
+  const isPlayer = req.method === "POST" && ["join", "link", "answer", "here"].includes(body.action);
   let K = REAL;
   if (isPlayer && body.test) { await testGate(body.test); K = TEST; }
 
@@ -318,6 +483,16 @@ module.exports = L.handler(async (req, res) => {
     const fresh = JSON.parse((await L.redis(["HGET", K.players, pid])) || raw);
     fresh.rid = p.rid; fresh.table = p.table;
     await L.redis(["HSET", K.players, pid, JSON.stringify(fresh)]);
+    return L.send(res, 200, { ok: true });
+  }
+
+  if (req.method === "POST" && body.action === "here") {
+    const pid = L.str(body.pid, 64);
+    await L.rateLimit(req, "quiz-here", 900, 60);
+    const state = await getState(K);
+    if (state.phase !== "ready" || Number(body.seq) !== state.readySeq) return L.send(res, 200, { ok: false });
+    if (!(await L.redis(["HGET", K.players, pid]))) throw new L.HttpError(404, "Joueur inconnu, rejoignez à nouveau le quiz.");
+    await L.redis(["HSET", K.ready(state.readySeq), pid, "1"]);
     return L.send(res, 200, { ok: true });
   }
 
@@ -402,7 +577,7 @@ module.exports = L.handler(async (req, res) => {
     const testMeta = K.test ? await getJson(TEST_META, null) : null;
     if (K.test && !testMeta) throw new L.HttpError(409, "Aucune répétition en cours : ouvrez-en une.");
     const from = body.from && typeof body.from === "object" ? body.from : null;
-    if (from && ["start", "reveal", "board", "podium"].includes(body.action) &&
+    if (from && ["ready", "start", "go", "reveal", "board", "podium"].includes(body.action) &&
       (from.phase !== state.phase || (from.round || 0) !== (state.round || 0))) {
       throw new L.HttpError(409, "Le quiz a déjà avancé (double appui, ou quelqu'un d'autre pilote). L'écran se met à jour.");
     }
@@ -412,77 +587,32 @@ module.exports = L.handler(async (req, res) => {
         Object.assign(state, { phase: "lobby" });
         break;
 
-      case "start": { // question suivante (ou celle demandée)
-        if (state.phase === "question") throw new L.HttpError(409, "Révélez d'abord la réponse de la question en cours.");
-        const index = body.index !== undefined ? parseInt(body.index, 10) : state.index + 1;
-        const q = questions[index];
-        if (!q) throw new L.HttpError(400, "Il n'y a plus de question.");
-        const round = (state.round || 0) + 1;
-        if (!(await L.redis(["HSETNX", K.locks, "start:" + round, String(now)]))) throw new L.HttpError(409, "Cette question vient déjà d'être lancée.");
-        Object.assign(state, {
-          phase: "question", index, round, done: false,
-          startedAt: now + 3000, endsAt: now + 3000 + q.time * 1000, counts: null, gains: null, typed: null, funnies: null,
-        });
-        break;
-      }
-
-      case "reveal": {
-        if (state.phase !== "question") throw new L.HttpError(409, "Aucune question en cours.");
-        if (!(await L.redis(["HSETNX", K.locks, "reveal:" + state.round, String(now)]))) throw new L.HttpError(409, "La réponse est déjà en cours de révélation.");
-        const q = questions[state.index];
-        if (!q) throw new L.HttpError(409, "Cette question n'existe plus.");
-        // 1) on ferme les réponses tout de suite, 2) on laisse arriver celles déjà en route, 3) on compte
-        Object.assign(state, { phase: "reveal", scoring: true, endsAt: Math.min(state.endsAt, now), counts: q.choices.map(() => 0), gains: {}, by: me.name });
-        await setJson(K.state, state);
-        await new Promise((r) => setTimeout(r, 400));
-        const [answers, players] = await Promise.all([L.hgetallJson(K.answers(state.round)), L.hgetallJson(K.players)]);
-        const counts = q.choices.map(() => 0);
-        const gains = {};
-        const writes = [];
-        const typing = q.mode === "type", T = q.time * 1000, H = typing ? q.hintAt * 1000 : 0;
-        const targets = [q.choices[q.answer]].concat(q.accept || []);
-        const typed = { ok: 0, ko: 0 }, wrong = [];
-        for (const [pid, a] of Object.entries(answers)) {
-          const p = players[pid];
-          let good;
-          if (a.text !== undefined) {
-            good = TY.isRight(a.text, targets);
-            if (good) typed.ok++; else { typed.ko++; if (p) wrong.push({ name: p.name, text: a.text }); }
-          } else {
-            if (a.choice >= 0 && a.choice < counts.length) counts[a.choice]++;
-            good = a.choice === q.answer;
-          }
-          if (!p) continue;
-          let pts = 0;
-          if (good && !typing) {
-            const ratio = Math.min(1, a.ms / T);
-            pts = Math.round(1000 * (1 - ratio / 2)); // 1000 si instantané, 500 au gong
-          } else if (good && a.text !== undefined && a.ms <= H) {
-            pts = Math.round(1000 * (1 - Math.min(1, a.ms / H) / 2)); // trouvé au clavier : 1000 → 500
-          } else if (good) {
-            pts = Math.round(400 * (1 - Math.min(1, Math.max(0, a.ms - H) / Math.max(1, T - H)) / 2)); // avec les choix : 400 → 200
-          }
-          gains[p.pub] = pts;
-          p.score = (p.score || 0) + pts;
-          p.played = (p.played || 0) + 1;
-          writes.push(pid, JSON.stringify(p));
-        }
-        // tous les scores en une seule écriture (rapide même avec 70 joueurs)
-        if (writes.length) await L.redis(["HSET", K.players].concat(writes));
-        Object.assign(state, { counts, gains, scoring: false, typed: typing ? typed : null, funnies: typing ? TY.funny(wrong, 4) : null });
-        break;
-      }
-
+      case "ready":
+      case "start":
+      case "reveal":
       case "board":
-        Object.assign(state, { phase: "board" });
+        await flow(K, state, questions, body.action, { now, by: me.name, index: body.index });
         break;
+
+      case "go": // lancer la question sans attendre les retardataires
+        if (state.phase !== "ready") throw new L.HttpError(409, "Aucune vérification en cours.");
+        await flow(K, state, questions, "start", { now, by: me.name });
+        break;
+
+      case "auto": { // mode automatique (et départ de la 1re question depuis l'accueil)
+        state.auto = { on: !!body.on, boardEvery: [1, 2, 3, 5].includes(+body.boardEvery) ? +body.boardEvery : (state.auto && state.auto.boardEvery) || 1 };
+        if (state.auto.on && (state.phase === "lobby" || (state.phase === "off" && !state.done)) && questions[state.index + 1]) {
+          await flow(K, state, questions, "ready", { now, by: me.name });
+        }
+        break;
+      }
 
       case "funny": // afficher ou non les réponses drôles sur l'écran géant
         state.showFunny = !!body.on;
         break;
 
       case "podium":
-        Object.assign(state, { phase: "podium", done: true });
+        await flow(K, state, questions, "podium", { now, by: me.name });
         break;
 
       case "off":
@@ -517,6 +647,7 @@ module.exports = L.handler(async (req, res) => {
         }
         await L.redis(["HSET", REAL.games, cur, JSON.stringify({ questions }), name, JSON.stringify({ questions: next })]);
         await setJson(REAL.questions, next);
+        await L.redis(["DEL", K.miss]); // nouveau jeu : plus personne n'est compté absent
         // scores à zéro, joueurs gardés (ils n'ont pas à se réinscrire)
         const players = await L.hgetallJson(K.players);
         const writes = [];
@@ -536,7 +667,7 @@ module.exports = L.handler(async (req, res) => {
 
       case "reset": {
         await wipe(K, state);
-        Object.assign(state, { phase: "off", index: -1, round: 0, counts: null, gains: null, done: false });
+        Object.assign(state, { phase: "off", index: -1, round: 0, readySeq: 0, counts: null, gains: null, done: false, auto: { on: false, boardEvery: (state.auto && state.auto.boardEvery) || 1 } });
         break;
       }
 

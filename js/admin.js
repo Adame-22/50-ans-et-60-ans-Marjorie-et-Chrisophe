@@ -1914,7 +1914,7 @@
   });
 
   /* ───────── Quiz (animateur) ───────── */
-  var PHASES = { off: "Fermé", lobby: "Embarquement", question: "Question", reveal: "Réponse", board: "Classement", podium: "Podium" };
+  var PHASES = { off: "Fermé", lobby: "Embarquement", ready: "Vérification", question: "Question", reveal: "Réponse", board: "Classement", podium: "Podium" };
   var qz = { timer: 0, questions: null, state: null, offset: 0, dirty: false, raf: 0, gen: 0, lastOk: 0, qsig: "", test: false };
   try { qz.test = localStorage.getItem("mc-qz-mode") === "test"; } catch (e) { /* ignoré */ }
 
@@ -2025,10 +2025,11 @@
     var last = st.index >= n - 1;
     if (!n && (st.phase === "off" || st.phase === "lobby")) return { label: "Ajoutez d'abord des questions (plus bas)", action: null };
     switch (st.phase) {
-      case "lobby": return last ? { label: "Afficher le podium final", action: "podium" } : { label: "Lancer la question " + (st.index + 2), action: "start" };
+      case "lobby": return last ? { label: "Afficher le podium final", action: "podium" } : { label: "Lancer la question " + (st.index + 2), action: "ready" };
+      case "ready": return { label: "Lancer la question " + (st.next + 1) + " sans attendre", action: "go" };
       case "question": return { label: "Révéler la réponse", action: "reveal" };
-      case "reveal": return { label: "Afficher le classement", action: "board" };
-      case "board": return last ? { label: "Afficher le podium final", action: "podium" } : { label: "Lancer la question " + (st.index + 2), action: "start" };
+      case "reveal": return last ? { label: "Afficher le podium final", action: "podium" } : { label: "Afficher le classement", action: "board" };
+      case "board": return last ? { label: "Afficher le podium final", action: "podium" } : { label: "Lancer la question " + (st.index + 2), action: "ready" };
       case "podium": return { label: "Terminer le quiz", action: "off" };
       default:
         if (st.done) return { label: "Réafficher le podium", action: "podium" };
@@ -2046,6 +2047,18 @@
     $("#qz-index").textContent = (game !== "Quiz de bord" ? game + " · " : "") + (st.index >= 0 ? "Question " + (st.index + 1) + " sur " + n : n + " questions prêtes") + (d.teams ? " · par équipes" : "");
     renderGames(d.games || [], st);
     $("#qz-by").textContent = st.by ? "Dernière action : " + st.by : "";
+    var rd = d.ready;
+    $("#qz-ready").hidden = !rd;
+    if (rd) $("#qz-ready").innerHTML = "<b>" + rd.count + " / " + rd.expected + "</b> joueurs connectés" +
+      (rd.missing.length ? " · on attend : " + rd.missing.map(esc).join(", ") : " · tout le monde est là ✓") +
+      (rd.absent.length ? "<br><small>Absents (plus attendus, ils peuvent revenir) : " + rd.absent.map(esc).join(", ") + "</small>" : "");
+    var autoOn = !!(st.auto && st.auto.on);
+    qz.auto = autoOn;
+    $("#qz-auto").textContent = autoOn ? "⏸ Pause : repasser en manuel" : "▶ Tout en automatique";
+    $("#qz-auto").className = "btn btn--small " + (autoOn ? "btn--line" : "btn--gold");
+    $("#qz-auto").hidden = st.phase === "podium" || st.done || !n;
+    if (document.activeElement !== $("#qz-every")) $("#qz-every").value = String((st.auto && st.auto.boardEvery) || 1);
+    $("#qz-regie").classList.toggle("is-auto", autoOn);
     $("#qz-funny-on").checked = st.showFunny !== false;
     $("#qz-players").textContent = d.players;
     $("#qz-dots").innerHTML = d.questions.map(function (x, i) {
@@ -2067,7 +2080,8 @@
         : st.index >= 0
           ? "Le quiz est en pause (arrêté après la question " + (st.index + 1) + "). « Reprendre le quiz » continue là où vous en étiez ; pour tout recommencer : « Autres options » puis « Tout remettre à zéro »."
           : "Avant de commencer : affichez l'écran géant sur le vidéoprojecteur (bouton en haut). Puis appuyez sur le gros bouton : l'écran montre le QR code pour rejoindre.",
-      lobby: "Annoncez : « Sortez vos téléphones, scannez le QR code à l'écran et entrez votre prénom ! » " + plural(d.players, "joueur est", "joueurs sont") + " déjà là. Quand tout le monde est prêt, lancez la question.",
+      lobby: "Annoncez : « Sortez vos téléphones, scannez le QR code à l'écran et entrez votre prénom ! » " + plural(d.players, "joueur est", "joueurs sont") + " déjà là. Quand tout le monde est prêt, lancez la question (ou « Tout en automatique » : le quiz se déroule tout seul).",
+      ready: "Vérification des joueurs : chacun garde le quiz ouvert sur son téléphone. La question part toute seule dès que tout le monde est là (10 secondes au plus).",
       question: q && q.audio
         ? "🎵 Blind test : l'extrait passe sur l'écran géant (le son de l'écran doit être activé). Les invités répondent sur leur téléphone. Révélez la réponse quand le chrono est fini : la chanson repart avec sa pochette."
         : "Lisez la question à voix haute. Les invités répondent sur leur téléphone. Révélez la réponse quand le chrono est fini (ou quand tout le monde a répondu).",
@@ -2114,15 +2128,20 @@
     btn.disabled = !step.action || qz.busy || Date.now() < (qz.cool || 0);
     $("#qz-skip").hidden = st.phase !== "reveal";
     $("#qz-skip").textContent = st.index >= n - 1 ? "Passer au podium final" : "Passer le classement → question " + (st.index + 2);
+    $("#qz-skip").hidden = $("#qz-skip").hidden || st.index >= n - 1;
     $("#qz-podium").hidden = ["lobby", "reveal", "board"].indexOf(st.phase) < 0 || st.index >= n - 1 || st.index < 0;
     $all(".qz-item").forEach(function (li, i) { li.classList.toggle("is-current", i === st.index && st.phase !== "off"); });
     cancelAnimationFrame(qz.raf);
     (function tick() {
       var rest = st.phase === "question" ? Math.max(0, st.endsAt - (Date.now() + qz.offset)) : 0;
       $("#qz-left").textContent = st.phase === "question" ? (rest > 0 ? "encore " + Math.ceil(rest / 1000) + " s" : "temps écoulé") : "–";
-      btn.textContent = step.label + (st.phase === "question" && rest > 0 ? " (encore " + Math.ceil(rest / 1000) + " s)" : "");
+      btn.textContent = (qz.auto && step.action && ["ready", "question", "reveal", "board"].indexOf(st.phase) >= 0 ? "⏭ Tout de suite : " : "") + step.label + (st.phase === "question" && rest > 0 ? " (encore " + Math.ceil(rest / 1000) + " s)" : "");
+      var nx = d.next, inS = nx ? Math.max(0, Math.ceil((nx.at - (Date.now() + qz.offset)) / 1000)) : 0;
+      var NEXT = { start: "la question part", reveal: "révélation", board: "classement", ready: "question suivante", podium: "podium final" };
+      $("#qz-autonext").textContent = nx && (qz.auto || st.phase === "ready") ? "Automatique : " + NEXT[nx.action] + (inS > 0 ? " dans " + inS + " s" : "…") : qz.auto ? "Automatique : en route" : "";
+      var keep = !!nx; // le décompte automatique continue de s'afficher
       $("#qz-regie").classList.toggle("is-timeup", st.phase === "question" && rest <= 0);
-      if (rest > 0) qz.raf = requestAnimationFrame(tick);
+      if (rest > 0 || keep) qz.raf = requestAnimationFrame(tick);
     })();
   }
   $("#qz-next").addEventListener("click", function () {
@@ -2134,7 +2153,7 @@
   $("#qz-skip").addEventListener("click", function () {
     var d = qz.d;
     if (!d || qz.busy) return;
-    quizAction(d.state.index >= d.questions.length - 1 ? "podium" : "start");
+    quizAction(d.state.index >= d.questions.length - 1 ? "podium" : "ready");
   });
   // barre d'espace = étape suivante (sauf en tapant dans un champ)
   document.addEventListener("keydown", function (e) {
@@ -2225,7 +2244,7 @@
       var warn = cur && cur.phase === "question" ? "\n\nLa question en cours sera abandonnée, sans points." : cur && li <= cur.index ? "\n\nAttention : cette question a déjà été jouée, ses points compteront deux fois." : "";
       if (!confirm("Lancer maintenant la question " + (li + 1) + " ?" + warn)) return;
       if (cur && cur.phase === "question") return toast("Révélez d'abord la réponse de la question en cours.", true);
-      quizAction("start", { index: li });
+      quizAction("ready", { index: li });
     }
   });
   $("#qz-add").addEventListener("click", function () {
@@ -2409,6 +2428,19 @@
     })
       .catch(function (err) { qz.busy = false; $("#qz-next").disabled = false; toast(err.message, true); if (err.status === 409) startQuizAdmin(); });
   }
+  $("#qz-auto").addEventListener("click", function () {
+    var d = qz.d; if (!d || qz.busy) return;
+    var on = !(d.state.auto && d.state.auto.on);
+    if (on && d.state.phase === "lobby" && !confirm("Lancer le quiz en automatique ?\n\nTout s'enchaîne seul : vérification des joueurs, questions, réponses, classements, podium. Vous pouvez mettre en pause à tout moment.")) return;
+    api("/api/quiz", { method: "POST", body: withTest({ action: "auto", on: on, boardEvery: +$("#qz-every").value }) })
+      .then(function () { toast(on ? "Mode automatique activé." : "Mode manuel : c'est vous qui avancez."); startQuizAdmin(); })
+      .catch(function (err) { toast(err.message, true); });
+  });
+  $("#qz-every").addEventListener("change", function () {
+    var d = qz.d; if (!d) return;
+    api("/api/quiz", { method: "POST", body: withTest({ action: "auto", on: !!(d.state.auto && d.state.auto.on), boardEvery: +this.value }) })
+      .then(function () { toast("Réglage du classement enregistré."); startQuizAdmin(); }).catch(function (err) { toast(err.message, true); });
+  });
   $("#qz-funny-on").addEventListener("change", function () {
     api("/api/quiz", { method: "POST", body: withTest({ action: "funny", on: this.checked }) })
       .then(function () { toast(this.checked ? "Réponses drôles affichées." : "Réponses drôles masquées."); startQuizAdmin(); }.bind(this))

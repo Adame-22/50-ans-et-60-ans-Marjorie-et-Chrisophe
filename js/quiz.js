@@ -26,6 +26,7 @@
   var sending = false;
   var drafts = {};                   // manche → texte en cours de saisie (questions « à taper »)
   var hintPolled = "";
+  var hereSent = "", hereOk = "";      // vérification avant chaque question : « je suis là » envoyé / confirmé
 
   function load(k) {
     try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; }
@@ -207,6 +208,35 @@
         btn.textContent = "C'est noté ✓";
       }).catch(function (err) { btn.disabled = false; btn.textContent = err.message; });
     });
+  }
+
+  // Vérification avant la question : le téléphone répond tout seul « je suis là »
+  function sayHere() {
+    if (!me || !state || state.phase !== "ready" || !state.ready) return;
+    var key = state.ready.seq + "|" + me.pid;
+    if (hereSent === key) return;
+    hereSent = key;
+    post({ action: "here", pid: me.pid, seq: state.ready.seq }, 4000).then(function (d) {
+      if (d.ok) { hereOk = key; viewKey = ""; render(); } else hereSent = "";
+    }, function (err) {
+      hereSent = "";
+      if (err.status === 404) { me = null; save(null); viewKey = ""; render(); }
+    });
+  }
+  function renderReady() {
+    var r = state.ready, ok = hereOk === r.seq + "|" + me.pid;
+    app.innerHTML =
+      '<div class="ready-card fx-rise">' +
+      '<p class="q-num">Question <b>' + (r.next + 1) + "</b> / " + state.total + "</p>" +
+      '<p class="ready-card__big">' + (ok ? "✅" : "📡") + "</p>" +
+      '<p class="ready-card__title">' + (ok ? "Vous êtes bien connecté·e&nbsp;!" : "Connexion…") + "</p>" +
+      '<p class="ready-card__sub">La question arrive dès que tout le monde est là.<br>Gardez cette page ouverte.</p>' +
+      '<p class="ready-card__count" id="rd-count"></p></div>';
+    updateReady();
+  }
+  function updateReady() {
+    var el = document.getElementById("rd-count"), r = state.ready;
+    if (el && r) el.textContent = r.count + " / " + r.expected + " joueurs prêts";
   }
 
   // Avant le top départ : la question seule, avec « 3, 2, 1 »
@@ -476,9 +506,11 @@
     var key = !me ? (state.phase === "off" ? "off" : "join")
       : [state.phase, k, state.index, me.pid, isTyped(mem.ans[k]) ? "t" : mem.ans[k], state.question && state.question.mode === "type" ? (state.question.choices ? "c" : "n") : "", t ? t.id : "", state.teamMode ? 1 : 0, state.scoring ? 1 : 0, state.done ? 1 : 0, state.game || ""].join("|");
     if (me && state.phase === "question" && state.startedAt && now() < state.startedAt) key += "|wait";
+    if (me && state.phase === "ready" && state.ready) key += "|r" + state.ready.seq + (hereOk === state.ready.seq + "|" + me.pid ? "ok" : "");
     if (me && (state.phase === "reveal" || state.phase === "board" || state.phase === "podium")) key += "|" + JSON.stringify(myRank()) + JSON.stringify(t) + (state.teams ? state.teams.length : 0);
     if (key === viewKey) {
       if (state.phase === "question") updateAnswered();
+      if (state.phase === "ready") updateReady();
       return;
     }
     viewKey = key;
@@ -493,6 +525,7 @@
     }
     if (!me) return renderJoin();
     if (state.phase === "lobby") return renderLobby();
+    if (state.phase === "ready" && state.ready) return renderReady();
     if (state.phase === "question") return state.startedAt && now() < state.startedAt ? renderCountdown() : renderQuestion();
     if (state.phase === "reveal") return renderReveal();
     if (state.phase === "board") return renderBoard(false);
@@ -514,13 +547,14 @@
       clock(d);
       state = d;
       if (state.teamMode) syncSeat();
+      sayHere();
       render();
     }).catch(function (err) {
       // répétition terminée (ou mauvais lien)
       if (TEST && err.status === 404) { viewKey = "test-end"; app.innerHTML = '<div class="live-card center"><p class="live__tag">🧪 Répétition</p><h2>Cette répétition est terminée</h2><p class="muted">Merci d\'avoir testé&nbsp;! Le vrai quiz aura lieu pendant la fête.</p></div>'; }
       /* sinon réseau capricieux : on réessaie au prochain tour */
     })
-      .then(function () { pollTimer = setTimeout(poll, document.hidden ? 4000 : 1500); });
+      .then(function () { pollTimer = setTimeout(poll, document.hidden ? 4000 : state && state.phase === "ready" ? 1000 : 1500); });
   }
   // retour sur la page (téléphone rallumé) : mise à jour immédiate
   document.addEventListener("visibilitychange", function () {

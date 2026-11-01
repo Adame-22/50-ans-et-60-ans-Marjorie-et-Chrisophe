@@ -700,3 +700,10 @@ body.live.is-playing .q-status { margin-top: .6rem; }
 .sent--typed { background: rgba(255, 251, 254, .1); border: 2px solid rgba(255, 251, 254, .25); }
 .sent__kbd { font-size: 2rem; }
 .verdict-screen__typed { margin: .2rem 0 0; font-size: .95rem; opacity: .9; }
+
+/* Vérification avant chaque question */
+.ready-card { display: grid; justify-items: center; gap: .5rem; margin-top: 8vh; text-align: center; }
+.ready-card__big { margin: .4rem 0 0; font-size: 4.2rem; line-height: 1; animation: fx-pop .6s cubic-bezier(.3, 1.4, .5, 1) both; }
+.ready-card__title { margin: 0; font-family: var(--serif); font-size: 1.9rem; }
+.ready-card__sub { margin: 0; color: rgba(255, 251, 254, .78); line-height: 1.5; }
+.ready-card__count { margin: .6rem 0 0; font-weight: 700; color: var(--gold-light); }
