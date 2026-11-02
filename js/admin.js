@@ -358,7 +358,7 @@
   function passLink(r) { return notify.site + "/billet?p=" + encodeURIComponent(r.passToken || ""); }
   function passText(r) {
     var first = r.prenom || String(r.nom || "").split(" ")[0];
-    return "Bonjour " + first + " ! Voici votre carte d'embarquement pour les 50 & 60 ans de Marjorie et Christophe (samedi 7 novembre, 12h30, Draveil) : " + passLink(r);
+    return "Bonjour " + first + " ! Voici votre carte d'embarquement pour les 50 & 60 ans de Marjorie et Christophe (samedi 7 novembre " + arrivalText(r) + ", Draveil) : " + passLink(r);
   }
   function sendLinks(r) {
     if (r.presence !== "oui" || !r.passToken) return "";
@@ -457,35 +457,82 @@
     });
   });
 
-  /* Rappel J-5 : récapitulatif complet, une seule fois par réponse */
+  /* Rappel J-5 : par e-mail (automatique) et par WhatsApp / SMS (un toucher par invité, depuis le téléphone) */
+  var EV = window.EVENT || {};
+  function faresOf(r) {
+    var f = [r.creneau || "journee"].concat(r.creneauxAcc || []), out = [];
+    for (var i = 0; i < Math.max(1, r.passagers || 1); i++) out.push(f[i] || f[0]);
+    return out;
+  }
+  // « à 12h30 », « à 19h00 » (soir seulement), ou les deux pour un groupe mêlé
+  function arrivalText(r) {
+    var f = faresOf(r), soir = f.filter(function (x) { return x === "soir"; }).length, day = f.length - soir;
+    var evening = EV.heureSoir ? "à " + EV.heureSoir : "en soirée";
+    if (!day) return evening;
+    if (!soir) return "à " + (EV.heure || "12h30");
+    return "à " + (EV.heure || "12h30") + " (et " + evening + " pour " + (soir > 1 ? "ceux qui viennent" : "celui ou celle qui vient") + " le soir)";
+  }
   function remindText(r) {
     var first = r.prenom || String(r.nom || "").split(" ")[0];
-    return "Bonjour " + first + " ! J-5 avant le vol MC 5060 ✈ Rendez-vous samedi 7 novembre à 12h30, salle des fêtes de Champrosay, rue du Bas de Champrosay à Draveil (à côté du stade de Champrosay et du centre aéré). Itinéraire : https://maps.app.goo.gl/hPMCvkp1w56v3Ffo6 · Dress code simple et chic, parking sur place." +
+    return "Bonjour " + first + " ! ✈ Petit rappel pour le vol MC 5060, les 50 & 60 ans de Marjorie et Christophe : rendez-vous samedi 7 novembre " + arrivalText(r) +
+      ", salle des fêtes de Champrosay, rue du Bas de Champrosay à Draveil (à côté du stade de Champrosay et du centre aéré). Itinéraire : https://maps.app.goo.gl/hPMCvkp1w56v3Ffo6 · Dress code simple et chic, parking sur place." +
       (r.passToken ? " Votre carte d'embarquement : " + passLink(r) : "") + " À samedi !";
+  }
+  // numéro français → international (WhatsApp veut 33612345678)
+  function phoneIntl(t) {
+    var d = String(t || "").replace(/[^\d+]/g, "");
+    if (/^\+/.test(d)) d = d.slice(1); else if (/^00/.test(d)) d = d.slice(2); else if (/^0\d{9}$/.test(d)) d = "33" + d.slice(1);
+    return /^\d{10,15}$/.test(d) ? d : "";
   }
   function renderRemind() {
     if (!$("#remind-box")) return;
     var going = state.rsvps.filter(function (r) { return r.presence === "oui"; });
     var todo = going.filter(function (r) { return r.email && !r.remindedAt; });
     var done = going.filter(function (r) { return r.remindedAt; }).length;
-    var nomail = going.filter(function (r) { return !r.email; });
     $("#remind-status").textContent = !notify.email ? "L'envoi automatique d'e-mails n'est pas réglé."
-      : todo.length ? todo.length + " réponse(s) à prévenir" + (done ? " · " + done + " déjà prévenue(s)" : "") + "."
+      : todo.length ? todo.length + " réponse(s) à prévenir par e-mail" + (done ? " · " + done + " déjà prévenue(s)" : "") + "."
       : done ? "✓ Tout le monde avec un e-mail a reçu le rappel (" + done + ")." : "Aucune réponse avec e-mail pour l'instant.";
     $("#remind-send").disabled = !notify.email || !todo.length;
-    $("#remind-send").textContent = "Envoyer le rappel (" + todo.length + ")";
-    $("#remind-nomail").hidden = !nomail.length;
-    $("#remind-nomail-sum").textContent = nomail.length + " invité(s) sans e-mail : à prévenir à la main";
-    $("#remind-list").innerHTML = nomail.map(function (r, i) {
-      return "<li><span>" + esc(r.nom) + (r.telephone ? " · " + esc(r.telephone) : "") + '</span><button class="btn btn--small btn--line" type="button" data-remind-copy="' + i + '">Copier le message</button></li>';
-    }).join("");
-    $all("[data-remind-copy]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var t = remindText(nomail[+b.getAttribute("data-remind-copy")]);
-        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast("Message copié : collez-le dans WhatsApp."); }, function () { prompt("Copiez le message :", t); });
-      });
-    });
+    $("#remind-send").textContent = "Envoyer le rappel par e-mail (" + todo.length + ")";
+    // liste WhatsApp / SMS : ceux sans e-mail d'abord (et tous, si on coche la case)
+    var all = $("#remind-all").checked;
+    var list = going.filter(function (r) { return all || !r.email; })
+      .sort(function (a, b) { return (!!a.email - !!b.email) || (!!a.remindedMsgAt - !!b.remindedMsgAt) || a.nom.localeCompare(b.nom, "fr"); });
+    var noMail = going.filter(function (r) { return !r.email; }), okMsg = noMail.filter(function (r) { return r.remindedMsgAt; }).length;
+    $("#remind-nomail").hidden = !going.length;
+    $("#remind-nomail-sum").textContent = "Par WhatsApp ou SMS : " + okMsg + " / " + noMail.length + " invité(s) sans e-mail prévenu(s)";
+    $("#remind-list").innerHTML = list.map(function (r) {
+      var tel = phoneIntl(r.telephone), txt = encodeURIComponent(remindText(r));
+      var fares = faresOf(r), fs = fares.every(function (x) { return x === fares[0]; }) ? { midi: "midi", soir: "soir", journee: "midi + soir" }[fares[0]] : "groupe mêlé";
+      return '<li class="' + (r.remindedMsgAt ? "is-done" : "") + '"><div class="remind__who"><b>' + esc(r.nom) + "</b><small>" + r.passagers + " pers. · " + fs +
+        (r.telephone ? " · " + esc(r.telephone) : " · pas de téléphone") + (r.email ? (r.remindedAt ? " · ✉ e-mail reçu" : " · ✉ e-mail") : "") + "</small></div>" +
+        '<div class="remind__do">' +
+        (tel ? '<a class="btn btn--small btn--wa" data-remind-go="' + r.id + '" data-via="whatsapp" target="_blank" rel="noopener" href="https://wa.me/' + tel + "?text=" + txt + '">WhatsApp</a>' +
+          '<a class="btn btn--small btn--line" data-remind-go="' + r.id + '" data-via="sms" href="sms:+' + tel + "?&body=" + txt + '">SMS</a>'
+          : '<button class="btn btn--small btn--line" type="button" data-remind-copy="' + r.id + '">Copier le message</button>') +
+        '<label class="remind__ok"><input type="checkbox" data-remind-mark="' + r.id + '"' + (r.remindedMsgAt ? " checked" : "") + " /> prévenu</label></div></li>";
+    }).join("") || '<li class="hint">Tout le monde a un e-mail : cochez la case ci-dessus pour les prévenir aussi sur WhatsApp.</li>';
   }
+  function markReminded(id, on, via) {
+    return api("/api/rsvp", { method: "POST", body: { action: "remind-mark", id: id, on: on, via: via } }).then(function (d) {
+      var r = state.rsvps.find(function (x) { return x.id === id; });
+      if (r) { r.remindedMsgAt = d.remindedMsgAt; if (d.passToken) r.passToken = d.passToken; }
+      renderRemind();
+    }).catch(function (err) { toast(err.message, true); });
+  }
+  $("#remind-all").addEventListener("change", renderRemind);
+  $("#remind-list").addEventListener("click", function (e) {
+    var go = e.target.closest("[data-remind-go]"), copy = e.target.closest("[data-remind-copy]");
+    if (go) markReminded(go.getAttribute("data-remind-go"), true, go.getAttribute("data-via")); // le lien s'ouvre, on coche « prévenu »
+    if (copy) {
+      var r = state.rsvps.find(function (x) { return x.id === copy.getAttribute("data-remind-copy"); }), t = remindText(r);
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast("Message copié : à transmettre à la famille, ou à lire au téléphone."); }, function () { prompt("Copiez le message :", t); });
+    }
+  });
+  $("#remind-list").addEventListener("change", function (e) {
+    var id = e.target.getAttribute("data-remind-mark");
+    if (id) markReminded(id, e.target.checked, "autre");
+  });
   $("#remind-send").addEventListener("click", function () {
     var n = state.rsvps.filter(function (r) { return r.presence === "oui" && r.email && !r.remindedAt; }).length;
     if (!n || !confirm("Envoyer le rappel J-5 à " + n + " réponse(s) ?\n\nConseil : cliquez d'abord sur « Voir l'e-mail » pour le relire.")) return;

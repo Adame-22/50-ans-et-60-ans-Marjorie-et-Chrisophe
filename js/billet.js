@@ -43,7 +43,7 @@
         '<div class="wide"><dt>Passager</dt><dd>' + esc(p.nom) + "</dd></div>" +
         "<div><dt>Vol</dt><dd>MC 5060</dd></div>" +
         "<div><dt>Date</dt><dd>" + esc(CFG.dateLabel || "") + "</dd></div>" +
-        "<div><dt>Embarquement</dt><dd>" + esc(CFG.heure || "") + "</dd></div>" +
+        "<div><dt>Embarquement</dt><dd>" + esc(p.creneau === "soir" ? CFG.heureSoir || "En soirée" : CFG.heure || "") + "</dd></div>" + // le soir : heure d'arrivée du soir
         "<div><dt>Porte</dt><dd>" + esc(CFG.porte || "") + "</dd></div>" +
         '<div><dt>Billet</dt><dd>' + f.name + "</dd></div>" +
         "<div><dt>Présent</dt><dd>" + f.when + "</dd></div>" +

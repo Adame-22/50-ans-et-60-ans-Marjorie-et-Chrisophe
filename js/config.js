@@ -11,6 +11,9 @@ window.EVENT = {
   // Textes affichés
   dateLabel: "Samedi 7 novembre 2026",
   heure: "12h30",
+  // Heure d'arrivée des invités qui viennent seulement le soir (ex. "19h00").
+  // Vide : les cartes et messages disent « en soirée ». À mettre aussi dans api/_notify.js (HEURE_SOIR).
+  heureSoir: "",
   lieu: "Salle des fêtes de Champrosay",
   adresse: "Rue du Bas de Champrosay, 91210 Draveil",
   repere: "À côté du stade de Champrosay et du centre aéré",

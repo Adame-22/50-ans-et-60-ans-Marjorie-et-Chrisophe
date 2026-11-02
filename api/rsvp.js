@@ -191,6 +191,18 @@ module.exports = L.handler(async (req, res) => {
       return L.send(res, 200, liste);
     }
     // Rappel J-5 : récapitulatif complet à ceux qui viennent (ids donnés, sinon tous ceux qui ne l'ont pas reçu)
+    // rappel envoyé à la main (WhatsApp ou SMS depuis le téléphone de l'équipage) : on coche « prévenu »
+    if (b.action === "remind-mark") {
+      const me = await L.requireUser(req);
+      const raw = await L.redis(["HGET", L.K.rsvps, L.str(b.id, 64)]);
+      if (!raw) throw new L.HttpError(404, "Réponse introuvable.");
+      const e = JSON.parse(raw);
+      if (b.on) { e.remindedMsgAt = new Date().toISOString(); e.remindedMsgVia = ["whatsapp", "sms", "autre"].includes(b.via) ? b.via : "autre"; e.remindedMsgBy = me.name || me.username; N.ensureToken(e); }
+      else { delete e.remindedMsgAt; delete e.remindedMsgVia; delete e.remindedMsgBy; }
+      await L.redis(["HSET", L.K.rsvps, e.id, JSON.stringify(e)]);
+      return L.send(res, 200, { ok: true, remindedMsgAt: e.remindedMsgAt || null, passToken: e.passToken });
+    }
+
     if (b.action === "remind") {
       await L.requireUser(req);
       const cfg = await N.getConfig();

@@ -966,3 +966,16 @@ body.admin { font-variant-numeric: lining-nums; }
 .regie__ready small { color: var(--muted); }
 .regie__cheats { margin: .2rem 0 .6rem; padding: .6rem .8rem; border-radius: 10px; background: #fdecea; font-size: .92rem; }
 #qz-crewpush.is-on { border-color: #2f9e5b; color: #1f7a45; }
+
+/* Rappel par WhatsApp / SMS */
+.remind__phone { margin-top: 1rem; padding-top: .8rem; border-top: 1px dashed var(--line); }
+.remind__phone h4 { margin: 0 0 .3rem; }
+.remind__all { display: flex; align-items: center; gap: .5rem; margin: .4rem 0 .6rem; font-size: .9rem; }
+.remind__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.remind__list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.remind__list li.is-done { background: #eef8f1; border-color: #bfe3cb; }
+.remind__who { display: grid; gap: 2px; min-width: 0; }
+.remind__who small { color: var(--muted); }
+.remind__do { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.btn--wa { background: #25d366; border-color: #25d366; color: #fff; }
+.remind__ok { display: inline-flex; align-items: center; gap: .3rem; font-size: .88rem; }
