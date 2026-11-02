@@ -482,9 +482,10 @@
     if (q.audio) later(function () { Music.resume(q.audio.url, q.audio.start, 0.6); }, 700);
   }
 
+  // anti-Shazam : seulement le nombre, jamais les prénoms (ils vont à la régie)
   function suspectsLine() {
-    var s = quiz.suspects || [];
-    return s.length ? '<p class="qz-suspects">🕵️ Partis Shazamer&nbsp;? <b>' + s.map(esc).join(", ") + "</b> <small>(100 points maximum)</small></p>" : "";
+    var n = quiz.away || 0;
+    return n ? '<p class="qz-suspects">🕵️ <b>' + n + (n > 1 ? " joueurs ont" : " joueur a") + "</b> quitté le quiz pendant l'extrait… <small>(100 points maximum)</small></p>" : "";
   }
   function renderTypedReveal(q, song) {
     var counts = quiz.counts || [], ty = quiz.typed || { ok: 0, ko: 0 };

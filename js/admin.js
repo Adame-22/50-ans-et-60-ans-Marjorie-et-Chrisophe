@@ -2060,6 +2060,16 @@
     if (document.activeElement !== $("#qz-every")) $("#qz-every").value = String((st.auto && st.auto.boardEvery) || 1);
     $("#qz-regie").classList.toggle("is-auto", autoOn);
     $("#qz-funny-on").checked = st.showFunny !== false;
+    // journal anti-Shazam (privé : seulement dans la régie et en notification)
+    var log = st.cheatLog || [];
+    $("#qz-cheats").hidden = !log.length;
+    if (log.length) $("#qz-cheats").innerHTML = "<b>🕵️ Sortis du quiz pendant un extrait (100 pts max) :</b> " + log.map(function (c) { return "Q" + c.q + " " + c.names.map(esc).join(", "); }).join(" · ");
+    if (qz.cheatSeen !== undefined && log.length > qz.cheatSeen) {
+      var lastC = log[log.length - 1];
+      toast("🕵️ Shazam repéré · question " + lastC.q + " : " + lastC.names.join(", "));
+      try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch (e) { /* ignoré */ }
+    }
+    qz.cheatSeen = log.length;
     $("#qz-players").textContent = d.players;
     $("#qz-dots").innerHTML = d.questions.map(function (x, i) {
       var cls = i < st.index || (i === st.index && ["reveal", "board", "podium"].indexOf(st.phase) >= 0) || (st.phase === "podium") ? "is-done" : i === st.index && st.phase === "question" ? "is-now" : "";
@@ -2100,7 +2110,7 @@
       var ty = st.typed, showTy = !!(ty && st.phase !== "question");
       $("#qz-typed").hidden = !showTy;
       if (showTy) $("#qz-typed").textContent = "⌨️ " + ty.ok + " trouvé(s) au clavier · " + ty.ko + " réponse(s) tapée(s) fausse(s) · 🎯 " + ((st.counts || [])[q.answer] || 0) + " avec les choix";
-      var fun = showTy ? st.funnies || [] : [], sus = st.phase !== "question" ? st.suspects || [] : [];
+      var fun = showTy ? st.funnies || [] : [], sus = [];
       $("#qz-funny").hidden = !fun.length && !sus.length;
       $("#qz-funny").innerHTML = (fun.length ? "<b>😂 Réponses drôles" + (st.showFunny === false ? " (masquées sur l'écran)" : " affichées") + " :</b> " + fun.map(function (f) { return "«&nbsp;" + esc(f.text) + "&nbsp;» <small>" + esc(f.name) + "</small>"; }).join(" · ") : "") +
         (sus.length ? (fun.length ? "<br>" : "") + "<b>🕵️ Sortis du quiz pendant l'extrait (100 pts max) :</b> " + sus.map(esc).join(", ") : "");
@@ -2429,6 +2439,51 @@
     })
       .catch(function (err) { qz.busy = false; $("#qz-next").disabled = false; toast(err.message, true); if (err.status === 409) startQuizAdmin(); });
   }
+  /* Alerte « tricheurs » sur ce téléphone (notification push réservée à l'équipage) */
+  var crewPush = { reg: null, sub: null };
+  function b64ToBytes(s) {
+    var pad = "=".repeat((4 - s.length % 4) % 4), raw = atob((s + pad).replace(/-/g, "+").replace(/_/g, "/")), out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function crewPushLabel(on) {
+    $("#qz-crewpush").textContent = on ? "🔕 Ne plus me prévenir des tricheurs" : "🔔 Me prévenir des tricheurs sur ce téléphone";
+    $("#qz-crewpush").classList.toggle("is-on", on);
+  }
+  function crewPushInit() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !window.Notification) {
+      $("#qz-crewpush").disabled = true;
+      $("#qz-crewpush-hint").textContent = "Notifications non disponibles ici. Sur iPhone : ajoutez le site à l'écran d'accueil, puis ouvrez l'admin depuis l'icône.";
+      return;
+    }
+    navigator.serviceWorker.register("/sw.js").then(function (reg) { crewPush.reg = reg; return reg.pushManager.getSubscription(); }).then(function (sub) {
+      crewPush.sub = sub;
+      if (!sub) return crewPushLabel(false);
+      return api("/api/push?view=crew&endpoint=" + encodeURIComponent(sub.endpoint)).then(function (d) { crewPushLabel(d.subscribed); });
+    }).catch(function () { /* ignoré */ });
+  }
+  $("#qz-crewpush").addEventListener("click", function () {
+    var btn = this, on = btn.classList.contains("is-on");
+    if (on) {
+      return api("/api/push", { method: "POST", body: { action: "crew-unsubscribe", endpoint: crewPush.sub && crewPush.sub.endpoint } })
+        .then(function () { crewPushLabel(false); toast("Vous ne serez plus prévenu·e."); }).catch(function (err) { toast(err.message, true); });
+    }
+    btn.disabled = true;
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== "granted") throw new Error("Notifications refusées : autorisez-les dans les réglages du navigateur.");
+      return Promise.all([crewPush.reg || navigator.serviceWorker.register("/sw.js"), api("/api/push?view=key")]);
+    }).then(function (r) {
+      crewPush.reg = r[0];
+      return r[0].pushManager.getSubscription().then(function (old) { return old || r[0].pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(r[1].publicKey) }); });
+    }).then(function (sub) {
+      crewPush.sub = sub;
+      return api("/api/push", { method: "POST", body: { action: "crew-subscribe", subscription: sub.toJSON() } });
+    }).then(function () { crewPushLabel(true); toast("C'est noté : vous serez prévenu·e des tricheurs sur ce téléphone."); })
+      .catch(function (err) { toast(err.message, true); })
+      .then(function () { btn.disabled = false; });
+  });
+  crewPushInit();
+
   $("#qz-auto").addEventListener("click", function () {
     var d = qz.d; if (!d || qz.busy) return;
     var on = !(d.state.auto && d.state.auto.on);

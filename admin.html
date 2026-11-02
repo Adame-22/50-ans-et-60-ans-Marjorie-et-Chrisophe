@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261113" />
-  <link rel="stylesheet" href="css/style.css?v=20261113" />
-  <link rel="stylesheet" href="css/admin.css?v=20261113" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261114" />
+  <link rel="stylesheet" href="css/style.css?v=20261114" />
+  <link rel="stylesheet" href="css/admin.css?v=20261114" />
 </head>
 <body class="admin">
 
@@ -476,6 +476,7 @@
           <p class="regie__typed" id="qz-typed" hidden></p>
           <div class="regie__funny" id="qz-funny" hidden></div>
         </div>
+        <p class="regie__cheats" id="qz-cheats" hidden></p>
 
         <div class="regie__live" id="qz-live" hidden>
           <div class="regie__meter"><i id="qz-bar"></i></div>
@@ -494,6 +495,8 @@
             <summary>Autres options</summary>
             <div class="regie__optsbody">
               <label class="regie__check"><input type="checkbox" id="qz-funny-on" checked /> Afficher les réponses drôles sur l'écran géant (questions à taper)</label>
+              <button type="button" class="btn btn--small btn--line" id="qz-crewpush">🔔 Me prévenir des tricheurs sur ce téléphone</button>
+              <p class="hint hint--tiny" id="qz-crewpush-hint">Une notification sur votre téléphone quand un joueur quitte le quiz pendant un extrait (Shazam), avec son prénom. Sur iPhone : ajoutez d'abord le site à l'écran d'accueil.</p>
               <button type="button" class="btn btn--small btn--line" data-qz="podium" id="qz-podium" hidden>Arrêter et afficher le podium</button>
               <button type="button" class="btn btn--small btn--line" data-qz="lobby">Réouvrir l'accueil des joueurs</button>
               <button type="button" class="btn btn--small btn--line" data-qz="off">Fermer le quiz</button>
@@ -825,9 +828,9 @@
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261113"></script>
+  <script src="js/graph.js?v=20261114"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261113"></script>
-  <script src="js/admin.js?v=20261113"></script>
+  <script src="js/xlsx.js?v=20261114"></script>
+  <script src="js/admin.js?v=20261114"></script>
 </body>
 </html>

@@ -15,8 +15,9 @@
  * À la révélation, l'écran montre quelques réponses fausses tapées (« réponses drôles », filtrées).
  *
  * Anti-Shazam (questions avec extrait) : le téléphone dit combien de temps il a quitté la page avant de
- * répondre (away, en ms). Au-delà de 2 s, la réponse rapporte 100 points au plus et le prénom s'affiche
- * à la révélation (« Partis Shazamer ? »).
+ * répondre (away, en ms). Au-delà de 2 s, la réponse rapporte 100 points au plus. L'écran géant n'affiche
+ * que leur nombre ; les prénoms vont à la régie (journal) et en notification aux membres de l'équipage
+ * qui l'ont demandé (« 🔔 Me prévenir des tricheurs »).
  *
  * Quand l'équipage active « classement par équipe » (onglet Équipes), l'état public
  * contient aussi teams (moyenne des points par équipe) et teamOf (joueur → équipe).
@@ -48,6 +49,7 @@ const crypto = require("crypto");
 const L = require("./_lib");
 const TM = require("./_teams");
 const TY = require("./_typed");
+const PU = require("./_push");
 
 function keysFor(test) {
   const p = test ? "mc:quiz:test:" : "mc:quiz:";
@@ -69,6 +71,7 @@ const TEST_META = "mc:quiz:test:meta"; // { code, game, by, openedAt }
 const DEFAULT_GAME = "Quiz de bord";
 const READY_MIN = 2500, READY_MAX = 10000; // vérification des joueurs : au moins 2,5 s à l'écran, 10 s au plus
 const BOARD_FOR = 5500;
+const SITE = process.env.SITE_URL || "https://50-ans-et-60-ans-marjorie-et-chriso.vercel.app";
 const AWAY_MAX = 2000; // au-delà de 2 s hors de la page pendant un extrait : réponse plafonnée
 const MAX_GAMES = 8;
 
@@ -306,6 +309,11 @@ async function flow(K, state, questions, action, o) {
       // tous les scores en une seule écriture (rapide même avec 70 joueurs)
       if (writes.length) await L.redis(["HSET", K.players].concat(writes));
       Object.assign(state, { counts, gains, scoring: false, revealedAt: Date.now(), typed: typing ? typed : null, funnies: typing ? TY.funny(wrong, 4) : null, suspects: suspects.slice(0, 8) });
+      if (suspects.length) { // journal pour la régie + alerte privée (jamais de nom sur l'écran géant)
+        state.cheatLog = (state.cheatLog || []).concat([{ q: state.index + 1, names: suspects.slice(0, 12) }]).slice(-40);
+        const alert = PU.notifyCrew({ title: (K.test ? "🧪 Répétition · " : "") + "🕵️ Shazam repéré", body: "Question " + (state.index + 1) + " : " + suspects.join(", ") + " (100 points maximum)", url: "/admin" }, o.site).catch(() => 0);
+        await Promise.race([alert, new Promise((r) => setTimeout(r, 3000))]);
+      }
       break;
     }
 
@@ -349,7 +357,7 @@ async function autoStep(K, state, questions, now) {
   const stepKey = "auto:" + [state.phase, state.round || 0, state.index, state.readySeq || 0].join(":");
   if (!(await L.redis(["HSETNX", K.locks, stepKey, String(now)]))) return state;
   try {
-    await flow(K, state, questions, plan.action, { now, by: "Automatique" });
+    await flow(K, state, questions, plan.action, { now, by: "Automatique", site: SITE });
     state.by = "Automatique";
     await setJson(K.state, state);
   } catch (e) { /* l'animateur a été plus rapide : rien à faire */ }
@@ -438,7 +446,7 @@ module.exports = L.handler(async (req, res) => {
       out.counts = state.counts || [];
       out.answered = (state.counts || []).reduce((a, b) => a + b, 0) + (state.typed ? state.typed.ok + state.typed.ko : 0);
       if (state.typed) { out.typed = state.typed; out.funnies = state.showFunny === false ? [] : state.funnies || []; }
-      if (state.suspects && state.suspects.length && state.showFunny !== false) out.suspects = state.suspects;
+      if (state.suspects && state.suspects.length) out.away = state.suspects.length; // un nombre, jamais de prénom
       out.gains = state.gains || {};
       out.scoring = !!state.scoring; // points en cours de calcul (moins d'une seconde)
     }
@@ -601,7 +609,7 @@ module.exports = L.handler(async (req, res) => {
       case "start":
       case "reveal":
       case "board":
-        await flow(K, state, questions, body.action, { now, by: me.name, index: body.index });
+        await flow(K, state, questions, body.action, { now, by: me.name, index: body.index, site: SITE });
         break;
 
       case "go": // lancer la question sans attendre les retardataires
@@ -663,7 +671,7 @@ module.exports = L.handler(async (req, res) => {
         const writes = [];
         for (const [pid, p] of Object.entries(players)) { p.score = 0; p.played = 0; writes.push(pid, JSON.stringify(p)); }
         if (writes.length) await L.redis(["HSET", K.players].concat(writes));
-        Object.assign(state, { game: name, phase: state.phase === "off" ? "off" : "lobby", index: -1, counts: null, gains: null, done: false });
+        Object.assign(state, { game: name, phase: state.phase === "off" ? "off" : "lobby", index: -1, counts: null, gains: null, done: false, cheatLog: [], suspects: null });
         break;
       }
 
@@ -677,7 +685,7 @@ module.exports = L.handler(async (req, res) => {
 
       case "reset": {
         await wipe(K, state);
-        Object.assign(state, { phase: "off", index: -1, round: 0, readySeq: 0, counts: null, gains: null, done: false, auto: { on: false, boardEvery: (state.auto && state.auto.boardEvery) || 1 } });
+        Object.assign(state, { phase: "off", index: -1, round: 0, readySeq: 0, counts: null, gains: null, done: false, cheatLog: [], suspects: null, auto: { on: false, boardEvery: (state.auto && state.auto.boardEvery) || 1 } });
         break;
       }
 

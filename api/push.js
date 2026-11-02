@@ -9,6 +9,9 @@
  *    POST { action: "unsubscribe", endpoint }
  *    GET  ?view=admin            (équipage) → nombre d'abonnés, dernières annonces
  *    POST { action: "send", title, body, url } (équipage) → envoie l'annonce à tous
+ *    Alertes privées de l'équipage (ex. « Shazam repéré » pendant le blind test) :
+ *    GET  ?view=crew&endpoint=…   (équipage) → ce téléphone est-il abonné ?
+ *    POST { action: "crew-subscribe", subscription } / { action: "crew-unsubscribe", endpoint } (équipage)
  *
  * 2. Calendrier auquel on s'abonne (webcal) : /agenda.ics → GET ?view=ics
  *    L'agenda du téléphone le relit régulièrement : rappels la veille et 2 h avant,
@@ -17,17 +20,10 @@
 const crypto = require("crypto");
 const webpush = require("web-push");
 const L = require("./_lib");
+const PU = require("./_push");
 
-const K = { vapid: "mc:push:vapid", subs: "mc:push:subs", log: "mc:push:log" };
-
-async function vapid() {
-  let raw = await L.redis(["GET", K.vapid]);
-  if (!raw) {
-    await L.redis(["SETNX", K.vapid, JSON.stringify(webpush.generateVAPIDKeys())]);
-    raw = await L.redis(["GET", K.vapid]);
-  }
-  return JSON.parse(raw);
-}
+const K = { subs: "mc:push:subs", log: "mc:push:log" };
+const vapid = PU.vapid;
 
 function site(req) {
   const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
@@ -84,6 +80,12 @@ module.exports = L.handler(async (req, res) => {
   if (req.method === "GET" && view === "key") {
     return L.send(res, 200, { publicKey: (await vapid()).publicKey });
   }
+  if (req.method === "GET" && view === "crew") {
+    const me = await L.requireUser(req);
+    L.noSpoil(me);
+    const raw = await L.redis(["HGET", PU.K.crew, PU.subId(L.query(req).get("endpoint"))]);
+    return L.send(res, 200, { subscribed: !!raw, count: await L.redis(["HLEN", PU.K.crew]) });
+  }
   if (req.method === "GET" && view === "admin") {
     await L.requireUser(req);
     const n = await L.redis(["HLEN", K.subs]);
@@ -105,6 +107,19 @@ module.exports = L.handler(async (req, res) => {
   if (b.action === "unsubscribe") {
     const id = crypto.createHash("sha256").update(String(b.endpoint || "")).digest("hex").slice(0, 24);
     await L.redis(["HDEL", K.subs, id]);
+    return L.send(res, 200, { ok: true });
+  }
+
+  if (b.action === "crew-subscribe" || b.action === "crew-unsubscribe") {
+    const me = await L.requireUser(req);
+    L.noSpoil(me); // les fêtés ne reçoivent pas les alertes du quiz (surprise)
+    if (b.action === "crew-unsubscribe") {
+      await L.redis(["HDEL", PU.K.crew, PU.subId(b.endpoint)]);
+      return L.send(res, 200, { ok: true });
+    }
+    const sub = PU.cleanSub(b.subscription);
+    if (!sub) throw new L.HttpError(400, "Abonnement invalide.");
+    await L.redis(["HSET", PU.K.crew, PU.subId(sub.endpoint), JSON.stringify({ sub, username: me.username, name: me.name, at: new Date().toISOString() })]);
     return L.send(res, 200, { ok: true });
   }
 

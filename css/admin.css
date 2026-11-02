@@ -964,3 +964,5 @@ body.admin { font-variant-numeric: lining-nums; }
 #qz-regie.is-auto .regie__auto { background: #e9f7ee; box-shadow: inset 0 0 0 2px #2f9e5b; }
 .regie__ready { margin: .2rem 0 .6rem; padding: .6rem .8rem; border-radius: 10px; background: #fff7e6; }
 .regie__ready small { color: var(--muted); }
+.regie__cheats { margin: .2rem 0 .6rem; padding: .6rem .8rem; border-radius: 10px; background: #fdecea; font-size: .92rem; }
+#qz-crewpush.is-on { border-color: #2f9e5b; color: #1f7a45; }
