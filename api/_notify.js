@@ -18,7 +18,7 @@ const PROVIDERS = ["brevo", "agentmail"];
 const FARE = { midi: "Business · le déjeuner", soir: "Premium · la soirée", journee: "Première · midi et soir" };
 // Heures d'arrivée : le midi (et la journée) à 12h30 ; le soir, à HEURE_SOIR (à renseigner aussi dans js/config.js, heureSoir)
 const HEURE_MIDI = "12h30";
-const HEURE_SOIR = process.env.HEURE_SOIR || "";
+const HEURE_SOIR = process.env.HEURE_SOIR || "19h00";
 // « à 12h30 », « à 19h00 », ou les deux pour un groupe mêlé
 function arrivalText(entry) {
   const fares = faresOf(entry), soir = fares.filter((f) => f === "soir").length, day = fares.length - soir;
@@ -205,6 +205,7 @@ const PROGRAMME = [
   ["14h00", "Service à bord : le buffet"],
   ["16h30", "Altitude de croisière : discours, surprises et gâteau"],
   ["17h30", "Zone de turbulences : la piste de danse est ouverte"],
+  ["19h00", "Vol de nuit : accueil des passagers de la soirée"],
   ["Tard", "Atterrissage en douceur"],
 ];
 function peopleOf(e) {

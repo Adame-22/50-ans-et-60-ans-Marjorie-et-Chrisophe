@@ -13,7 +13,7 @@ window.EVENT = {
   heure: "12h30",
   // Heure d'arrivée des invités qui viennent seulement le soir (ex. "19h00").
   // Vide : les cartes et messages disent « en soirée ». À mettre aussi dans api/_notify.js (HEURE_SOIR).
-  heureSoir: "",
+  heureSoir: "19h00",
   lieu: "Salle des fêtes de Champrosay",
   adresse: "Rue du Bas de Champrosay, 91210 Draveil",
   repere: "À côté du stade de Champrosay et du centre aéré",
@@ -57,6 +57,7 @@ window.EVENT = {
     { heure: "14h00", titre: "Service à bord", texte: "Un buffet qui réveillera vos papilles. On y a mis tout notre cœur… Bon appétit !" },
     { heure: "16h30", titre: "Altitude de croisière", texte: "Discours, surprises et gâteau d'anniversaire." },
     { heure: "17h30", titre: "Zone de turbulences", texte: "La piste de danse est ouverte. Ceintures détachées." },
+    { heure: "19h00", titre: "Vol de nuit", texte: "Accueil des passagers de la soirée : dîner, gâteau et piste de danse." },
     { heure: "Tard", titre: "Atterrissage", texte: "Dernier verre et retour en douceur." },
   ],
 };
