@@ -139,6 +139,14 @@ ${entry.passagers > 1 ? entry.passagers + " passagers · " : ""}Billet : ${esc(F
 /* Explications lisibles pour les erreurs les plus courantes */
 function explain(provider, status, text) {
   const t = String(text || "");
+  if (provider === "brevo-sms") {
+    if (status === 402 || /credit/i.test(t)) return "Plus assez de crédits SMS dans Brevo : achetez des crédits SMS (menu de votre compte → Crédits / Plan).";
+    if (status === 401) return "Clé Brevo refusée pour les SMS : vérifiez la clé API (xkeysib-…).";
+    if (/recipient|number|phone/i.test(t)) return "Numéro refusé par Brevo : vérifiez le numéro de téléphone.";
+    if (/sender/i.test(t)) return "Nom d'expéditeur SMS refusé par Brevo.";
+    if (/unrecognised IP|unrecognized IP|authorised_ips|authorized IP/i.test(t)) return "Brevo bloque l'adresse IP du site : dans Brevo, Sécurité → Adresses IP autorisées, désactivez le blocage.";
+    return "Brevo SMS " + status + " " + t.slice(0, 160);
+  }
   if (provider === "brevo") {
     if (/unrecognised IP|unrecognized IP|authorised_ips|authorized IP/i.test(t)) return "Brevo bloque l'adresse IP du site : dans Brevo, Sécurité → Adresses IP autorisées, désactivez le blocage.";
     if (status === 401) return "Clé Brevo refusée : vérifiez qu'il s'agit bien d'une clé API (xkeysib-…), pas d'une clé SMTP.";
@@ -277,4 +285,38 @@ async function sendTest(req, to) {
   catch (e) { throw new L.HttpError(502, e.message); }
 }
 
-module.exports = { arrivalText, faresOf, HEURE_SOIR, status, adminView, saveConfig, clearConfig, getConfig, siteUrl, passUrl, ensureToken, phoneE164, sendEmail, sendTest, emailHtml, FARE, sendReminder, reminderHtml };
+/* ───────── Rappel par SMS (Brevo, avec les crédits SMS achetés dans Brevo) ───────── */
+const SMS_SENDER = "VolMC5060"; // nom d'expéditeur : 3 à 11 lettres ou chiffres
+// Alphabet SMS standard (GSM 7 bits) : 160 caractères par SMS. Un seul caractère hors alphabet (ê, emoji…)
+// ferait passer tout le message à 70 caractères par SMS : on le remplace donc par son équivalent simple.
+const GSM = "@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
+const GSM_EXT = "^{}\\[~]|€";
+function toGsm(s) {
+  const map = { "ê": "e", "ë": "e", "â": "a", "î": "i", "ï": "i", "ô": "o", "û": "u", "ç": "c", "À": "A", "Â": "A", "È": "E", "Ê": "E", "Ë": "E", "Î": "I", "Ï": "I", "Ô": "O", "Û": "U", "Ù": "U",
+    "’": "'", "‘": "'", "«": "\"", "»": "\"", "“": "\"", "”": "\"", "–": "-", "—": "-", "…": "...", "\u00a0": " ", "\u202f": " " };
+  return Array.from(String(s || "")).map((ch) => (GSM.includes(ch) || GSM_EXT.includes(ch) ? ch : map[ch] !== undefined ? map[ch] : (ch.normalize("NFD")[0].match(/[A-Za-z]/) ? ch.normalize("NFD")[0] : ""))).join("").replace(/ {2,}/g, " ");
+}
+function smsParts(text) {
+  const n = Array.from(text).reduce((a, ch) => a + (GSM_EXT.includes(ch) ? 2 : 1), 0);
+  return n <= 160 ? 1 : Math.ceil(n / 153);
+}
+function smsText(entry, url) {
+  const first = entry.prenom || String(entry.nom || "").split(" ")[0];
+  return toGsm("Bonjour " + first + " ! Rappel des 50 et 60 ans de Marjorie et Christophe : samedi 7 novembre " + arrivalText(entry) +
+    ", salle de Champrosay à Draveil (près du stade). Votre carte et l'itinéraire : " + url);
+}
+async function sendSms(req, entry, cfg, linkUrl) {
+  const c = cfg || (await getConfig());
+  if (!c.key || c.provider !== "brevo") throw new Error("Les SMS passent par Brevo : réglez d'abord la clé Brevo (envoi des e-mails).");
+  const to = phoneE164(entry.telephone);
+  if (!/^\d{10,15}$/.test(to)) throw new Error("Numéro de téléphone incorrect.");
+  const body = { sender: SMS_SENDER, recipient: to, content: smsText(entry, linkUrl || passUrl(req, entry)), type: "transactional", tag: "rappel" };
+  try {
+    return await post("https://api.brevo.com/v3/transactionalSMS/send", { "api-key": c.key }, body, "brevo-sms");
+  } catch (e) {
+    if (!/ 404 /.test(e.message)) throw e;
+    return post("https://api.brevo.com/v3/transactionalSMS/sms", { "api-key": c.key }, body, "brevo-sms"); // ancienne adresse de l'API
+  }
+}
+
+module.exports = { arrivalText, faresOf, HEURE_SOIR, smsText, smsParts, sendSms, status, adminView, saveConfig, clearConfig, getConfig, siteUrl, passUrl, ensureToken, phoneE164, sendEmail, sendTest, emailHtml, FARE, sendReminder, reminderHtml };

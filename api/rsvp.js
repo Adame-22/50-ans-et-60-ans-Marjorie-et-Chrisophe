@@ -203,6 +203,48 @@ module.exports = L.handler(async (req, res) => {
       return L.send(res, 200, { ok: true, remindedMsgAt: e.remindedMsgAt || null, passToken: e.passToken });
     }
 
+    // Rappel par SMS (Brevo) : aperçu, test, puis envoi par petits lots (une fois par invité)
+    if (b.action === "sms-preview" || b.action === "remind-sms") {
+      await L.requireUser(req);
+      const all = Object.values(await L.hgetallJson(L.K.rsvps));
+      const skipMsg = b.skipMsg !== false; // ceux déjà prévenus sur WhatsApp / SMS à la main ne reçoivent rien
+      const want = Array.isArray(b.ids) ? b.ids.map((x) => L.str(x, 64)) : null;
+      const target = all.filter((e) => e.presence === "oui" && /^\d{10,15}$/.test(N.phoneE164(e.telephone)) &&
+        (want ? want.includes(e.id) : !e.remindedSmsAt && !(skipMsg && e.remindedMsgAt)));
+      if (b.action === "sms-preview") {
+        const sample = target[0] || all.find((e) => e.presence === "oui") || { nom: "Jeanne Martin", passagers: 1, creneau: "journee" };
+        N.ensureToken(sample);
+        const text = N.smsText(sample, N.passUrl(req, sample));
+        const parts = target.reduce((a, e) => { N.ensureToken(e); return a + N.smsParts(N.smsText(e, N.passUrl(req, e))); }, 0);
+        return L.send(res, 200, { count: target.length, parts, sample: { nom: sample.nom, text, parts: N.smsParts(text), length: text.length },
+          done: all.filter((e) => e.remindedSmsAt).length });
+      }
+      const cfg = await N.getConfig();
+      if (b.test) { // SMS de test à son propre numéro (exemple : la première réponse)
+        const sample = Object.assign({}, target[0] || all.find((e) => e.presence === "oui"), { telephone: L.str(b.test, 30) });
+        N.ensureToken(sample);
+        try { const r = await N.sendSms(req, sample, cfg); return L.send(res, 200, { ok: true, test: true, credits: r.remainingCredits }); }
+        catch (e) { throw new L.HttpError(502, e.message); }
+      }
+      const batch = target.slice(0, 8); // petits lots : le navigateur rappelle tant qu'il en reste
+      const out = { sent: 0, errors: [], left: Math.max(0, target.length - batch.length), credits: null };
+      for (const e of batch) {
+        try {
+          N.ensureToken(e);
+          const r = await N.sendSms(req, e, cfg);
+          e.remindedSmsAt = new Date().toISOString();
+          await L.redis(["HSET", L.K.rsvps, e.id, JSON.stringify(e)]);
+          out.sent++;
+          if (r && r.remainingCredits !== undefined) out.credits = r.remainingCredits;
+        } catch (err) {
+          out.errors.push(e.nom + " : " + err.message);
+          // problème de compte (crédits, clé, blocage) : inutile d'insister ; un numéro faux n'arrête pas les autres
+          if (/crédits SMS|Clé Brevo|adresse IP|expéditeur SMS|passent par Brevo/.test(err.message)) { out.left = 0; out.stop = err.message; break; }
+        }
+      }
+      return L.send(res, 200, out);
+    }
+
     if (b.action === "remind") {
       await L.requireUser(req);
       const cfg = await N.getConfig();

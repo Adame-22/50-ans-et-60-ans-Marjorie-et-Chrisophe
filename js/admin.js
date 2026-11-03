@@ -494,6 +494,7 @@
       : done ? "✓ Tout le monde avec un e-mail a reçu le rappel (" + done + ")." : "Aucune réponse avec e-mail pour l'instant.";
     $("#remind-send").disabled = !notify.email || !todo.length;
     $("#remind-send").textContent = "Envoyer le rappel par e-mail (" + todo.length + ")";
+    if (!sms.busy) loadSms();
     // liste WhatsApp / SMS : ceux sans e-mail d'abord (et tous, si on coche la case)
     var all = $("#remind-all").checked;
     var list = going.filter(function (r) { return all || !r.email; })
@@ -521,6 +522,48 @@
     }).catch(function (err) { toast(err.message, true); });
   }
   $("#remind-all").addEventListener("change", renderRemind);
+
+  /* Rappel par SMS automatique (Brevo) */
+  var sms = { data: null, busy: false };
+  function loadSms() {
+    if (sms.busy) return;
+    api("/api/rsvp", { method: "POST", body: { action: "sms-preview", skipMsg: $("#sms-skipmsg").checked } }).then(function (d) {
+      sms.data = d;
+      var euros = (d.parts * 0.045).toFixed(2).replace(".", ",");
+      $("#sms-status").textContent = !notify.email ? "Réglez d'abord la clé Brevo (envoi des e-mails) : les SMS passent par le même compte."
+        : d.count ? d.count + " invité(s) à prévenir · " + d.parts + " SMS en tout (environ " + euros + " €)" + (d.done ? " · " + d.done + " déjà envoyé(s)" : "") + "."
+        : d.done ? "✓ SMS envoyés à " + d.done + " invité(s)." : "Personne à prévenir par SMS.";
+      $("#sms-send").textContent = "Envoyer les SMS (" + d.count + ")";
+      $("#sms-send").disabled = !notify.email || !d.count;
+      $("#sms-sample").textContent = "Exemple pour " + d.sample.nom + " (" + d.sample.parts + " SMS, " + d.sample.length + " caractères) :\n\n" + d.sample.text;
+    }).catch(function (e) { $("#sms-status").textContent = e.message; });
+  }
+  $("#sms-skipmsg").addEventListener("change", loadSms);
+  $("#sms-see").addEventListener("click", function () { $("#sms-sample").hidden = !$("#sms-sample").hidden; });
+  $("#sms-test").addEventListener("click", function () {
+    var to = (prompt("Votre numéro de portable pour recevoir un SMS de test :") || "").trim();
+    if (!to) return;
+    var btn = this; btn.disabled = true;
+    api("/api/rsvp", { method: "POST", body: { action: "remind-sms", test: to } })
+      .then(function (d) { toast("SMS de test envoyé" + (d.credits !== undefined && d.credits !== null ? " · crédits restants : " + d.credits : "") + "."); })
+      .catch(function (e) { toast(e.message, true); }).then(function () { btn.disabled = false; });
+  });
+  $("#sms-send").addEventListener("click", function () {
+    var d = sms.data; if (!d || !d.count) return;
+    if (!confirm("Envoyer le rappel par SMS à " + d.count + " invité(s) ?\n\n" + d.parts + " SMS en tout, environ " + (d.parts * 0.045).toFixed(2).replace(".", ",") + " € de crédits Brevo.\nConseil : envoyez-vous d'abord un SMS de test.")) return;
+    var btn = this, sent = 0, errors = [];
+    sms.busy = true; btn.disabled = true;
+    (function batch() {
+      btn.textContent = "Envoi… " + sent + " / " + d.count;
+      api("/api/rsvp", { method: "POST", body: { action: "remind-sms", skipMsg: $("#sms-skipmsg").checked } }).then(function (r) {
+        sent += r.sent; errors = errors.concat(r.errors);
+        if (r.left > 0 && r.sent > 0) return batch(); // lot suivant
+        sms.busy = false;
+        toast(sent + " SMS envoyé(s)" + (errors.length ? ", " + errors.length + " erreur(s) — " + errors[0] : "") + (r.credits !== null && r.credits !== undefined ? " · crédits restants : " + r.credits : "") + ".", !!errors.length);
+        loadRsvps(); loadSms();
+      }).catch(function (e) { sms.busy = false; toast(e.message, true); loadSms(); });
+    })();
+  });
   $("#remind-list").addEventListener("click", function (e) {
     var go = e.target.closest("[data-remind-go]"), copy = e.target.closest("[data-remind-copy]");
     if (go) markReminded(go.getAttribute("data-remind-go"), true, go.getAttribute("data-via")); // le lien s'ouvre, on coche « prévenu »
