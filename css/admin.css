@@ -986,3 +986,5 @@ body.admin { font-variant-numeric: lining-nums; }
 .remind__smscfg .field { flex: 1 1 160px; margin: 0; }
 .remind__next { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .4rem 0 .8rem; }
 .remind__next .hint { flex-basis: 100%; margin: 0; }
+.remind__tel { display: block; font-size: .85rem; margin-top: .2rem; font-weight: 600; }
+.remind__txt { margin: .25rem 0 0; font-size: .82rem; line-height: 1.35; white-space: pre-wrap; user-select: all; background: rgba(0,0,0,.04); padding: .4rem .5rem; border-radius: 6px; }

@@ -511,7 +511,7 @@
     $("#remind-send").textContent = "Envoyer le rappel par e-mail (" + todo.length + ")";
     if (!sms.busy) loadSms();
     // liste WhatsApp / SMS : ceux sans e-mail d'abord (et tous, si on coche la case)
-    var all = $("#remind-all").checked;
+    var all = $("#remind-all").checked, showTxt = $("#remind-show").checked;
     var list = going.filter(function (r) { return all || !r.email; })
       .sort(function (a, b) { return (!!a.email - !!b.email) || (!!a.remindedMsgAt - !!b.remindedMsgAt) || a.nom.localeCompare(b.nom, "fr"); });
     var noMail = going.filter(function (r) { return !r.email; }), okMsg = noMail.filter(function (r) { return r.remindedMsgAt; }).length;
@@ -521,7 +521,8 @@
       var tel = phoneIntl(r.telephone), txt = encodeURIComponent(remindText(r));
       var fares = faresOf(r), fs = fares.every(function (x) { return x === fares[0]; }) ? { midi: "midi", soir: "soir", journee: "midi + soir" }[fares[0]] : "groupe mêlé";
       return '<li class="' + (r.remindedMsgAt ? "is-done" : "") + '"><div class="remind__who"><b>' + esc(r.nom) + "</b><small>" + r.passagers + " pers. · " + fs +
-        (r.telephone ? " · " + esc(r.telephone) + (r.relai ? " (via " + esc(r.relai) + ")" : "") : " · pas de téléphone") + (r.email ? (r.remindedAt ? " · ✉ e-mail reçu" : " · ✉ e-mail") : "") + "</small></div>" +
+        (r.telephone ? " · " + esc(r.telephone) + (r.relai ? " (via " + esc(r.relai) + ")" : "") : " · pas de téléphone") + (r.email ? (r.remindedAt ? " · ✉ e-mail reçu" : " · ✉ e-mail") : "") + "</small>" +
+        (showTxt && tel ? '<span class="remind__tel">Numéro : +' + tel + '</span><p class="remind__txt">' + esc(remindText(r)) + "</p>" : "") + "</div>" +
         '<div class="remind__do">' +
         (tel ? '<a class="btn btn--small btn--wa" data-remind-go="' + r.id + '" data-via="whatsapp" target="_blank" rel="noopener" href="https://wa.me/' + tel + "?text=" + txt + '">WhatsApp</a>' +
           '<a class="btn btn--small btn--line" data-remind-go="' + r.id + '" data-via="sms" href="sms:+' + tel + "?&body=" + txt + '">SMS</a>'
@@ -551,6 +552,7 @@
     }).catch(function (err) { toast(err.message, true); });
   }
   $("#remind-all").addEventListener("change", renderRemind);
+  $("#remind-show").addEventListener("change", renderRemind);
   ["sms", "wa"].forEach(function (k) {
     $("#remind-next-" + k).addEventListener("click", function () {
       if (remindNext) markReminded(remindNext.id, true, k === "wa" ? "whatsapp" : "sms"); // le lien s'ouvre, on passe au suivant
