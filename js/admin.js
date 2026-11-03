@@ -485,7 +485,9 @@
   }
   function remindText(r) {
     var first = r.prenom || String(r.nom || "").split(" ")[0];
-    return "Bonjour " + first + " ! ✈ Petit rappel pour le vol MC 5060, les 50 & 60 ans de Marjorie et Christophe : rendez-vous samedi 7 novembre " + arrivalText(r) +
+    // signé du prénom de l'expéditeur : ceux qui n'ont pas son numéro savent tout de suite qui écrit
+    var me = state.me && String(state.me.name || "").trim().split(" ")[0];
+    return "Bonjour " + first + " ! " + (me ? "C'est " + me + ". " : "") + "✈ Petit rappel pour le vol MC 5060, les 50 & 60 ans de Marjorie et Christophe : rendez-vous samedi 7 novembre " + arrivalText(r) +
       ", salle des fêtes de Champrosay, rue du Bas de Champrosay à Draveil (à côté du stade de Champrosay et du centre aéré). Itinéraire : https://maps.app.goo.gl/hPMCvkp1w56v3Ffo6 · Dress code simple et chic, parking sur place." +
       (r.passToken ? " Votre carte d'embarquement : " + passLink(r) : "") + " À samedi !";
   }
