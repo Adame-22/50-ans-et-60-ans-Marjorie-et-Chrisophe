@@ -984,3 +984,5 @@ body.admin { font-variant-numeric: lining-nums; }
 .remind__smstext { white-space: pre-wrap; font: .9rem/1.45 var(--sans); background: #f4efe8; border-radius: 10px; padding: .7rem .8rem; margin: .4rem 0; }
 .remind__smscfg { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem .8rem; margin: .4rem 0 .2rem; }
 .remind__smscfg .field { flex: 1 1 160px; margin: 0; }
+.remind__next { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .4rem 0 .8rem; }
+.remind__next .hint { flex-basis: 100%; margin: 0; }

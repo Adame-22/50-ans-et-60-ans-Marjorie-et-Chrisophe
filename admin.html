@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261118" />
-  <link rel="stylesheet" href="css/style.css?v=20261118" />
-  <link rel="stylesheet" href="css/admin.css?v=20261118" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261119" />
+  <link rel="stylesheet" href="css/style.css?v=20261119" />
+  <link rel="stylesheet" href="css/admin.css?v=20261119" />
 </head>
 <body class="admin">
 
@@ -281,6 +281,11 @@
           <h4 id="remind-nomail-sum"></h4>
           <p class="hint hint--tiny">Depuis votre téléphone : touchez <b>WhatsApp</b> (ou <b>SMS</b>), le message personnalisé s'ouvre déjà écrit (prénom, bonne heure, adresse, lien de sa carte). Il ne reste qu'à appuyer sur « Envoyer ». L'invité est alors coché « prévenu ».</p>
           <label class="remind__all"><input type="checkbox" id="remind-all" /> Montrer aussi ceux qui ont un e-mail (pour les prévenir aussi sur WhatsApp)</label>
+          <div class="remind__next">
+            <a class="btn btn--gold" id="remind-next-sms" href="#">📩 SMS au suivant</a>
+            <a class="btn btn--wa" id="remind-next-wa" href="#" target="_blank" rel="noopener">WhatsApp au suivant</a>
+            <p class="hint hint--tiny" id="remind-next-who"></p>
+          </div>
           <ul class="remind__list" id="remind-list"></ul>
         </div>
       </div>
@@ -847,11 +852,11 @@
 
   <div class="toast" id="toast" role="status" hidden></div>
 
-  <script src="js/config.js?v=20261118"></script>
+  <script src="js/config.js?v=20261119"></script>
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261118"></script>
+  <script src="js/graph.js?v=20261119"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261118"></script>
-  <script src="js/admin.js?v=20261118"></script>
+  <script src="js/xlsx.js?v=20261119"></script>
+  <script src="js/admin.js?v=20261119"></script>
 </body>
 </html>

@@ -524,7 +524,21 @@
           : '<button class="btn btn--small btn--line" type="button" data-remind-copy="' + r.id + '">Copier le message</button>') +
         '<label class="remind__ok"><input type="checkbox" data-remind-mark="' + r.id + '"' + (r.remindedMsgAt ? " checked" : "") + " /> prévenu</label></div></li>";
     }).join("") || '<li class="hint">Tout le monde a un e-mail : cochez la case ci-dessus pour les prévenir aussi sur WhatsApp.</li>';
+    // « au suivant » : le premier de la liste qui a un téléphone et n'est pas encore prévenu
+    var next = list.filter(function (r) { return phoneIntl(r.telephone) && !r.remindedMsgAt; })[0];
+    remindNext = next || null;
+    var left = list.filter(function (r) { return phoneIntl(r.telephone) && !r.remindedMsgAt; }).length;
+    $("#remind-next-sms").hidden = $("#remind-next-wa").hidden = !next;
+    if (next) {
+      var t = encodeURIComponent(remindText(next)), tel = phoneIntl(next.telephone);
+      $("#remind-next-sms").href = "sms:+" + tel + "?&body=" + t;
+      $("#remind-next-wa").href = "https://wa.me/" + tel + "?text=" + t;
+      $("#remind-next-sms").textContent = "📩 SMS au suivant : " + next.nom;
+    }
+    $("#remind-next-who").textContent = next ? left + " à prévenir. Le message s'ouvre déjà écrit depuis votre téléphone (votre numéro, gratuit) : appuyez sur Envoyer, revenez ici, puis « au suivant »."
+      : "✓ Tout le monde dans cette liste est prévenu.";
   }
+  var remindNext = null;
   function markReminded(id, on, via) {
     return api("/api/rsvp", { method: "POST", body: { action: "remind-mark", id: id, on: on, via: via } }).then(function (d) {
       var r = state.rsvps.find(function (x) { return x.id === id; });
@@ -533,6 +547,11 @@
     }).catch(function (err) { toast(err.message, true); });
   }
   $("#remind-all").addEventListener("change", renderRemind);
+  ["sms", "wa"].forEach(function (k) {
+    $("#remind-next-" + k).addEventListener("click", function () {
+      if (remindNext) markReminded(remindNext.id, true, k === "wa" ? "whatsapp" : "sms"); // le lien s'ouvre, on passe au suivant
+    });
+  });
 
   /* Rappel par SMS automatique (Brevo) */
   var sms = { data: null, busy: false };
