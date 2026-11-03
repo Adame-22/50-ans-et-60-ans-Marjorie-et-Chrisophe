@@ -7,9 +7,9 @@
   <title>Tour de contrôle · Vol MC 5060</title>
   <meta name="theme-color" content="#000033" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="css/fonts.css?v=20261117" />
-  <link rel="stylesheet" href="css/style.css?v=20261117" />
-  <link rel="stylesheet" href="css/admin.css?v=20261117" />
+  <link rel="stylesheet" href="css/fonts.css?v=20261118" />
+  <link rel="stylesheet" href="css/style.css?v=20261118" />
+  <link rel="stylesheet" href="css/admin.css?v=20261118" />
 </head>
 <body class="admin">
 
@@ -261,6 +261,12 @@
         <div class="remind__sms" id="remind-sms">
           <h4>📱 Par SMS automatique (Brevo)</h4>
           <p class="hint hint--tiny">Un SMS court à chaque invité qui a un téléphone : son prénom, la bonne heure (12h30 ou 19h00), la salle et le lien de sa carte d'embarquement (avec l'itinéraire). Chaque message compte pour 2 SMS ; il faut des crédits SMS dans Brevo (environ 0,045 € le SMS). Chacun ne le reçoit qu'une fois.</p>
+          <form class="remind__smscfg" id="sms-cfg" novalidate>
+            <div class="field"><label for="sms-sender">Nom d'expéditeur (validé dans Brevo)</label><input id="sms-sender" maxlength="11" autocomplete="off" placeholder="ex. CDETAILING" /></div>
+            <div class="field"><label for="sms-sign">Signature en tête du SMS</label><input id="sms-sign" maxlength="20" autocomplete="off" placeholder="ex. Adame" /></div>
+            <button class="btn btn--small btn--line" type="submit">Enregistrer</button>
+          </form>
+          <p class="hint hint--tiny">Le nom d'expéditeur doit être exactement celui validé par Brevo (Paramètres → SMS → Sender ID), sinon les SMS sont refusés. La signature donne « Bonjour Céline ! C'est Adame : rappel des 50 et 60 ans… ».</p>
           <p class="hint" id="sms-status">…</p>
           <pre class="remind__smstext" id="sms-sample" hidden></pre>
           <label class="remind__all"><input type="checkbox" id="sms-skipmsg" checked /> Ne pas envoyer à ceux déjà prévenus sur WhatsApp</label>
@@ -841,11 +847,11 @@
 
   <div class="toast" id="toast" role="status" hidden></div>
 
-  <script src="js/config.js?v=20261117"></script>
+  <script src="js/config.js?v=20261118"></script>
   <script src="js/vendor/sortable-1.15.2.min.js"></script>
-  <script src="js/graph.js?v=20261117"></script>
+  <script src="js/graph.js?v=20261118"></script>
   <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
-  <script src="js/xlsx.js?v=20261117"></script>
-  <script src="js/admin.js?v=20261117"></script>
+  <script src="js/xlsx.js?v=20261118"></script>
+  <script src="js/admin.js?v=20261118"></script>
 </body>
 </html>

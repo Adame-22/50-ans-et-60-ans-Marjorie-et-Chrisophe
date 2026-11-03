@@ -399,8 +399,19 @@
     renderRsvps();
   }
   function loadNotify() {
-    api("/api/rsvp?view=notify").then(renderNotify).catch(function () {});
+    api("/api/rsvp?view=notify").then(function (d) {
+      renderNotify(d);
+      if (d.admin && document.activeElement !== $("#sms-sender") && document.activeElement !== $("#sms-sign")) {
+        $("#sms-sender").value = d.smsSender || ""; $("#sms-sign").value = d.smsSign || "";
+      }
+    }).catch(function () {});
   }
+  $("#sms-cfg").addEventListener("submit", function (e) {
+    e.preventDefault();
+    api("/api/rsvp", { method: "POST", body: { action: "sms-config", sender: $("#sms-sender").value.trim(), sign: $("#sms-sign").value.trim() } })
+      .then(function () { toast("Réglages SMS enregistrés."); loadSms(); })
+      .catch(function (err) { toast(err.message, true); });
+  });
   $("#mail-provider").addEventListener("change", mailHelp);
   $("#mail-form").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -535,7 +546,7 @@
         : d.done ? "✓ SMS envoyés à " + d.done + " invité(s)." : "Personne à prévenir par SMS.";
       $("#sms-send").textContent = "Envoyer les SMS (" + d.count + ")";
       $("#sms-send").disabled = !notify.email || !d.count;
-      $("#sms-sample").textContent = "Exemple pour " + d.sample.nom + " (" + d.sample.parts + " SMS, " + d.sample.length + " caractères) :\n\n" + d.sample.text;
+      $("#sms-sample").textContent = "Expéditeur : " + d.sender + "\nExemple pour " + d.sample.nom + " (" + d.sample.parts + " SMS, " + d.sample.length + " caractères) :\n\n" + d.sample.text;
     }).catch(function (e) { $("#sms-status").textContent = e.message; });
   }
   $("#sms-skipmsg").addEventListener("change", loadSms);

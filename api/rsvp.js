@@ -204,8 +204,15 @@ module.exports = L.handler(async (req, res) => {
     }
 
     // Rappel par SMS (Brevo) : aperçu, test, puis envoi par petits lots (une fois par invité)
+    if (b.action === "sms-config") { // nom d'expéditeur validé dans Brevo, signature en tête du SMS
+      const me = await L.requireUser(req, { admin: true });
+      L.noAgent(me);
+      await N.saveSms(b, me.username);
+      return L.send(res, 200, await N.adminView());
+    }
     if (b.action === "sms-preview" || b.action === "remind-sms") {
       await L.requireUser(req);
+      const smsCfg = await N.getConfig(), sign = smsCfg.smsSign === undefined ? N.SMS_SIGN : smsCfg.smsSign;
       const all = Object.values(await L.hgetallJson(L.K.rsvps));
       const skipMsg = b.skipMsg !== false; // ceux déjà prévenus sur WhatsApp / SMS à la main ne reçoivent rien
       const want = Array.isArray(b.ids) ? b.ids.map((x) => L.str(x, 64)) : null;
@@ -214,10 +221,10 @@ module.exports = L.handler(async (req, res) => {
       if (b.action === "sms-preview") {
         const sample = target[0] || all.find((e) => e.presence === "oui") || { nom: "Jeanne Martin", passagers: 1, creneau: "journee" };
         N.ensureToken(sample);
-        const text = N.smsText(sample, N.passUrl(req, sample));
-        const parts = target.reduce((a, e) => { N.ensureToken(e); return a + N.smsParts(N.smsText(e, N.passUrl(req, e))); }, 0);
+        const text = N.smsText(sample, N.passUrl(req, sample), sign);
+        const parts = target.reduce((a, e) => { N.ensureToken(e); return a + N.smsParts(N.smsText(e, N.passUrl(req, e), sign)); }, 0);
         return L.send(res, 200, { count: target.length, parts, sample: { nom: sample.nom, text, parts: N.smsParts(text), length: text.length },
-          done: all.filter((e) => e.remindedSmsAt).length });
+          done: all.filter((e) => e.remindedSmsAt).length, sender: smsCfg.smsSender || "VolMC5060", sign });
       }
       const cfg = await N.getConfig();
       if (b.test) { // SMS de test à son propre numéro (exemple : la première réponse)

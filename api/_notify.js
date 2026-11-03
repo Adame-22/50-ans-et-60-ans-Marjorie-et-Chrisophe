@@ -57,6 +57,7 @@ async function adminView() {
   return {
     email: ready(c), source: c.source, provider: c.provider, from: c.from, fromName: c.fromName,
     keyEnd: c.key ? c.key.slice(-4) : "", log: log.slice(0, 8),
+    smsSender: c.smsSender || SMS_SENDER, smsSign: c.smsSign === undefined ? SMS_SIGN : c.smsSign,
   };
 }
 
@@ -71,6 +72,7 @@ async function saveConfig(b, by) {
     key: key || (old.provider === provider ? old.key || "" : ""),
     from: String(b.from || "").trim().slice(0, 120),
     fromName: String(b.fromName || "").trim().slice(0, 60),
+    smsSender: old.smsSender, smsSign: old.smsSign, // réglages SMS gardés
     updatedAt: new Date().toISOString(), by,
   };
   if (cfg.from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cfg.from)) throw new L.HttpError(400, "L'adresse d'expéditeur semble incorrecte.");
@@ -286,7 +288,20 @@ async function sendTest(req, to) {
 }
 
 /* ───────── Rappel par SMS (Brevo, avec les crédits SMS achetés dans Brevo) ───────── */
-const SMS_SENDER = "VolMC5060"; // nom d'expéditeur : 3 à 11 lettres ou chiffres
+// Nom d'expéditeur : 3 à 11 lettres ou chiffres, et il doit être enregistré et validé dans Brevo (Sender ID).
+// Réglable dans l'admin (ex. CDETAILING) ; « signature » : qui écrit, en tête du SMS (ex. « C'est Adame : »).
+const SMS_SENDER = "VolMC5060";
+const SMS_SIGN = "Adame";
+async function saveSms(b, by) {
+  const raw = await L.redis(["GET", K_MAIL]);
+  const cfg = raw ? JSON.parse(raw) : {};
+  const sender = String(b.sender || "").trim();
+  if (!/^(?=.*[A-Za-z])[A-Za-z0-9]{3,11}$/.test(sender)) throw new L.HttpError(400, "Nom d'expéditeur : 3 à 11 lettres ou chiffres, sans espace ni accent (ex. CDETAILING).");
+  cfg.smsSender = sender;
+  cfg.smsSign = String(b.sign || "").trim().slice(0, 20);
+  cfg.updatedAt = new Date().toISOString(); cfg.by = by;
+  await L.redis(["SET", K_MAIL, JSON.stringify(cfg)]);
+}
 // Alphabet SMS standard (GSM 7 bits) : 160 caractères par SMS. Un seul caractère hors alphabet (ê, emoji…)
 // ferait passer tout le message à 70 caractères par SMS : on le remplace donc par son équivalent simple.
 const GSM = "@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
@@ -300,9 +315,11 @@ function smsParts(text) {
   const n = Array.from(text).reduce((a, ch) => a + (GSM_EXT.includes(ch) ? 2 : 1), 0);
   return n <= 160 ? 1 : Math.ceil(n / 153);
 }
-function smsText(entry, url) {
+function smsText(entry, url, sign) {
   const first = entry.prenom || String(entry.nom || "").split(" ")[0];
-  return toGsm("Bonjour " + first + " ! Rappel des 50 et 60 ans de Marjorie et Christophe : samedi 7 novembre " + arrivalText(entry) +
+  const fares = faresOf(entry), soir = fares.filter((f) => f === "soir").length;
+  const when = !soir ? "à " + HEURE_MIDI : soir === fares.length ? "à " + HEURE_SOIR : "à " + HEURE_MIDI + " (" + HEURE_SOIR + " pour ceux du soir)";
+  return toGsm("Bonjour " + first + " ! " + (sign ? "C'est " + sign + " : rappel" : "Rappel") + " des 50 et 60 ans de Marjorie et Christophe, samedi 7 novembre " + when +
     ", salle de Champrosay à Draveil (près du stade). Votre carte et l'itinéraire : " + url);
 }
 async function sendSms(req, entry, cfg, linkUrl) {
@@ -310,7 +327,7 @@ async function sendSms(req, entry, cfg, linkUrl) {
   if (!c.key || c.provider !== "brevo") throw new Error("Les SMS passent par Brevo : réglez d'abord la clé Brevo (envoi des e-mails).");
   const to = phoneE164(entry.telephone);
   if (!/^\d{10,15}$/.test(to)) throw new Error("Numéro de téléphone incorrect.");
-  const body = { sender: SMS_SENDER, recipient: to, content: smsText(entry, linkUrl || passUrl(req, entry)), type: "transactional", tag: "rappel" };
+  const body = { sender: c.smsSender || SMS_SENDER, recipient: to, content: smsText(entry, linkUrl || passUrl(req, entry), c.smsSign === undefined ? SMS_SIGN : c.smsSign), type: "transactional", tag: "rappel" };
   try {
     return await post("https://api.brevo.com/v3/transactionalSMS/send", { "api-key": c.key }, body, "brevo-sms");
   } catch (e) {
@@ -319,4 +336,4 @@ async function sendSms(req, entry, cfg, linkUrl) {
   }
 }
 
-module.exports = { arrivalText, faresOf, HEURE_SOIR, smsText, smsParts, sendSms, status, adminView, saveConfig, clearConfig, getConfig, siteUrl, passUrl, ensureToken, phoneE164, sendEmail, sendTest, emailHtml, FARE, sendReminder, reminderHtml };
+module.exports = { arrivalText, faresOf, HEURE_SOIR, smsText, smsParts, sendSms, saveSms, SMS_SIGN, status, adminView, saveConfig, clearConfig, getConfig, siteUrl, passUrl, ensureToken, phoneE164, sendEmail, sendTest, emailHtml, FARE, sendReminder, reminderHtml };
