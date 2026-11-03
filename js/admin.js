@@ -485,9 +485,11 @@
   }
   function remindText(r) {
     var first = r.prenom || String(r.nom || "").split(" ")[0];
+    var relai = r.relai && String(r.relai).trim().split(" ")[0];
     // signé du prénom de l'expéditeur : ceux qui n'ont pas son numéro savent tout de suite qui écrit
     var me = state.me && String(state.me.name || "").trim().split(" ")[0];
-    return "Bonjour " + first + " ! " + (me ? "C'est " + me + ". " : "") + "✈ Petit rappel pour le vol MC 5060, les 50 & 60 ans de Marjorie et Christophe : rendez-vous samedi 7 novembre " + arrivalText(r) +
+    return "Bonjour " + (relai || first) + " ! " + (me ? "C'est " + me + ". " : "") +
+      (relai ? "Peux-tu transmettre ce message à " + r.nom + " ? " : "") + "✈ Petit rappel pour le vol MC 5060, les 50 & 60 ans de Marjorie et Christophe : rendez-vous samedi 7 novembre " + arrivalText(r) +
       ", salle des fêtes de Champrosay, rue du Bas de Champrosay à Draveil (à côté du stade de Champrosay et du centre aéré). Itinéraire : https://maps.app.goo.gl/hPMCvkp1w56v3Ffo6 · Dress code simple et chic, parking sur place." +
       (r.passToken ? " Votre carte d'embarquement : " + passLink(r) : "") + " À samedi !";
   }
@@ -519,7 +521,7 @@
       var tel = phoneIntl(r.telephone), txt = encodeURIComponent(remindText(r));
       var fares = faresOf(r), fs = fares.every(function (x) { return x === fares[0]; }) ? { midi: "midi", soir: "soir", journee: "midi + soir" }[fares[0]] : "groupe mêlé";
       return '<li class="' + (r.remindedMsgAt ? "is-done" : "") + '"><div class="remind__who"><b>' + esc(r.nom) + "</b><small>" + r.passagers + " pers. · " + fs +
-        (r.telephone ? " · " + esc(r.telephone) : " · pas de téléphone") + (r.email ? (r.remindedAt ? " · ✉ e-mail reçu" : " · ✉ e-mail") : "") + "</small></div>" +
+        (r.telephone ? " · " + esc(r.telephone) + (r.relai ? " (via " + esc(r.relai) + ")" : "") : " · pas de téléphone") + (r.email ? (r.remindedAt ? " · ✉ e-mail reçu" : " · ✉ e-mail") : "") + "</small></div>" +
         '<div class="remind__do">' +
         (tel ? '<a class="btn btn--small btn--wa" data-remind-go="' + r.id + '" data-via="whatsapp" target="_blank" rel="noopener" href="https://wa.me/' + tel + "?text=" + txt + '">WhatsApp</a>' +
           '<a class="btn btn--small btn--line" data-remind-go="' + r.id + '" data-via="sms" href="sms:+' + tel + "?&body=" + txt + '">SMS</a>'

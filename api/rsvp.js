@@ -416,6 +416,8 @@ module.exports = L.handler(async (req, res) => {
         entry.email = email;
       }
       if (x.telephone !== undefined) entry.telephone = L.str(x.telephone, 20).replace(/[^\d+ .()-]/g, "");
+      // le téléphone est celui d'un proche qui transmet (ex. une invitée sans portable)
+      if (x.relai !== undefined) { const r = L.str(x.relai, 60); if (r) entry.relai = r; else delete entry.relai; }
       // les fêtés ne voient pas les messages : ils ne peuvent pas non plus les modifier
       if (x.message !== undefined && !L.isHost(me)) entry.message = L.str(x.message, 1500);
       entry.editedAt = new Date().toISOString();
