@@ -20,6 +20,8 @@ const L = require("./_lib");
 const N = require("./_notify");
 const T = require("./_seating");
 
+// Enregistrement en ligne terminé : seul l'équipage peut encore ajouter une réponse (voir aussi js/config.js, inscriptionsCloses)
+const RSVP_CLOSED = process.env.RSVP_OUVERT !== "1";
 const REPAS = ["Standard", "Végétarien", "Végétalien", "Sans gluten", "Sans porc", "Enfant", "Autre"];
 
 function passView(e) {
@@ -310,6 +312,7 @@ module.exports = L.handler(async (req, res) => {
     const email = L.str(b.email, 120);
     const telephone = L.str(b.telephone, 20).replace(/[^\d+ .()-]/g, "");
     const byCrew = b.source === "equipage" && (await L.requireUser(req)); // ajout manuel depuis l'admin
+    if (RSVP_CLOSED && !byCrew) throw new L.HttpError(403, "L'enregistrement en ligne est terminé. Pour tout changement, répondez au SMS ou à l'e-mail de rappel.");
     if (!email && !telephone && !byCrew) throw new L.HttpError(400, "Indiquez votre e-mail ou votre numéro de portable.");
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new L.HttpError(400, "L'adresse e-mail semble incorrecte.");
     const entry = {

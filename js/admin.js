@@ -490,7 +490,7 @@
     var me = state.me && String(state.me.name || "").trim().split(" ")[0];
     return "Bonjour " + (relai || first) + " ! " + (me ? "C'est " + me + ". " : "") +
       (relai ? "Peux-tu transmettre ce message à " + r.nom + " ? " : "") + "✈ Petit rappel pour le vol MC 5060, les 50 & 60 ans de Marjorie et Christophe : rendez-vous samedi 7 novembre " + arrivalText(r) +
-      ", salle des fêtes de Champrosay, rue du Bas de Champrosay à Draveil (à côté du stade de Champrosay et du centre aéré). Itinéraire : https://maps.app.goo.gl/hPMCvkp1w56v3Ffo6 · Dress code simple et chic, parking sur place." +
+      ", salle des fêtes de Champrosay, rue du Bas de Champrosay à Draveil (à côté du stade de Champrosay et du centre aéré). Dress code simple et chic, parking sur place. Horaires, itinéraire et programme : " + notify.site + "/infos" +
       (r.passToken ? " Votre carte d'embarquement : " + passLink(r) : "") + " À samedi !";
   }
   // numéro français → international (WhatsApp veut 33612345678)

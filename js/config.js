@@ -25,6 +25,9 @@ window.EVENT = {
   porte: "A50", // la « porte d'embarquement » affichée sur le tableau
   dressCode: "Simple et chic",
   rsvpAvant: "25 octobre 2026",
+  // true : l'enregistrement en ligne est terminé (formulaire remplacé par un message,
+  // boutons de l'accueil vers la page /infos). À mettre aussi dans api/rsvp.js (RSVP_CLOSED).
+  inscriptionsCloses: true,
   parking: "Parking disponible sur place.",
 
   // Heures de vol des passeports : avec les dates de naissance (AAAA-MM-JJ),

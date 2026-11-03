@@ -342,6 +342,18 @@
     svg.innerHTML = html;
   });
 
+  /* ───────── Enregistrement terminé : message à la place du formulaire ───────── */
+  if (CFG.inscriptionsCloses) {
+    var closedBox = document.getElementById("checkin-closed"), ckForm = document.getElementById("checkin");
+    if (closedBox && ckForm) { closedBox.hidden = false; ckForm.hidden = true; }
+    var ckLead = document.getElementById("checkin-lead");
+    if (ckLead) ckLead.textContent = "L'enregistrement en ligne est terminé.";
+    var heroCta = document.getElementById("hero-cta");
+    if (heroCta) { heroCta.href = "/infos"; heroCta.querySelector(".btn__label").textContent = "Infos passagers"; }
+    var navCta = document.getElementById("nav-cta");
+    if (navCta) { navCta.href = "/infos"; navCta.textContent = "Infos passagers"; }
+  }
+
   /* ───────── Check-in / RSVP ───────── */
   var form = document.getElementById("checkin");
   var done = document.getElementById("checkin-done");

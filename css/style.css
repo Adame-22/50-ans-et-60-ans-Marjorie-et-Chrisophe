@@ -1514,3 +1514,34 @@ h3 { font-size: 1.6rem; }
 /* Repère pour trouver la salle (le GPS se trompe avec l'adresse seule) */
 .info__hint { font-style: normal; font-size: .88rem; color: #8f5c38; }
 .route-card__hint { margin: .2rem 0 .9rem; font-size: .95rem; color: var(--gold-light); }
+
+/* ───────── Enregistrement terminé (accueil) ───────── */
+.checkin-closed { text-align: center; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: clamp(32px, 6vw, 56px) clamp(20px, 4vw, 44px); position: relative; }
+.checkin-closed__stamp { display: inline-block; transform: rotate(-6deg); border: 3px double #b0302a; color: #b0302a; font: 800 .95rem var(--sans); letter-spacing: .25em; text-transform: uppercase; padding: .45rem 1rem; border-radius: 8px; }
+.checkin-closed h3 { font-size: 2.2rem; margin: 1.2rem 0 .6rem; }
+.checkin-closed p { color: var(--muted); margin: 0 auto 1rem; max-width: 480px; }
+.checkin-closed__small { font-size: .92rem; }
+.checkin-closed .btn { margin-top: .8rem; }
+
+/* ───────── Page Infos passagers (/infos) ───────── */
+.infos-page .nav { position: sticky; }
+.ip-hero { padding-top: clamp(48px, 9vw, 96px); text-align: center; }
+.ip-hero .eyebrow { color: var(--gold-light); }
+.ip-hero__title { font-family: var(--serif); font-weight: 500; font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.1; margin: .6rem 0 .4rem; }
+.ip-hero__date { font-size: 1.2rem; margin: 0 0 1rem; color: rgba(255, 251, 254, .85); }
+.ip-hero__closed { display: inline-flex; gap: .5rem; align-items: center; margin: 0 0 1.8rem; padding: .45rem 1rem; border-radius: 999px; background: rgba(255, 177, 0, .14); color: var(--gold-light); font-weight: 600; font-size: .95rem; }
+.ip-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ip-time { display: grid; gap: .25rem; padding: 18px 14px; border: 1px solid rgba(255, 177, 0, .5); border-radius: 16px; background: rgba(255, 251, 254, .05); }
+.ip-time small { font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 251, 254, .7); }
+.ip-time b { font-family: var(--serif); font-size: clamp(2.2rem, 8vw, 3rem); font-weight: 500; color: var(--gold-light); line-height: 1; }
+.ip-time span { font-size: .9rem; color: rgba(255, 251, 254, .8); }
+.ip-hero__note { margin: 1.4rem auto 0; max-width: 520px; font-size: .95rem; color: rgba(255, 251, 254, .75); }
+.ip-where { padding-top: clamp(40px, 7vw, 72px); }
+.ip-where .route-card { margin: 0 0 24px; }
+.ip-more { text-align: center; padding: clamp(48px, 8vw, 80px) 0; }
+.ip-more .big-actions { margin: 1rem 0 1.4rem; text-align: left; }
+.ip-more__help { color: var(--muted); margin: .4rem 0; }
+@media (max-width: 520px) {
+  .ip-times { grid-template-columns: 1fr; }
+  .infos-page .nav__links a:not(.nav__cta) { display: none; }
+}
