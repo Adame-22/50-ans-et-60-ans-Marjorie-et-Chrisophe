@@ -29,6 +29,11 @@ window.EVENT = {
   // boutons de l'accueil vers la page /infos). À mettre aussi dans api/rsvp.js (RSVP_CLOSED).
   inscriptionsCloses: true,
   parking: "Parking disponible sur place.",
+  // Petit mot affiché sur l'accueil, la page /infos et les cartes d'embarquement (supprimer pour le retirer)
+  urne: {
+    titre: "Une urne à bord",
+    texte: "Votre présence est notre plus beau cadeau. Pour ceux qui souhaitent participer au cadeau de Marjorie et Christophe, une urne sera à disposition à l'accueil de la salle.",
+  },
 
   // Heures de vol des passeports : avec les dates de naissance (AAAA-MM-JJ),
   // le compteur est exact et avance en direct. Sinon : âge × 8 766 h.

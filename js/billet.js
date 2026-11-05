@@ -57,6 +57,10 @@
     function act(href, icon, title, sub, extra) {
       return '<a class="bact" href="' + href + '"' + (extra || "") + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + icon + '"/></svg><b>' + title + "</b><small>" + sub + "</small></a>";
     }
+    if (CFG.urne && CFG.urne.texte) {
+      html += '<aside class="urne urne--billet"><span class="urne__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M4 11h16v9H4zM7 11V8h10v3M10 5.5h4"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M9 15.5h6"/></svg></span>' +
+        '<div><p class="urne__kicker">Un mot de l\'équipage</p><h3>' + esc(CFG.urne.titre || "") + "</h3><p>" + esc(CFG.urne.texte) + "</p></div></aside>";
+    }
     html += '<section class="billet__prep"><h2>Préparer le voyage</h2><div class="billet__actions">' +
       act("/agenda.ics", "M5 5h14v15H5zM5 10h14M9 3v4M15 3v4", "Agenda", "Rappel la veille", ' download="vol-mc5060.ics"') +
       act("webcal://" + location.host + "/agenda.ics", "M5 5h14v15H5zM5 10h14M9 3v4M15 3v4M9 15l2 2 4-4", "S'abonner", "Mises à jour auto") +

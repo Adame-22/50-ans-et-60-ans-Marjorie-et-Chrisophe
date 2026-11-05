@@ -1545,3 +1545,12 @@ h3 { font-size: 1.6rem; }
   .ip-times { grid-template-columns: 1fr; }
   .infos-page .nav__links a:not(.nav__cta) { display: none; }
 }
+
+/* ───────── Petit mot : l'urne ───────── */
+.urne { display: flex; gap: 16px; align-items: flex-start; margin: 24px 0; padding: clamp(18px, 3vw, 26px); border: 1.5px dashed var(--gold); border-radius: var(--radius); background: #fff; text-align: left; }
+.urne__ico { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 177, 0, .14); color: var(--gold); }
+.urne__ico svg { width: 26px; height: 26px; }
+.urne__kicker { margin: 0 0 .2rem; font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+.urne h3 { margin: 0 0 .35rem; font-family: var(--serif); font-weight: 500; font-size: 1.5rem; color: var(--navy); }
+.urne p:last-child { margin: 0; color: var(--muted); line-height: 1.55; }
+.urne--billet { margin: 8px 0 20px; }

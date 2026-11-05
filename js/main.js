@@ -342,6 +342,17 @@
     svg.innerHTML = html;
   });
 
+  /* ───────── Petit mot : l'urne ───────── */
+  document.querySelectorAll("[data-urne]").forEach(function (el) {
+    var u = CFG.urne;
+    if (!u || !u.texte) return;
+    var t = document.createElement("div"), x = document.createElement("div");
+    t.textContent = u.titre || ""; x.textContent = u.texte;
+    el.innerHTML = '<span class="urne__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M4 11h16v9H4zM7 11V8h10v3M10 5.5h4"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M9 15.5h6"/></svg></span>' +
+      '<div><p class="urne__kicker">Un mot de l\'équipage</p><h3>' + t.innerHTML + "</h3><p>" + x.innerHTML + "</p></div>";
+    el.hidden = false;
+  });
+
   /* ───────── Enregistrement terminé : message à la place du formulaire ───────── */
   if (CFG.inscriptionsCloses) {
     var closedBox = document.getElementById("checkin-closed"), ckForm = document.getElementById("checkin");
