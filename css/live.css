@@ -710,3 +710,10 @@ body.live.is-playing .q-status { margin-top: .6rem; }
 
 /* Anti-Shazam */
 .q-noshazam { margin: -.1rem 0 .5rem; text-align: center; font-size: .82rem; font-weight: 700; color: #ff9c8f; }
+
+/* Questions avec photos : petites vignettes au-dessus des réponses */
+.q-pics { display: flex; gap: 6px; justify-content: center; margin: .2rem 0 .6rem; height: 26vh; height: 26dvh; }
+.q-pics img { min-width: 0; max-width: 100%; height: 100%; object-fit: contain; border-radius: 10px; border: 2px solid #fff; flex: 0 1 auto; }
+.q-pics--2 img, .q-pics--3 img { max-width: calc((100% - 12px) / 2); }
+.q-pics--3 img { max-width: calc((100% - 12px) / 3); }
+body.live.is-playing.has-pics .choices--kahoot { min-height: 150px; }

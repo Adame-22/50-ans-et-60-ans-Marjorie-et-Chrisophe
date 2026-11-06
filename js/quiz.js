@@ -272,6 +272,15 @@
     })();
   }
 
+  // Photos de la question (aussi sur l'écran géant) : en petit, pour ceux qui sont loin de l'écran
+  function picsHtml(q) {
+    if (!q.images || !q.images.length) return "";
+    document.body.classList.add("has-pics");
+    return '<div class="q-pics q-pics--' + q.images.length + '">' + q.images.map(function (id) {
+      return '<img src="/api/quiz?img=' + encodeURIComponent(id) + '" alt="" />';
+    }).join("") + "</div>";
+  }
+
   // Blind test : la musique passe sur l'écran géant, pas sur les téléphones
   function musicBanner(q) {
     return q.audio ? '<p class="q-music"><span class="q-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Écoutez l\'extrait sur l\'écran géant</p>' : "";
@@ -361,10 +370,11 @@
     if (q.mode === "type") return renderTyping();
     if (!shownAt[k]) shownAt[k] = Date.now();
     document.body.classList.add("is-playing"); // les 4 cases occupent tout le bas de l'écran, sous le pouce
+    document.body.classList.remove("has-pics");
     app.innerHTML =
       '<div class="q-meta"><span class="q-num">Question <b>' + (state.index + 1) + "</b> / " + state.total + '</span><span id="q-left" class="q-left"></span></div>' +
       '<div class="q-timer" id="q-timer"><i id="q-bar"></i><span class="q-plane" aria-hidden="true"></span></div>' +
-      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + musicBanner(q) + noShazam(q) + choicesHtml(q) +
+      '<p class="q-text q-text--small">' + esc(q.q) + "</p>" + picsHtml(q) + musicBanner(q) + noShazam(q) + choicesHtml(q) +
       '<p class="center q-status" id="q-status" role="status"></p>';
     bindChoices();
     runTimer();

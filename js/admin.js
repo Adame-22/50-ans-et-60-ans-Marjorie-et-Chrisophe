@@ -2300,7 +2300,9 @@
   function renderQuizList() {
     $("#qz-list").innerHTML = qz.questions.map(function (q, i) {
       var ch = q.choices.concat(["", "", "", ""]).slice(0, 4);
-      return '<li class="qz-item' + (q.audio ? " is-music" : "") + '" data-i="' + i + '"' + (q.audio ? ' data-audio="' + esc(JSON.stringify(q.audio)) + '"' : "") + ">" +
+      return '<li class="qz-item' + (q.audio ? " is-music" : "") + '" data-i="' + i + '"' + (q.audio ? ' data-audio="' + esc(JSON.stringify(q.audio)) + '"' : "") +
+        (q.images && q.images.length ? ' data-images="' + esc(q.images.join(",")) + '"' : "") + ">" +
+        (q.images && q.images.length ? '<div class="qz-thumbs">' + q.images.map(function (id) { return '<img src="/api/quiz?img=' + encodeURIComponent(id) + '" alt="" loading="lazy" />'; }).join("") + "</div>" : "") +
         '<div class="qz-item__head"><input type="text" class="qz-item__q" data-f="q" value="' + esc(q.q) + '" placeholder="Question" maxlength="200" />' +
         '<label class="qz-item__secs"><input type="number" class="qz-item__time" data-f="time" min="5" max="60" value="' + q.time + '" aria-label="Durée en secondes" /> s</label></div>' +
         '<div class="qz-choices">' + ch.map(function (c, j) {
@@ -2343,6 +2345,8 @@
       }
       var a = li.getAttribute("data-audio");
       if (a) { out.audio = JSON.parse(a); out.audio.start = Math.min(25, Math.max(0, parseInt(get("start"), 10) || 0)); }
+      var im = li.getAttribute("data-images");
+      if (im) out.images = im.split(",");
       return out;
     });
   }

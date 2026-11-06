@@ -489,3 +489,22 @@ body.is-test .screen__now::before { content: "🧪 RÉPÉTITION · "; color: #b9
 .qz-suspects { margin: 0; text-align: center; font-size: min(1.9vw, 3.2vh); animation: fx-pop .6s cubic-bezier(.3, 1.4, .5, 1) both .9s; }
 .qz-suspects b { color: #ff9c8f; }
 .qz-suspects small { font-size: .7em; color: rgba(255, 251, 254, .7); }
+
+/* ───────── Questions avec photos (« Christophe ou Chantal ? ») ───────── */
+.quiz-slide2.has-pics { grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 2vh; }
+.quiz-slide2.has-pics .qz-question { font-size: min(3vw, 5vh); }
+.quiz-slide2.has-pics .qz-mid { min-height: 0; height: 100%; gap: 3vw; align-items: center; }
+.quiz-slide2.has-pics .qz-clock { order: 0; flex: none; }
+.quiz-slide2.has-pics .qz-answers { order: 2; flex: none; }
+.qz-mid .qz-pics { order: 1; }
+.qz-pics { flex: 1 1 auto; min-width: 0; height: 100%; display: flex; gap: 1.4vw; justify-content: center; align-items: center; position: relative; }
+.qz-pics figure { margin: 0; flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: center; justify-content: center; }
+.qz-pics img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 1vw; border: .35vw solid #fffbfe; box-shadow: 0 2vh 5vh -1vh rgba(0, 0, 0, .75); animation: fx-pop .6s cubic-bezier(.3, 1.4, .5, 1) both; }
+.qz-pics figure:nth-child(2) img { animation-delay: .1s; }
+.qz-pics figure:nth-child(3) img { animation-delay: .2s; }
+.quiz-slide2.has-pics .qz-tile { padding-block: min(1.4vw, 2.4vh); }
+.quiz-slide2.is-reveal.has-pics { grid-template-rows: auto minmax(0, 1fr) auto auto; }
+.quiz-slide2.is-reveal.has-pics .qz-hist { height: min(10vw, 13vh); }
+.quiz-slide2.is-reveal.has-pics .qz-pics img { filter: brightness(.6); animation: none; }
+.qz-stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg); padding: 1.4vh 3.4vw; border: .6vw double var(--gold-light, #ffcf5c); border-radius: 1.2vw; color: var(--gold-light, #ffcf5c); background: rgba(0, 0, 51, .55); font-weight: 800; font-size: min(5.2vw, 9vh); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; animation: qz-stamp .5s cubic-bezier(.2, 1.4, .4, 1) .2s both; }
+@keyframes qz-stamp { from { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(2.2); } to { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg) scale(1); } }

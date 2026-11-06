@@ -404,12 +404,19 @@
     })();
   }
 
+  // photos d'une question (jeu « Christophe ou Chantal ? »)
+  var imgSeen = {}; // photos de la question suivante, chargées à l'avance
+  function pics(q, stamp) {
+    return '<div class="qz-pics">' + q.images.map(function (id) {
+      return '<figure><img src="/api/quiz?img=' + encodeURIComponent(id) + '" alt="" /></figure>';
+    }).join("") + (stamp ? '<span class="qz-stamp">' + esc(stamp) + "</span>" : "") + "</div>";
+  }
   function renderQuestion() {
-    var q = quiz.question;
-    stage.innerHTML = '<section class="slide quiz-slide2' + (isLong(q) ? " is-long" : "") + '">' +
+    var q = quiz.question, hasPics = q.images && q.images.length;
+    stage.innerHTML = '<section class="slide quiz-slide2' + (isLong(q) ? " is-long" : "") + (hasPics ? " has-pics" : "") + '">' +
       '<div class="qz-head"><span class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + "</span></div>" +
       '<p class="qz-question">' + esc(q.q) + "</p>" +
-      '<div class="qz-mid"><div class="qz-clock" id="qz-clock"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" class="qz-clock__bg"/><circle cx="50" cy="50" r="44" class="qz-clock__fg" id="qz-ring"/></svg><b id="qz-left"></b></div>' +
+      '<div class="qz-mid">' + (hasPics ? pics(q) : "") + '<div class="qz-clock" id="qz-clock"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" class="qz-clock__bg"/><circle cx="50" cy="50" r="44" class="qz-clock__fg" id="qz-ring"/></svg><b id="qz-left"></b></div>' +
       (q.audio ? '<div class="qz-listen">' + (Sound.on
         ? '<span class="qz-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><b>Écoutez&nbsp;!</b>'
         : '<b>🔇 Son coupé</b><small>cliquez sur « Activer le son »</small>') + "</div>" : "") +
@@ -460,13 +467,14 @@
     var q = quiz.question, counts = quiz.counts || [], total = counts.reduce(function (a, b) { return a + b; }, 0);
     var max = Math.max.apply(null, counts.concat([1])), good = counts[quiz.correct] || 0;
     var pct = total ? Math.round(good / total * 100) : 0;
-    var song = q.audio && q.audio.title;
+    var song = q.audio && q.audio.title, hasPics = q.images && q.images.length;
     if (q.mode === "type") return renderTypedReveal(q, song);
-    stage.innerHTML = '<section class="slide quiz-slide2 is-reveal' + (isLong(q) ? " is-long" : "") + (song ? " is-song" : "") + '">' +
+    stage.innerHTML = '<section class="slide quiz-slide2 is-reveal' + (isLong(q) ? " is-long" : "") + (song ? " is-song" : "") + (hasPics ? " has-pics" : "") + '">' +
       '<div class="qz-head"><span class="qz-num">Question ' + (quiz.index + 1) + " sur " + quiz.total + '</span><span class="qz-pct">' + pct + " % de bonnes réponses</span></div>" +
       (song
         ? '<div class="qz-song">' + (q.audio.cover ? '<img src="' + esc(q.audio.cover) + '" alt="" />' : "") +
           "<div><b>" + esc(q.audio.title) + "</b><span>" + esc(q.audio.artist) + (q.audio.year ? " · " + esc(q.audio.year) : "") + "</span></div></div>"
+        : hasPics ? pics(q, q.choices[quiz.correct])
         : '<p class="qz-question">' + esc(q.q) + "</p>") +
       '<div class="qz-hist">' + q.choices.map(function (c, i) {
         return '<div class="qz-col k' + i + (i === quiz.correct ? " is-correct" : "") + '"><span class="qz-col__n">' + (counts[i] || 0) + "</span>" +
@@ -570,6 +578,7 @@
     if (quiz.phase === "ready" && quiz.ready) key += "|r" + quiz.ready.seq;
     if (quiz.phase === "board") key += "|" + (quiz.leaderboard || []).slice(0, 5).map(function (p) { return p.pub + p.score; }).join(",") + "|" + (quiz.teams || []).map(function (t) { return t.id + t.score; }).join(",");
     if (quiz.preload) Music.preload(quiz.preload);
+    (quiz.preloadImages || []).forEach(function (id) { if (!imgSeen[id]) { imgSeen[id] = new Image(); imgSeen[id].src = "/api/quiz?img=" + encodeURIComponent(id); } });
     if (quiz.phase === "lobby") { if (quizKey.indexOf("lobby|") !== 0) { clearStage(); Music.stop(); quizKey = key; stage.innerHTML = ""; } renderLobby(); return; }
     if (key === quizKey) {
       if (quiz.phase === "question") {

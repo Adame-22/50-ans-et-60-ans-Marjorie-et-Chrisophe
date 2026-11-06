@@ -29,6 +29,9 @@
  *   POST { action: "game", name, create? } → change de jeu (ex. « Quiz de bord » → « Blind test ») :
  *        les joueurs restent connectés, les scores repartent de zéro
  *   POST { action: "game-delete", name }
+ *   POST { action: "img-put", data }       → enregistre une photo (data URL JPEG/PNG/WebP déjà réduite) → { id }
+ *   GET  ?img=<id>                         → la photo (public, cache long) ; une question peut en montrer 1 à 4 (images: [id])
+ *   PUT  { questions, game }               → « game » : enregistre les questions d'un autre jeu sans le charger
  *   POST { action: "lobby" | "ready" | "start" | "go" | "reveal" | "board" | "podium" | "off" | "reset", from? }
  *        ready : vérification des joueurs avant une question (« 58 / 62 connectés ») ; la question part toute
  *        seule dès que tout le monde est là (10 s au plus) ; go : la lancer sans attendre.
@@ -69,6 +72,8 @@ const REAL = keysFor(false);
 const TEST = keysFor(true);
 const TEST_META = "mc:quiz:test:meta"; // { code, game, by, openedAt }
 const DEFAULT_GAME = "Quiz de bord";
+const IMG_ID = /^[a-f0-9]{24}$/;
+const imgKey = (id) => "mc:quiz:img:" + id;
 const READY_MIN = 2500, READY_MAX = 10000; // vérification des joueurs : au moins 2,5 s à l'écran, 10 s au plus
 const BOARD_FOR = 5500;
 const SITE = process.env.SITE_URL || "https://50-ans-et-60-ans-marjorie-et-chriso.vercel.app";
@@ -173,6 +178,9 @@ function sanitizeQuestions(list) {
     }
     const audio = sanitizeAudio(x.audio);
     if (audio) out.audio = audio;
+    // photos (jeu « Christophe ou Chantal ? ») : identifiants des images enregistrées avec img-put
+    const images = (Array.isArray(x.images) ? x.images : []).map((i) => String(i || "")).filter((i) => IMG_ID.test(i)).slice(0, 4);
+    if (images.length) out.images = images;
     return out;
   });
 }
@@ -369,6 +377,16 @@ module.exports = L.handler(async (req, res) => {
   const params = L.query(req);
 
   /* ───────── Lecture ───────── */
+  if (req.method === "GET" && params.get("img")) {
+    const id = String(params.get("img"));
+    const raw = IMG_ID.test(id) ? await L.redis(["GET", imgKey(id)]) : null;
+    const m = raw && raw.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
+    if (!m) return L.send(res, 404, { error: "Photo introuvable." });
+    res.statusCode = 200;
+    res.setHeader("Content-Type", m[1]);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); // l'identifiant dépend du contenu
+    return res.end(Buffer.from(m[2], "base64"));
+  }
   if (req.method === "GET") {
     const view = params.get("view") || "public";
     let K = REAL, meta = null;
@@ -431,6 +449,7 @@ module.exports = L.handler(async (req, res) => {
       }
       // l'écran géant joue l'extrait ; le titre n'est donné qu'à la révélation
       if (cur.audio) out.question.audio = state.phase === "question" ? { url: cur.audio.url, start: cur.audio.start } : cur.audio;
+      if (cur.images) out.question.images = cur.images;
       out.round = state.round;
       out.startedAt = state.startedAt;
       out.endsAt = state.endsAt;
@@ -441,6 +460,7 @@ module.exports = L.handler(async (req, res) => {
     // l'écran géant charge à l'avance l'extrait de la question suivante
     const next = ["lobby", "reveal", "board"].includes(state.phase) ? questions[state.index + 1] : state.phase === "ready" ? questions[state.next] : null;
     if (next && next.audio) out.preload = next.audio.url;
+    if (next && next.images) out.preloadImages = next.images;
     if (["reveal", "board"].includes(state.phase)) {
       out.correct = cur ? cur.answer : null;
       out.counts = state.counts || [];
@@ -559,9 +579,24 @@ module.exports = L.handler(async (req, res) => {
     K = TEST;
   }
 
+  if (req.method === "POST" && body.action === "img-put") {
+    const data = String(body.data || "");
+    if (!/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(data) || data.length > 1500000) throw new L.HttpError(400, "Photo invalide ou trop lourde (1 Mo au plus, déjà réduite).");
+    const id = require("crypto").createHash("sha256").update(data).digest("hex").slice(0, 24);
+    await L.redis(["SET", imgKey(id), data]);
+    return L.send(res, 200, { id });
+  }
+
   if (req.method === "PUT") {
     const questions = sanitizeQuestions(body.questions);
     const real = await getState(REAL);
+    const other = L.str(body.game, 40);
+    if (other && !K.test && other !== (real.game || DEFAULT_GAME)) { // enregistrer un autre jeu sans toucher à celui de la soirée
+      const games = await L.hgetallJson(REAL.games);
+      if (!games[other] && Object.keys(games).length + 1 >= MAX_GAMES) throw new L.HttpError(409, "Il y a déjà " + MAX_GAMES + " jeux : supprimez-en un.");
+      await L.redis(["HSET", REAL.games, other, JSON.stringify({ questions })]);
+      return L.send(res, 200, { questions, game: other });
+    }
     // en répétition, on modifie le jeu en cours de test (qui n'est pas forcément celui de la soirée)
     const meta = K.test ? await getJson(TEST_META, null) : null;
     if (K.test && !meta) throw new L.HttpError(409, "Aucune répétition en cours.");

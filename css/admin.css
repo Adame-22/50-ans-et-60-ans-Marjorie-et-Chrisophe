@@ -988,3 +988,5 @@ body.admin { font-variant-numeric: lining-nums; }
 .remind__next .hint { flex-basis: 100%; margin: 0; }
 .remind__tel { display: block; font-size: .85rem; margin-top: .2rem; font-weight: 600; }
 .remind__txt { margin: .25rem 0 0; font-size: .82rem; line-height: 1.35; white-space: pre-wrap; user-select: all; background: rgba(0,0,0,.04); padding: .4rem .5rem; border-radius: 6px; }
+.qz-thumbs { display: flex; gap: 6px; margin: 0 0 .5rem; }
+.qz-thumbs img { height: 64px; border-radius: 6px; }
