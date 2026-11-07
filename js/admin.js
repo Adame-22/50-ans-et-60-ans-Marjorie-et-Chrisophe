@@ -2182,6 +2182,7 @@
     $("#qz-auto").className = "btn btn--small " + (autoOn ? "btn--line" : "btn--gold");
     $("#qz-auto").hidden = st.phase === "podium" || st.done || !n;
     if (document.activeElement !== $("#qz-every")) $("#qz-every").value = String((st.auto && st.auto.boardEvery) || 1);
+    $("#qz-untimed").checked = !!st.untimed;
     $("#qz-regie").classList.toggle("is-auto", autoOn);
     $("#qz-funny-on").checked = st.showFunny !== false;
     // journal anti-Shazam (privé : seulement dans la régie et en notification)
@@ -2618,6 +2619,12 @@
     if (on && d.state.phase === "lobby" && !confirm("Lancer le quiz en automatique ?\n\nTout s'enchaîne seul : vérification des joueurs, questions, réponses, classements, podium. Vous pouvez mettre en pause à tout moment.")) return;
     api("/api/quiz", { method: "POST", body: withTest({ action: "auto", on: on, boardEvery: +$("#qz-every").value }) })
       .then(function () { toast(on ? "Mode automatique activé." : "Mode manuel : c'est vous qui avancez."); startQuizAdmin(); })
+      .catch(function (err) { toast(err.message, true); });
+  });
+  $("#qz-untimed").addEventListener("change", function () {
+    var on = this.checked;
+    api("/api/quiz", { method: "POST", body: withTest({ action: "untimed", on: on }) })
+      .then(function () { toast(on ? "Sans limite de temps : la réponse s'affiche quand tout le monde a répondu (ou avec « Révéler »)." : "Limite de temps rétablie."); startQuizAdmin(); })
       .catch(function (err) { toast(err.message, true); });
   });
   $("#qz-every").addEventListener("change", function () {

@@ -441,10 +441,11 @@
     if (ring) ring.style.strokeDasharray = C;
     (function frame() {
       var rest = Math.max(0, Math.min(total, quiz.endsAt - now())), sec = Math.ceil(rest / 1000);
-      if (ring) ring.style.strokeDashoffset = C * (1 - rest / total);
-      if (left) left.textContent = rest > 0 ? sec : "0";
-      if (box) box.classList.toggle("is-hurry", rest > 0 && rest <= 5000);
-      if (rest > 0 && rest <= 5000 && sec !== lastTick && !quiz.question.audio) { lastTick = sec; Sound.tick(sec <= 1); }
+      var free = quiz.noLimit; // sans limite de temps : pas de compte à rebours
+      if (ring) ring.style.strokeDashoffset = free ? 0 : C * (1 - rest / total);
+      if (left) left.textContent = free ? "∞" : rest > 0 ? sec : "0";
+      if (box) box.classList.toggle("is-hurry", !free && rest > 0 && rest <= 5000);
+      if (!free && rest > 0 && rest <= 5000 && sec !== lastTick && !quiz.question.audio) { lastTick = sec; Sound.tick(sec <= 1); }
       var hs = document.getElementById("qz-hint");
       if (hs && quiz.question.hintAt) hs.textContent = Math.max(0, Math.ceil((quiz.question.hintAt - now()) / 1000));
       if (rest <= 0) {

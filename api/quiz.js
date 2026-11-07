@@ -29,6 +29,8 @@
  *   POST { action: "game", name, create? } → change de jeu (ex. « Quiz de bord » → « Blind test ») :
  *        les joueurs restent connectés, les scores repartent de zéro
  *   POST { action: "game-delete", name }
+ *   POST { action: "untimed", on }         → sans limite de temps : chaque question reste ouverte jusqu'à ce que
+ *        tous les présents aient répondu (en automatique) ou que l'animateur révèle la réponse
  *   POST { action: "img-put", data }       → enregistre une photo (data URL JPEG/PNG/WebP déjà réduite) → { id }
  *   GET  ?img=<id>                         → la photo (public, cache long) ; une question peut en montrer 1 à 4 (images: [id])
  *   PUT  { questions, game }               → « game » : enregistre les questions d'un autre jeu sans le charger
@@ -73,6 +75,7 @@ const TEST = keysFor(true);
 const TEST_META = "mc:quiz:test:meta"; // { code, game, by, openedAt }
 const DEFAULT_GAME = "Quiz de bord";
 const IMG_ID = /^[a-f0-9]{24}$/;
+const NO_LIMIT = 6 * 3600 * 1000; // « sans limite de temps » : la question reste ouverte jusqu'à la révélation
 const imgKey = (id) => "mc:quiz:img:" + id;
 const READY_MIN = 2500, READY_MAX = 10000; // vérification des joueurs : au moins 2,5 s à l'écran, 10 s au plus
 const BOARD_FOR = 5500;
@@ -266,7 +269,7 @@ async function flow(K, state, questions, action, o) {
       }
       Object.assign(state, {
         phase: "question", index, round, done: false, present,
-        startedAt: now + 3000, endsAt: now + 3000 + q.time * 1000, counts: null, gains: null, typed: null, funnies: null, suspects: null, revealedAt: null,
+        startedAt: now + 3000, endsAt: now + 3000 + (state.untimed ? NO_LIMIT : q.time * 1000), noLimit: !!state.untimed, counts: null, gains: null, typed: null, funnies: null, suspects: null, revealedAt: null,
       });
       break;
     }
@@ -453,6 +456,7 @@ module.exports = L.handler(async (req, res) => {
       out.round = state.round;
       out.startedAt = state.startedAt;
       out.endsAt = state.endsAt;
+      if (state.noLimit) out.noLimit = true;
     }
     if (state.phase === "question") out.answered = await L.redis(["HLEN", K.answers(state.round)]);
     out.done = !!state.done;
@@ -651,6 +655,16 @@ module.exports = L.handler(async (req, res) => {
         if (state.phase !== "ready") throw new L.HttpError(409, "Aucune vérification en cours.");
         await flow(K, state, questions, "start", { now, by: me.name });
         break;
+
+      case "untimed": { // sans limite de temps : la question reste ouverte jusqu'à ce que tout le monde ait répondu (ou « Révéler »)
+        state.untimed = !!body.on;
+        if (state.phase === "question") { // s'applique aussi à la question en cours
+          const q = questions[state.index];
+          state.noLimit = state.untimed;
+          state.endsAt = state.untimed ? state.startedAt + NO_LIMIT : Math.max(now + 5000, state.startedAt + (q ? q.time * 1000 : 20000));
+        }
+        break;
+      }
 
       case "auto": { // mode automatique (et départ de la 1re question depuis l'accueil)
         state.auto = { on: !!body.on, boardEvery: [1, 2, 3, 5].includes(+body.boardEvery) ? +body.boardEvery : (state.auto && state.auto.boardEvery) || 1 };

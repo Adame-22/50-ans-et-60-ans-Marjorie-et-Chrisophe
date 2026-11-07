@@ -437,10 +437,11 @@
     (function frame() {
       var rest = Math.max(0, Math.min(total, state.endsAt - now()));
       var sec = Math.ceil(rest / 1000);
-      bar.style.transform = "scaleX(" + Math.min(1, rest / total) + ")";
-      box.style.setProperty("--p", Math.min(1, rest / total).toFixed(4));
-      left.textContent = rest > 0 ? sec + " s" : "Temps écoulé";
-      var hurry = rest > 0 && rest <= 5000;
+      var free = state.noLimit; // sans limite de temps : on prend son temps
+      bar.style.transform = "scaleX(" + (free ? 1 : Math.min(1, rest / total)) + ")";
+      box.style.setProperty("--p", free ? "1" : Math.min(1, rest / total).toFixed(4));
+      left.textContent = free ? "Pas de limite" : rest > 0 ? sec + " s" : "Temps écoulé";
+      var hurry = !free && rest > 0 && rest <= 5000;
       box.classList.toggle("is-hurry", hurry);
       left.classList.toggle("is-hurry", hurry);
       if (hurry && sec !== lastSec) { lastSec = sec; left.classList.remove("tick"); void left.offsetWidth; left.classList.add("tick"); }
